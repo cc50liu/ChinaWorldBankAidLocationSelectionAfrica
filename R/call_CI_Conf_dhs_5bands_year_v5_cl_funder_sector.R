@@ -3,7 +3,7 @@
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations.  
 #           v5 improves on v4 by:
-#             - using the package version that includes uncertainty estimates
+#             - providing samplingType, nDepthHidden_conv, nDepthHidden_dense, maxPoolSize, strides, and kernelSize parameters
 #             - reading a new consolidated confounders file that excludes problemmatic points
 #             - adjusting nightlights to correspond with pre-project image year
 # Use:  called from slurm script with command-line arg for funder_sector
@@ -22,7 +22,7 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 #comment out to test
-#fund_sect_param <- "wb_140"
+#fund_sect_param <- "ch_140"
 orig_fund_sect_param <- fund_sect_param  #for "both" case
 
 run <- "v5_5b_2000i_dhs_year"
@@ -150,28 +150,24 @@ acquireImageRepFromDisk <- function(keys,training = F){
       mutate(cntl_count = round(control_count * proportion)) %>% 
       rename(treat_year = !!(paste0(fund_sect_param, "_min_oda_year")))
 
-    #produces something like this:
+    #produces this:
+    # A tibble: 10 × 4
     # treat_year count proportion cntl_count
     # <int> <int>      <dbl>      <dbl>
-    # 1       2000   228     0.0475        208
-    # 2       2001   434     0.0905        396
-    # 3       2002   388     0.0809        354
-    # 4       2003   829     0.173         757
-    # 5       2004   519     0.108         474
-    # 6       2005   371     0.0773        339
-    # 7       2006   468     0.0975        428
-    # 8       2007   223     0.0465        204
-    # 9       2008   474     0.0988        433
-    # 10       2009   120     0.0250        110
-    # 11       2010   109     0.0227        100
-    # 12       2011   173     0.0361        158
-    # 13       2012   295     0.0615        269
-    # 14       2013   116     0.0242        106
-    # 15       2014    51     0.0106         47
+    # 1       2000    10    0.0235         103
+    # 2       2002     2    0.00469         21
+    # 3       2003    32    0.0751         329
+    # 4       2005     6    0.0141          62
+    # 5       2006    41    0.0962         421
+    # 6       2007    29    0.0681         298
+    # 7       2008   125    0.293         1284
+    # 8       2009    19    0.0446         195
+    # 9       2012   112    0.263         1151
+    # 10       2013    50    0.117          514
     
     
-    # sum(year_props$cntl_count)
-    # sum(year_props$proportion)
+    #sum(year_props$cntl_count)
+    #sum(year_props$proportion)
 
     for (i in 1:nrow(year_props)) {
       #i=2  #uncomment to test
@@ -237,7 +233,9 @@ acquireImageRepFromDisk <- function(keys,training = F){
                     ifelse(is.na(sub_dhs_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
                                  sub_dhs_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
       acquireImageRepFxn = acquireImageRepFromDisk,
+      samplingType = "balancedTrain",
       nSGD = 2000,
+      nDepthHidden_conv = 5L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
       figuresPath = "./figures/", # figures saved here
       figuresTag = paste0(orig_fund_sect_param,"_",run),
       conda_env = NULL, # conda env to try to activate
