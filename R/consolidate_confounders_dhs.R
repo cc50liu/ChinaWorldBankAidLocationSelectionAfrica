@@ -5,7 +5,7 @@ rm(list=ls())
 
 #read only the dhs_id and the columns each file is "responsible" for
 dhs_vector_df <- read.csv("./data/interim/dhs_treat_control_vector.csv") %>% 
-  select(dhs_id, log_deaths1995_1999, leader_birthplace)
+  select(dhs_id, starts_with("log_"), starts_with("leader_"))
 
 dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
   select(dhs_id, starts_with("log"))
