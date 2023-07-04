@@ -107,7 +107,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   #create logged versions of variables
   dhs_log_df <- dhs_df %>%
     mutate(
-      across(all_of(starts_with("avg_")), ~ ifelse(!is.finite(log(.)), 0, log(.)), .names = "log_{.col}")
+      across(starts_with("avg_"), ~ ifelse(!is.finite(log(.)), 0, log(.)), .names = "log_{.col}")
     )
   
   #write to file for later use
