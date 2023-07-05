@@ -9,6 +9,11 @@ rm(list=ls())
 
 ################################################
 ### Load administrative borders and general data
+
+#get Africa ISO codes
+africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
+projection <- "ESRI:102023"
+
 #boundaries used in Gehring
 gadm0_sf <- sf::st_read("./data/country_regions/gadm28_adm0.shp")  %>%
   filter(ISO %in% africa_isos_df$iso3)
@@ -23,10 +28,6 @@ sf::st_crs(gadm1_sf) = "EPSG:4326"
 gadm1_sf <- sf::st_transform(gadm1_sf,crs=sf::st_crs(projection))
 gadm1_sf <- sf::st_make_valid(gadm1_sf)  
 unique(sf::st_is_valid(gadm1_sf))
-
-#get Africa ISO codes
-africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-projection <- "ESRI:102023"
 
 #settings to generate maps
 tmap_options(check.and.fix = TRUE)

@@ -10,14 +10,16 @@ dhs_vector_df <- read.csv("./data/interim/dhs_treat_control_vector.csv") %>%
 dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
   select(dhs_id, starts_with("log"))
 
-#join the two
-dhs_intermediate_df <- inner_join(dhs_vector_df, dhs_raster_df, by="dhs_id")
+dhs_natl_res_df <-  read.csv("./data/interim/dhs_natl_res.csv") 
 
 #get all columns here, which include iwi estimates, t/c and min_oda_year by sector
 dhs_treat_control_df <- read.csv("./data/interim/dhs_treat_control_sector_year.csv") 
 
-#join the two for the final consolidated file, n=9601
-dhs_confounders_df <- inner_join(dhs_intermediate_df, dhs_treat_control_df, by="dhs_id")
+#join them all into a consolidated df
+dhs_confounders_df <- dhs_treat_control_df %>% 
+  inner_join(dhs_vector_df, by="dhs_id") %>% 
+  inner_join(dhs_raster_df, by="dhs_id") %>% 
+  inner_join(dhs_natl_res_df, by="dhs_id")  
 
 write.csv(dhs_confounders_df,"./data/interim/dhs_treat_control_confounders.csv",row.names=FALSE)
 

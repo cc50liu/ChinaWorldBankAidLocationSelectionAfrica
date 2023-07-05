@@ -232,12 +232,17 @@ acquireImageRepFromDisk <- function(keys,training = F){
     ImageConfoundingAnalysis <- AnalyzeImageConfounding(
       obsW = sub_dhs_df[[fund_sect_param]],
       obsY = sub_dhs_df$iwi_2017_2019_est,  #lab's estimated iwi
-      X = scale(data.matrix(data.frame("log_avg_nl_pre_oda"=sub_dhs_df$log_avg_nl_pre_oda,  #scene level
-                                 "log_avg_min_to_city"=sub_dhs_df$log_avg_min_to_city,    #scene level
-                                 "log_avg_pop_dens_2000"=sub_dhs_df$log_avg_pop_dens_2000, #scene level
-                                 "log_3yr_pre_conflict_deaths"=sub_dhs_df$log_3yr_pre_conflict_deaths,    #inherited from ADM1
-                                 "leader_birthplace"=sub_dhs_df$leader_birthplace         #inherited from ADM1
-                                 )),center=TRUE, scale=TRUE),
+      X = scale(data.matrix(data.frame(
+         "log_avg_nl_pre_oda"         =sub_dhs_df$log_avg_nl_pre_oda,          #scene level
+         "log_avg_min_to_city"        =sub_dhs_df$log_avg_min_to_city,         #scene level
+         "log_avg_pop_dens_2000"      =sub_dhs_df$log_avg_pop_dens_2000,       #scene level
+         "log_3yr_pre_conflict_deaths"=sub_dhs_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+         "leader_birthplace"          =sub_dhs_df$leader_birthplace,           #inherited from ADM1
+         "log_dist_km_to_gold"        =sub_dhs_df$log_dist_km_to_gold,         #scene level
+         "log_dist_km_to_gems"        =sub_dhs_df$log_dist_km_to_gems,         #scene level
+         "log_dist_km_to_dia"         =sub_dhs_df$log_dist_km_to_dia,          #scene level
+         "log_dist_km_to_petro"       =sub_dhs_df$log_dist_km_to_petro         #scene level
+          )),center=TRUE, scale=TRUE),
       long = sub_dhs_df$lon,
       lat = sub_dhs_df$lat,
       #concatenate the image file location and project year into a single keys parameter
