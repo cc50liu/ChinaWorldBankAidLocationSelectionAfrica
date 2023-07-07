@@ -16,16 +16,14 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   dhs_df$avg_nl_2008_2010  <- NA
   dhs_df$avg_nl_2011_2013  <- NA
   dhs_df$avg_min_to_city   <- NA
-  dhs_df$avg_pop_dens_2000 <- NA
-
-  #nightlight bands:
-  #1996-1998: 24  
-  #1999-2001: 32
-  #2002-2004: 40
-  #2005-2007: 48
-  #2008-2010: 56
-  #2011-2013: 64  #stop here, at end of DMSP nighlight data and since these are pre-proj estimates
- 
+  
+  pop_dens_years <- c(2000, 2003, 2006, 2009, 2012)
+  for (pop_dens_year in pop_dens_years) {
+    column_name <- paste0("avg_pop_dens_", pop_dens_year)
+    dhs_df[[column_name]] <- NA
+  }
+  
+  #construct map of bands to the nl year columns they relate to
   nl_bands <- c("_24", "_32", "_40", "_48", "_56", "_64")
   nl_columns <- c("avg_nl_1996_1998",
                     "avg_nl_1999_2001",
@@ -40,7 +38,8 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
 
   #initialize current_iso3, used to open each country's pop density tif
   current_iso3 = "initial"
-  # Iterate over the rows of the data frame
+
+  # Iterate over dhs points
   for (i in 1:nrow(dhs_df)) {
     #i=1 #uncomment to test
     # Read the file path from the image_file column
@@ -54,41 +53,63 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
       # Calculate average nighlights
       nl <- terra::rast(file_path, lyrs = layer_name)
       if (j==1) {
-        #save the extent for later use
+        #save the extent to crop travel time and density rasters
         extent_nl <- terra::ext(nl)
       }
       average_nl <- base::mean(terra::as.matrix(nl),na.rm=TRUE)
       dhs_df[[nl_bands_to_columns$nl_columns[j]]][i] <- average_nl
     }
     
-    #use nightlight extent to crop travel time and pop density rasters
+    #calc and store average travel minutes
     travel_r <- terra::crop(acc_50k,extent_nl)
     average_travel_min_50k <- base::mean(terra::as.matrix(travel_r),na.rm=TRUE)
-
-    #read country's population density tif, if not already in memory
+    dhs_df$avg_min_to_city[i] <- average_travel_min_50k
+    
+    #read country's population density tifs, if not already in memory
     if (current_iso3 != dhs_df$iso3[i]) {
       current_iso3 <- dhs_df$iso3[i]
-      cntry_pop_dens_filename <- paste0("./data/WorldPop/",
-                                     tolower(current_iso3),
-                                     "_pd_2000_1km_UNadj.tif")
-      cntry_pop_dens_r <- terra::rast(cntry_pop_dens_filename) 
+      cntry_pop_dens2000_filename <- paste0("./data/WorldPop/",
+                                            tolower(current_iso3),
+                                            "_pd_2000_1km_UNadj.tif")
+      cntry_pop_dens2000_r <- terra::rast(cntry_pop_dens2000_filename) 
+      cntry_pop_dens2003_filename <- paste0("./data/WorldPop/",
+                                            tolower(current_iso3),
+                                            "_pd_2003_1km_UNadj.tif")
+      cntry_pop_dens2003_r <- terra::rast(cntry_pop_dens2003_filename) 
+      cntry_pop_dens2006_filename <- paste0("./data/WorldPop/",
+                                            tolower(current_iso3),
+                                            "_pd_2006_1km_UNadj.tif")
+      cntry_pop_dens2006_r <- terra::rast(cntry_pop_dens2006_filename) 
+      cntry_pop_dens2009_filename <- paste0("./data/WorldPop/",
+                                            tolower(current_iso3),
+                                            "_pd_2009_1km_UNadj.tif")
+      cntry_pop_dens2009_r <- terra::rast(cntry_pop_dens2009_filename) 
+      cntry_pop_dens2012_filename <- paste0("./data/WorldPop/",
+                                            tolower(current_iso3),
+                                            "_pd_2012_1km_UNadj.tif")
+      cntry_pop_dens2012_r <- terra::rast(cntry_pop_dens2012_filename) 
     }
-    tryCatch({
-      avg_pop_dens <- NA  #reinitialize in case this fails
-      pop_dens_r <- terra::crop(cntry_pop_dens_r,extent_nl)
-      avg_pop_dens <- base::mean(terra::as.matrix(pop_dens_r),na.rm=TRUE)
-    }, error=function(e) {
-      if (grepl("extents do not overlap", e$message)) {
-        # Print an error message or take any other action
-        print(paste("Skipping crop error i:",i,"lat",dhs_df$lat[i],"lon",
-                    dhs_df$lon[i],file_path,cntry_pop_dens_filename))
-        #Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2000_1km_UNadj.tif"
-      }
-    })
 
-    # Save to the dataframe
-    dhs_df$avg_min_to_city[i] <- average_travel_min_50k
-    dhs_df$avg_pop_dens_2000[i] <- avg_pop_dens
+    # Loop over the years, calculating and saving the pop density to df
+    for (pop_dens_year in pop_dens_years) {
+      tryCatch({
+        avg_pop_dens <- NA  # Reinitialize in case of failure
+        pop_dens_r <- terra::crop(get(paste0("cntry_pop_dens",pop_dens_year,"_r")), extent_nl)
+        avg_pop_dens <- base::mean(terra::as.matrix(pop_dens_r), na.rm = TRUE)
+      }, error = function(e) {
+        if (grepl("extents do not overlap", e$message)) {
+          print(paste("Skipping crop error i:",i,"lat",dhs_df$lat[i],"lon",
+                      dhs_df$lon[i],file_path,
+                      get(paste0("cntry_pop_dens",pop_dens_year,"_filename"))))
+          
+        }
+      })
+      
+      # Save to the dataframe
+      column_name <- paste0("avg_pop_dens_", year)
+      dhs_df[[column_name]][i] <- avg_pop_dens
+    }
+    
     if (i %% 100 == 0) {
       print(paste("iteration",i,"Avg nl",round(average_nl,1),"Avg trav min",
                   round(average_travel_min_50k,1), "Avg pd",round(avg_pop_dens,1)))

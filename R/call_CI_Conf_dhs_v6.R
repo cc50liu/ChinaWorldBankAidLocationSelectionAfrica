@@ -215,6 +215,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
           !!sym(oda_year_column) %in% 2008:2010 ~ log_avg_nl_2005_2007,
           !!sym(oda_year_column) %in% 2011:2013 ~ log_avg_nl_2008_2010,
           !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_nl_2011_2013),
+        log_avg_pop_dens = case_when(
+          !!sym(oda_year_column) %in% 2000:2004 ~ log_avg_pop_dens2000,
+          !!sym(oda_year_column) %in% 2005:2007 ~ log_avg_pop_dens2003,
+          !!sym(oda_year_column) %in% 2008:2010 ~ log_avg_pop_dens2006,
+          !!sym(oda_year_column) %in% 2011:2013 ~ log_avg_pop_dens2009,
+          !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_pop_dens2012),
         log_dist_km_to_gold = case_when(
           !!sym(oda_year_column) %in% 2000:2001 ~ log_dist_km_to_gold_pre2001,
           !!sym(oda_year_column) > 2001 ~ log_dist_km_to_gold_2001),
@@ -259,7 +265,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       X = scale(data.matrix(data.frame(
          "log_avg_nl_pre_oda"         =run_df$log_avg_nl_pre_oda,          #scene level
          "log_avg_min_to_city"        =run_df$log_avg_min_to_city,         #scene level
-         "log_avg_pop_dens_2000"      =run_df$log_avg_pop_dens_2000,       #scene level
+         "log_avg_pop_dens"           =run_df$log_avg_pop_dens,            #scene level
          "log_3yr_pre_conflict_deaths"=run_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
          "leader_birthplace"          =run_df$leader_birthplace,           #inherited from ADM1
          "log_dist_km_to_gold"        =run_df$log_dist_km_to_gold,         #scene level
