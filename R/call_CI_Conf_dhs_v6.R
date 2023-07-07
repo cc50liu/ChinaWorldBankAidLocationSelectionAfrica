@@ -206,7 +206,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
     #distribution of treatment first years)
     oda_year_column <- (paste0(fund_sect_param, "_min_oda_year"))
     
-    sub_dhs_df <- sub_dhs_df %>% 
+    sub_dhs_time_df <- sub_dhs_df %>% 
       mutate(
         log_avg_nl_pre_oda = case_when(
           !!sym(oda_year_column) %in% 2000:2001 ~ log_avg_nl_1996_1998,
@@ -235,26 +235,47 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                                  as.numeric(get(oda_year_column)) - 1))
       ) %>% ungroup()  
     
+    #join to country-level parameters
+    country_confounders_df <- read.csv("./data/interim/country_confounders.csv") %>% 
+      select(-country)
+    
+    run_df <- sub_dhs_time_df %>% 
+      left_join(country_confounders_df,
+                by=join_by(iso3, !!sym(oda_year_column) == year))
+    
+    #write input data to file
+    run_df %>% 
+      select(dhs_id, country, iso3, lat, lon, !!sym(fund_sect_param), 
+             !!sym(oda_year_column), image_file, iwi_2017_2019_est,
+             log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens_2000,
+             log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
+             log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
+             gdp_per_cap_USD2015,country_gini,polity2) %>% 
+    write.csv(., paste0("./data/interim/input_",run,"_",orig_fund_sect_param,".csv"),row.names = FALSE)
+
     ImageConfoundingAnalysis <- AnalyzeImageConfounding(
-      obsW = sub_dhs_df[[fund_sect_param]],
-      obsY = sub_dhs_df$iwi_2017_2019_est,  #lab's estimated iwi
+      obsW = run_df[[fund_sect_param]],
+      obsY = run_df$iwi_2017_2019_est,  #lab's estimated iwi
       X = scale(data.matrix(data.frame(
-         "log_avg_nl_pre_oda"         =sub_dhs_df$log_avg_nl_pre_oda,          #scene level
-         "log_avg_min_to_city"        =sub_dhs_df$log_avg_min_to_city,         #scene level
-         "log_avg_pop_dens_2000"      =sub_dhs_df$log_avg_pop_dens_2000,       #scene level
-         "log_3yr_pre_conflict_deaths"=sub_dhs_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
-         "leader_birthplace"          =sub_dhs_df$leader_birthplace,           #inherited from ADM1
-         "log_dist_km_to_gold"        =sub_dhs_df$log_dist_km_to_gold,         #scene level
-         "log_dist_km_to_gems"        =sub_dhs_df$log_dist_km_to_gems,         #scene level
-         "log_dist_km_to_dia"         =sub_dhs_df$log_dist_km_to_dia,          #scene level
-         "log_dist_km_to_petro"       =sub_dhs_df$log_dist_km_to_petro         #scene level
+         "log_avg_nl_pre_oda"         =run_df$log_avg_nl_pre_oda,          #scene level
+         "log_avg_min_to_city"        =run_df$log_avg_min_to_city,         #scene level
+         "log_avg_pop_dens_2000"      =run_df$log_avg_pop_dens_2000,       #scene level
+         "log_3yr_pre_conflict_deaths"=run_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+         "leader_birthplace"          =run_df$leader_birthplace,           #inherited from ADM1
+         "log_dist_km_to_gold"        =run_df$log_dist_km_to_gold,         #scene level
+         "log_dist_km_to_gems"        =run_df$log_dist_km_to_gems,         #scene level
+         "log_dist_km_to_dia"         =run_df$log_dist_km_to_dia,          #scene level
+         "log_dist_km_to_petro"       =run_df$log_dist_km_to_petro,        #scene level
+         "gdp_per_cap_USD2015"        =run_df$gdp_per_cap_USD2015,         #country level
+         "country_gini"               =run_df$country_gini,                #country level
+         "polity2"                    =run_df$polity2                      #country level
           )),center=TRUE, scale=TRUE),
-      long = sub_dhs_df$lon,
-      lat = sub_dhs_df$lat,
+      long = run_df$lon,
+      lat = run_df$lat,
       #concatenate the image file location and project year into a single keys parameter
-      keys = paste0(sub_dhs_df$image_file,
-                    ifelse(is.na(sub_dhs_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
-                                 sub_dhs_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
+      keys = paste0(run_df$image_file,
+                    ifelse(is.na(run_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
+                                 run_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
       acquireImageRepFxn = acquireImageRepFromDisk,
       samplingType = "balancedTrain",
       nSGD = 2000,
