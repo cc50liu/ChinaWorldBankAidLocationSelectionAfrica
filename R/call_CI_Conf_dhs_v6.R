@@ -201,21 +201,28 @@ acquireImageRepFromDisk <- function(keys,training = F){
     #   group_by(!!sym(paste0(fund_sect_param, "_min_oda_year"))) %>%
     #   count()
 
-    #populate non-dated variables we'll pass into the function with appropriate 
-    #pre-project values based on each dhs point's first year to receive projects
-    #in this sector (or, if a control point, the year assigned to match the
+    #adjust variables to be the year prior to each dhs point's first project year
+    #in the sector. (or, for control points, the year assigned to match the
     #distribution of treatment first years)
     oda_year_column <- (paste0(fund_sect_param, "_min_oda_year"))
     
     sub_dhs_df <- sub_dhs_df %>% 
       mutate(
         log_avg_nl_pre_oda = case_when(
-          !!sym(oda_year_column) %in% 1999:2001 ~ log_avg_nl_1996_1998,
+          !!sym(oda_year_column) %in% 2000:2001 ~ log_avg_nl_1996_1998,
           !!sym(oda_year_column) %in% 2002:2004 ~ log_avg_nl_1999_2001,
           !!sym(oda_year_column) %in% 2005:2007 ~ log_avg_nl_2002_2004,
           !!sym(oda_year_column) %in% 2008:2010 ~ log_avg_nl_2005_2007,
           !!sym(oda_year_column) %in% 2011:2013 ~ log_avg_nl_2008_2010,
-          !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_nl_2011_2013)) %>% 
+          !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_nl_2011_2013),
+        log_dist_km_to_gold = case_when(
+          !!sym(oda_year_column) %in% 2000:2001 ~ log_dist_km_to_gold_pre2001,
+          !!sym(oda_year_column) > 2001 ~ log_dist_km_to_gold_2001),
+        log_dist_km_to_petro = case_when(
+          !!sym(oda_year_column)==2000 ~ log_dist_km_to_petro_1999,
+          !!sym(oda_year_column) %in% 2001:2003 ~ log_dist_km_to_petro_2000_2002,
+          !!sym(oda_year_column) > 2003 ~ log_dist_km_to_petro_2003)
+        ) %>% 
       #set leader_birthplace based on year prior to earliest aid project 
       rowwise() %>% mutate(
         leader_birthplace = get(paste0("leader_", as.numeric(get(oda_year_column)) - 1))
@@ -228,7 +235,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                                  as.numeric(get(oda_year_column)) - 1))
       ) %>% ungroup()  
     
-
     ImageConfoundingAnalysis <- AnalyzeImageConfounding(
       obsW = sub_dhs_df[[fund_sect_param]],
       obsY = sub_dhs_df$iwi_2017_2019_est,  #lab's estimated iwi
