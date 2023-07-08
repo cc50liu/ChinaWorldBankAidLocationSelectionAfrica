@@ -17,7 +17,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   dhs_df$avg_nl_2011_2013  <- NA
   dhs_df$avg_min_to_city   <- NA
   
-  pop_dens_years <- c(2000, 2003, 2006, 2009, 2012)
+  pop_dens_years <- 2000:2013
   for (pop_dens_year in pop_dens_years) {
     column_name <- paste0("avg_pop_dens_", pop_dens_year)
     dhs_df[[column_name]] <- NA
@@ -68,26 +68,22 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
     #read country's population density tifs, if not already in memory
     if (current_iso3 != dhs_df$iso3[i]) {
       current_iso3 <- dhs_df$iso3[i]
-      cntry_pop_dens2000_filename <- paste0("./data/WorldPop/",
-                                            tolower(current_iso3),
-                                            "_pd_2000_1km_UNadj.tif")
-      cntry_pop_dens2000_r <- terra::rast(cntry_pop_dens2000_filename) 
-      cntry_pop_dens2003_filename <- paste0("./data/WorldPop/",
-                                            tolower(current_iso3),
-                                            "_pd_2003_1km_UNadj.tif")
-      cntry_pop_dens2003_r <- terra::rast(cntry_pop_dens2003_filename) 
-      cntry_pop_dens2006_filename <- paste0("./data/WorldPop/",
-                                            tolower(current_iso3),
-                                            "_pd_2006_1km_UNadj.tif")
-      cntry_pop_dens2006_r <- terra::rast(cntry_pop_dens2006_filename) 
-      cntry_pop_dens2009_filename <- paste0("./data/WorldPop/",
-                                            tolower(current_iso3),
-                                            "_pd_2009_1km_UNadj.tif")
-      cntry_pop_dens2009_r <- terra::rast(cntry_pop_dens2009_filename) 
-      cntry_pop_dens2012_filename <- paste0("./data/WorldPop/",
-                                            tolower(current_iso3),
-                                            "_pd_2012_1km_UNadj.tif")
-      cntry_pop_dens2012_r <- terra::rast(cntry_pop_dens2012_filename) 
+      #initialize empty variables for each year
+      for (pop_dens_year in pop_dens_years) {
+        raster_var_name <- paste0("cntry_pop_dens", pop_dens_year, "_r")
+        assign(raster_var_name, NULL)
+        file_var_name <- paste0("cntry_pop_dens", pop_dens_year, "_filename")
+        assign(file_var_name, NULL)        
+      }
+      #read tifs and store rasters in the year-specific variables initialized above
+      for (pop_dens_year in pop_dens_years) {
+        cntry_pop_dens_filename <- paste0("./data/WorldPop/", 
+                                          tolower(current_iso3), 
+                                          "_pd_", pop_dens_year, "_1km_UNadj.tif")
+        pop_dens_r <- terra::rast(cntry_pop_dens_filename)
+        assign(paste0("cntry_pop_dens", pop_dens_year, "_filename"), cntry_pop_dens_filename)
+        assign(paste0("cntry_pop_dens", pop_dens_year, "_r"), pop_dens_r)
+      }
     }
 
     # Loop over the years, calculating and saving the pop density to df
@@ -98,38 +94,60 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
         avg_pop_dens <- base::mean(terra::as.matrix(pop_dens_r), na.rm = TRUE)
       }, error = function(e) {
         if (grepl("extents do not overlap", e$message)) {
-          print(paste("Skipping crop error i:",i,"lat",dhs_df$lat[i],"lon",
-                      dhs_df$lon[i],file_path,
+          print(paste("Skipping crop error i:",i,"dhs_id",dhs_df$dhs_id,
+                      "lat",dhs_df$lat[i],"lon",dhs_df$lon[i],file_path,
                       get(paste0("cntry_pop_dens",pop_dens_year,"_filename"))))
-          
-        }
+        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2000_1km_UNadj.tif"
+        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2003_1km_UNadj.tif"
+        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2006_1km_UNadj.tif"
+        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2009_1km_UNadj.tif"
+        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2012_1km_UNadj.tif"
+          }
       })
       
       # Save to the dataframe
-      column_name <- paste0("avg_pop_dens_", year)
+      column_name <- paste0("avg_pop_dens_", pop_dens_year)
       dhs_df[[column_name]][i] <- avg_pop_dens
     }
     
     if (i %% 100 == 0) {
       print(paste("iteration",i,"Avg nl",round(average_nl,1),"Avg trav min",
-                  round(average_travel_min_50k,1), "Avg pd",round(avg_pop_dens,1)))
+                  round(average_travel_min_50k,1), "Last avg pd",
+                  round(avg_pop_dens,1)))
     }
   }
   
+  #write to file for later use
+  dhs_df %>% 
+    write.csv(.,"./data/interim/dhs_treat_control_raster_no_log.csv",row.names=FALSE)  
+  
+  #dhs_df <- read.csv("./data/interim/dhs_treat_control_raster_no_log.csv")
+  
+
+  #look at points where couldn't determine pop density
+  dhs_df %>%
+    select(dhs_id,country,starts_with("avg_pop_dens_"),image_file) %>% 
+    filter(!complete.cases(.))
+    
   #exclude points where pop density could not be determined, n now 9606
   dhs_df <- dhs_df %>%
-    filter(!is.na(avg_pop_dens_2000))
+    filter(complete.cases(.))
+  
+  #any rows with 0 population density?
+  dhs_df %>%
+    filter(if_any(starts_with("avg_pop_dens_"), ~.x == 0))
   
   #exclude 5 rows in DR congo where pop density is 0, n now 9601
   #dhs_id's 8359 8361 8364 8369 8376
   dhs_df <- dhs_df %>%
-    filter(avg_pop_dens_2000 > 0)  
+    filter(!if_any(starts_with("avg_pop_dens_"), ~.x == 0))  
   
   #create logged versions of variables
   dhs_log_df <- dhs_df %>%
     mutate(
-      across(starts_with("avg_"), ~ ifelse(!is.finite(log(.)), 0, log(.)), .names = "log_{.col}")
+      across(starts_with("avg_"), ~ log(. + 1), .names = "log_{.col}")
     )
+  names(dhs_log_df)
   
   #write to file for later use
   dhs_log_df %>% 
@@ -163,7 +181,7 @@ ggsave("./figures/log_nl_density.png",log_nl_density, width=6, height = 4, dpi=3
 minutes_travel_density <- dhs_log_df %>% 
   ggplot(aes(avg_min_to_city)) +
   geom_density() +
-  labs(x="Avg min to >50K City", y="Density per DHS point",
+  labs(x="Avg min to >50K City", y="Density across DHS points",
        title="Travel minutes to >50k City in 2000")
 
 minutes_travel_density
@@ -175,7 +193,7 @@ ggsave("./figures/minutes_travel_density.png",minutes_travel_density, width=6, h
 log_minutes_travel_density <-  dhs_log_df %>% 
   ggplot(aes(log_avg_min_to_city)) +
   geom_density() +
-  labs(x="Log Avg min to >50K City", y="Density per DHS point",
+  labs(x="Log Avg min to >50K City", y="Density across DHS points",
        title="Log Travel minutes to >50k City in 2000")
 
 log_minutes_travel_density
@@ -183,24 +201,29 @@ ggsave("./figures/log_minutes_travel_density.png",log_minutes_travel_density, wi
        bg="white", units="in")
 
 #plot the distribution of population density        
-population_density <- dhs_log_df %>% 
-  ggplot(aes(avg_pop_dens_2000)) +
+population_density <- dhs_log_df %>%
+  pivot_longer(cols = starts_with("avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
+  ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x="Average population density (2000)", y="Density per DHS point",
-       title="Average population density in 2000")
+  labs(x = "Average population density", y = "Density across DHS points",
+       title = "Population density across DHS points", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
 
 population_density
 ggsave("./figures/population_density.png",population_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
-log_avg_pop_dens_2000_density <-  dhs_log_df %>% 
-  ggplot(aes(log_avg_pop_dens_2000)) +
+log_avg_pop_dens_density <-  dhs_log_df %>% 
+  pivot_longer(cols = starts_with("log_avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
+  ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x="Log Average population density (2000)", y="Density per DHS point",
-       title="Log Average population density (2000)")
+  labs(x = "Average(log) population density", y = "Density (log) across DHS points",
+       title = "Population density (log) across DHS points", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
 
-log_avg_pop_dens_2000_density
-ggsave("./figures/log_avg_pop_dens_2000_density.png",log_avg_pop_dens_2000_density, width=6, height = 4, dpi=300,
+
+log_avg_pop_dens_density
+ggsave("./figures/log_avg_pop_dens_density.png",log_avg_pop_dens_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
 
