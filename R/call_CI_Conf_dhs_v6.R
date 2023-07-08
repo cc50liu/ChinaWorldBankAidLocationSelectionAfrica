@@ -215,12 +215,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
           !!sym(oda_year_column) %in% 2008:2010 ~ log_avg_nl_2005_2007,
           !!sym(oda_year_column) %in% 2011:2013 ~ log_avg_nl_2008_2010,
           !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_nl_2011_2013),
-        log_avg_pop_dens = case_when(
-          !!sym(oda_year_column) %in% 2000:2004 ~ log_avg_pop_dens2000,
-          !!sym(oda_year_column) %in% 2005:2007 ~ log_avg_pop_dens2003,
-          !!sym(oda_year_column) %in% 2008:2010 ~ log_avg_pop_dens2006,
-          !!sym(oda_year_column) %in% 2011:2013 ~ log_avg_pop_dens2009,
-          !!sym(oda_year_column) %in% 2014:2016 ~ log_avg_pop_dens2012),
         log_dist_km_to_gold = case_when(
           !!sym(oda_year_column) %in% 2000:2001 ~ log_dist_km_to_gold_pre2001,
           !!sym(oda_year_column) > 2001 ~ log_dist_km_to_gold_2001),
@@ -229,6 +223,13 @@ acquireImageRepFromDisk <- function(keys,training = F){
           !!sym(oda_year_column) %in% 2001:2003 ~ log_dist_km_to_petro_2000_2002,
           !!sym(oda_year_column) > 2003 ~ log_dist_km_to_petro_2003)
         ) %>% 
+      #set population density to year prior to earliest aid project
+      #except for 2000, where we don't have 1999 density so use 2000
+      rowwise() %>% mutate(
+        log_avg_pop_dens = ifelse(get(oda_year_column)==2000, log_avg_pop_dens_2000,
+                                   get(paste0("log_avg_pop_dens_", 
+                                             as.numeric(get(oda_year_column)) - 1)))
+      ) %>% ungroup() %>% 
       #set leader_birthplace based on year prior to earliest aid project 
       rowwise() %>% mutate(
         leader_birthplace = get(paste0("leader_", as.numeric(get(oda_year_column)) - 1))
@@ -253,7 +254,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
     run_df %>% 
       select(dhs_id, country, iso3, lat, lon, !!sym(fund_sect_param), 
              !!sym(oda_year_column), image_file, iwi_2017_2019_est,
-             log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens_2000,
+             log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens,
              log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
              log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
              gdp_per_cap_USD2015,country_gini,polity2) %>% 

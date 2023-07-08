@@ -22,7 +22,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
     column_name <- paste0("avg_pop_dens_", pop_dens_year)
     dhs_df[[column_name]] <- NA
   }
-  
+
   #construct map of bands to the nl year columns they relate to
   nl_bands <- c("_24", "_32", "_40", "_48", "_56", "_64")
   nl_columns <- c("avg_nl_1996_1998",
@@ -202,7 +202,7 @@ ggsave("./figures/log_minutes_travel_density.png",log_minutes_travel_density, wi
 
 #plot the distribution of population density        
 population_density <- dhs_log_df %>%
-  pivot_longer(cols = starts_with("avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
+  tidyr::pivot_longer(cols = starts_with("avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
   labs(x = "Average population density", y = "Density across DHS points",
@@ -214,7 +214,7 @@ ggsave("./figures/population_density.png",population_density, width=6, height = 
        bg="white", units="in")
 
 log_avg_pop_dens_density <-  dhs_log_df %>% 
-  pivot_longer(cols = starts_with("log_avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
+  tidyr::pivot_longer(cols = starts_with("log_avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
   labs(x = "Average(log) population density", y = "Density (log) across DHS points",
