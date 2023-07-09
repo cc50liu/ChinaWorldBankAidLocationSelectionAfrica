@@ -1,117 +1,139 @@
 #prep_confounders_dhs_loan_projects.R
 library(dplyr)
+library(ggplot2)
 rm(list=ls())
 
 #get Africa ISO codes
 africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 
+####################################################
+#### Load administrative borders
+projection <- "ESRI:102023"
+
+adm1_sf <- sf::st_read("./data/country_regions/gadm1_clean.shp")  %>%
+  filter(ISO %in% africa_isos_df$iso3)
+sf::st_crs(adm1_sf) = "EPSG:4326"
+adm1_sf <- sf::st_transform(adm1_sf,crs=sf::st_crs(projection))
+adm1_sf <- sf::st_make_valid(adm1_sf)
+unique(sf::st_is_valid(adm1_sf))
+
+adm2_sf <- sf::st_read("./data/country_regions/gadm2_clean.shp")  %>%
+  filter(ISO %in% africa_isos_df$iso3)
+sf::st_crs(adm2_sf) = "EPSG:4326"
+adm2_sf <- sf::st_transform(adm2_sf,crs=sf::st_crs(projection))
+adm2_sf <- sf::st_make_valid(adm2_sf)
+unique(sf::st_is_valid(adm2_sf))
+
+####################################################
+#### Transport projects
 #read projects and limit to those with location details and study years
-ch_oof_df <- read.csv("./data/AiddataChinav1.1.1/GeoCoded_China_Data_Merged_Files/oof-like_flows.csv") 
-
 #n=267 #safe to limit to africa isos because rows with multiple recipients not in Africa
-ch_oof_df <- ch_oof_df%>% 
-  filter(precision_code<=3 &  # 1=exact, 2=up to 25km, or 3=dist/muni/commune
+#these all have a status of Completion or Implementation
+ch_transport_oof_df <- read.csv("./data/AiddataChinav1.1.1/GeoCoded_China_Data_Merged_Files/oof-like_flows.csv") %>%  
+  filter(precision_code<=4 &  # 1=exact, 2=up to 25km, 3=ADM2, or 4=ADM1 
            umbrella==FALSE &
-           year <= 2014 &
+           year <= 2013 &
            !is.na(latitude) &
+           ad_sector_names=="Transport and Storage" &
            recipients_iso3 %in% africa_isos_df$iso3)
+#start_actual_isodate has too many missing values, so use transaction start date instead
 
-summary(ch_oof_df)
+#projects from 2005:2013
+# ch_transport_oof_df %>% 
+#   group_by(transactions_start_year) %>% 
+#   count()
 
-ch_oof_df %>% 
-  group_by(precision_code) %>% 
-  count()
-# precision_code     n
-# <int> <int>
-# 1              1   186
-# 2              2    41
-# 3              3    40
+ch_transport_oof_sf <- ch_transport_oof_df %>% 
+  sf::st_as_sf(coords = c("longitude", "latitude"),crs="EPSG:4326") %>% 
+  select(project_location_id,precision_code,transactions_start_year,geometry) %>%
+  sf::st_transform(.,crs=sf::st_crs(projection))
 
-ch_oof_df %>% 
-  group_by(location_class) %>% 
-  count()
-# location_class     n
-# <int> <int>
-# 1              1    41
-# 2              2   171
-# 3              3    54
-# 4              4     1
+#give the projects a footprint equal to the ADM1 or ADM2 hosting them
+ch_adm_transport_oof_sf <- bind_rows(
+  #ADM1 projects have adm1 footprint
+  sf::st_join(adm1_sf, 
+              ch_transport_oof_sf[ch_transport_oof_sf$precision_code==4,], 
+              join = sf::st_intersects, left = FALSE) %>%
+  select(ID_adm1,transactions_start_year,project_location_id,precision_code,geometry) %>% 
+  rename(ID_adm=ID_adm1),
+  #exact, near, and ADM2 projects have adm2 footprint
+  sf::st_join(adm2_sf, 
+            ch_transport_oof_sf[ch_transport_oof_sf$precision_code %in% 1:3, ], 
+            join = sf::st_intersects, left = FALSE) %>%
+  select(ID_adm2,transactions_start_year,project_location_id,precision_code,geometry) %>% 
+  rename(ID_adm=ID_adm2)
+)
 
-ch_oof_df %>% 
-  group_by(geographic_exactness) %>% 
-  count()
-# geographic_exactness     n
-# <int> <int>
-# 1                    1   203
-# 2                    2    64
+# ch_adm_transport_oof_sf %>% 
+#   sf::st_drop_geometry() %>% 
+#   group_by(ID_adm, transactions_start_year )
 
-ch_oof_df %>% 
-  group_by(start_actual_isodate) %>% 
-  count()
-# <chr>                <int>
-#   1 ""                     183
-# 2 "2003-01-01"             2
-# 3 "2005-07-05"             1
-# 4 "2005-07-28"             3
-# 5 "2005-11-08"             7
-# 6 "2005-11-19"             2
-# 7 "2005-12-06"             4
-# 8 "2005-12-13"             4
-# 9 "2006-04-06"             1
-# 10 "2006-04-18"             1
+####################################################
+#### Read DHS survey points
+dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
 
+dhs_sf <- dhs_df  %>%
+  sf::st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
+  select(dhs_id,geometry) %>% 
+  sf::st_transform(dhs_sf,crs=sf::st_crs(projection))
 
-ch_oof_df %>% 
-  group_by(status) %>% 
-  count()
-# status             n
-# <chr>          <int>
-# 1 Completion       174
-# 2 Implementation    93
+#intersect projects with dhs points n=160
+dhs_proj_intersect_df <- sf::st_join(dhs_sf, ch_adm_transport_oof_sf, 
+                                     join = sf::st_intersects, left=FALSE)  %>%
+  sf::st_drop_geometry() %>%
+  group_by(dhs_id, transactions_start_year)  %>%
+  summarize(proj_count = n()) %>%
+  ungroup() 
 
-ch_oof_df %>% 
-  group_by(transactions_start_year, year) %>% 
-  count()
-# transactions_start_year  year     n
-# <int> <int> <int>
-# 1                    2001  2001     2
-# 2                    2002  2002     2
-# 3                    2003  2003    20
-# 4                    2004  2004     6
-# 5                    2005  2005    46
-# 6                    2006  2006    38
-# 7                    2007  2007    26
-# 8                    2008  2008    28
-# 9                    2009  2009    23
-# 10                    2010  2010    16
-# 11                    2011  2011    16
-# 12                    2012  2012    18
-# 13                    2013  2013     9
-# 14                    2014  2014    17
+#create rows with 0's for years with no projects n=2400
+dhs_proj_inter_fill_df <- dhs_proj_intersect_df %>% 
+  tidyr::complete(dhs_id, transactions_start_year = 1999:2013,
+                  fill = list(proj_count = 0)) 
 
-ch_oof_df %>% 
-  group_by(field_completeness) %>% 
-  count()
-# 1                  6    33
-# 2                  7    24
-# 3                  8   112
-# 4                  9    98
+#create a cumulative_count column
+dhs_proj_cum_df <- dhs_proj_inter_fill_df %>% 
+  arrange(dhs_id, transactions_start_year) %>% 
+  group_by(dhs_id) %>% 
+  mutate(cumulative_count = cumsum(proj_count)) %>% 
+  ungroup()
 
-ch_oof_df %>% 
-  group_by(ad_sector_names) %>% 
-  count()
-# 1 Agriculture, Forestry and Fishing           10
-# 2 Communications                               7
-# 3 Education                                   74
-# 4 Energy Generation and Supply                52
-# 5 Government and Civil Society                 6
-# 6 Health                                      15
-# 7 Industry, Mining, Construction               9
-# 8 Other Multisector                            1
-# 9 Other Social infrastructure and services    25
-# 10 Transport and Storage                       56
-# 11 Water Supply and Sanitation                 12
+#convert to a wide format n=160
+dhs_proj_cum_wide_df <- dhs_proj_cum_df %>% 
+  select(-proj_count) %>% 
+  tidyr::pivot_wider(names_from=transactions_start_year,
+                     values_from = cumulative_count) %>% 
+  rename_with(~ gsub("^([0-9]{4}$)", "trans_proj_cum_n_\\1", .),
+              where(is.numeric))
+                     
+# Store the proj counts in the dhs_df and create logged versions of them
+dhs_final_df <- dhs_df %>%
+  left_join(dhs_proj_cum_wide_df, by = "dhs_id") %>%
+  mutate(across(starts_with("trans_proj_cum_n_"), ~ replace(., is.na(.), 0))) %>% 
+  mutate(across(starts_with("trans_"), ~ log(. + 1), .names = "log_{.col}"))  
 
+write.csv(dhs_final_df,"./data/interim/dhs_loan_projs.csv",row.names=FALSE)
 
+#plot the distribution of loan-based transport projects        
+transport_projs <- dhs_final_df %>%
+  tidyr::pivot_longer(cols = starts_with("trans_proj_cum_n_"), names_to = "transactions_start_year", values_to = "cum_projects_n") %>%
+  ggplot(aes(cum_projects_n, color = transactions_start_year)) +
+  geom_density() +
+  labs(x = "Count of Cumulative loan-based transport projects", y = "Density across DHS points",
+       title = "Cumulative loan-based transport project counts across DHS points", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
 
-write.csv(country_confounder_complete_df,"./data/interim/country_confounders.csv",row.names=FALSE)  
+transport_projs
+ggsave("./figures/transport_projs.png",transport_projs, width=6, height = 4, dpi=300,
+       bg="white", units="in")
+
+log_transport_projs <-  dhs_final_df %>%
+  tidyr::pivot_longer(cols = starts_with("log_trans_proj_cum_n_"), names_to = "transactions_start_year", values_to = "log_cum_projects_n") %>%
+  ggplot(aes(log_cum_projects_n, color = transactions_start_year)) +
+  geom_density() +
+  labs(x = "Count (log) of Cumulative loan-based transport projects", y = "Density across DHS points",
+       title = "Cumulative loan-based transport project counts (log) across DHS points", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
+
+log_transport_projs
+ggsave("./figures/log_transport_projs.png",log_transport_projs, width=6, height = 4, dpi=300,
+       bg="white", units="in")

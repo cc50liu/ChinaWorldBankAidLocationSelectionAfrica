@@ -19,7 +19,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
-#comment out to test
+#uncomment to test
 #fund_sect_param <- "ch_140"
 orig_fund_sect_param <- fund_sect_param  #for "both" case
 
@@ -240,7 +240,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                                  as.numeric(get(oda_year_column)) - 3,
                                                  "_",
                                                  as.numeric(get(oda_year_column)) - 1))
-      ) %>% ungroup()  
+      ) %>% ungroup() %>%  
+      #set loan-based transport projects based on year prior to earliest aid project 
+      rowwise() %>% mutate(
+        log_trans_proj_cum_n = get(paste0("log_trans_proj_cum_n_",
+                                          as.numeric(get(oda_year_column)) - 1))
+      ) %>% ungroup()
     
     #join to country-level parameters
     country_confounders_df <- read.csv("./data/interim/country_confounders.csv") %>% 
@@ -257,7 +262,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
              log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens,
              log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
              log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
-             gdp_per_cap_USD2015,country_gini,polity2) %>% 
+             gdp_per_cap_USD2015,country_gini,polity2,log_trans_proj_cum_n) %>% 
     write.csv(., paste0("./data/interim/input_",run,"_",orig_fund_sect_param,".csv"),row.names = FALSE)
 
     ImageConfoundingAnalysis <- AnalyzeImageConfounding(
@@ -269,6 +274,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
          "log_avg_pop_dens"           =run_df$log_avg_pop_dens,            #scene level
          "log_3yr_pre_conflict_deaths"=run_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
          "leader_birthplace"          =run_df$leader_birthplace,           #inherited from ADM1
+         "log_trans_proj_cum_n"       =run_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
          "log_dist_km_to_gold"        =run_df$log_dist_km_to_gold,         #scene level
          "log_dist_km_to_gems"        =run_df$log_dist_km_to_gems,         #scene level
          "log_dist_km_to_dia"         =run_df$log_dist_km_to_dia,          #scene level
