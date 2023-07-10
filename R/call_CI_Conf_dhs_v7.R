@@ -247,8 +247,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                           as.numeric(get(oda_year_column)) - 1))
       ) %>% ungroup()
     
-    names(run_df)
-    
     #join to country-level parameters
     country_confounders_df <- read.csv("./data/interim/country_confounders.csv") %>% 
       select(-country) %>% 
