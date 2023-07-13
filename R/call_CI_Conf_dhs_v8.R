@@ -1,13 +1,13 @@
-# call_CI_Conf_dhs_v7.R
+# call_CI_Conf_dhs_v8.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations.  
-#           v6 improves on v5 by:
-#             - adjusting parameters to be based on project start year
+#           v8 improves on v7 by:
+#             - adjusting start year of "both" funders to be min of CH and WB years
 # Use:  called from slurm script with command-line arg for funder_sector
-#       examples:  sbatch cl_sector_v5_5b_2000i_year_dhs.slurm wb_140
-#                  sbatch cl_sector_v5_5b_2000i_year_dhs.slurm ch_140
-#                  sbatch cl_sector_v5_5b_2000i_year_dhs.slurm both_140
+#       examples:  sbatch cl_sector_v8_dhs.slurm wb_140
+#                  sbatch cl_sector_v8_dhs.slurm ch_140
+#                  sbatch cl_sector_v8_dhs.slurm both_140
 # Runs:  approximately 12 to 16 hours on SNIC/NAISS
 library(causalimages)
 library(dplyr)
@@ -20,22 +20,46 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 #uncomment to test
-#fund_sect_param <- "wb_140"
-orig_fund_sect_param <- fund_sect_param  #for "both" case
+#fund_sect_param <- "both_140"
 
-run <- "v7"
+run <- "v8"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
 if (substr(fund_sect_param,1,4)=="both") {
   #get the both data out of the wb_sector column
-  sector <- substr(fund_sect_param,5,nchar(fund_sect_param))
-  fund_sect_param <- paste0("wb",sector)
-  #adjust the data for the both case
+  sector <- substr(fund_sect_param,6,nchar(fund_sect_param))
+  #create the necessary columns for the "both" case, using wb columns for t/c
+  # and getting min treatment year from both wb and ch
   dhs_df <- dhs_df %>% 
-    filter(!!sym(fund_sect_param) %in% c(0,2)) %>% 
-    mutate(!!fund_sect_param := ifelse(get(fund_sect_param) == 2, 1, get(fund_sect_param)))
+    filter(!!sym(paste0("wb_",sector)) %in% c(0,2)) %>% 
+    mutate(!!sym(paste0("both_",sector)) := ifelse(get(paste0("wb_",sector)) == 2, 1, get(paste0("wb_",sector)))) %>% 
+    rowwise() %>% mutate(
+      !!sym(paste0("both_",sector,"_min_oda_year")) := min(!!sym(paste0("wb_",sector,"_min_oda_year")),
+                                                           !!sym(paste0("ch_",sector,"_min_oda_year"))) 
+    ) %>% ungroup() 
 }
+
+# dhs_df %>%
+#   select(both_140, wb_140_min_oda_year, ch_140_min_oda_year, both_140_min_oda_year) %>%
+#   filter(both_140==1 & wb_140_min_oda_year != ch_140_min_oda_year) %>%
+#   group_by(wb_140_min_oda_year, ch_140_min_oda_year) %>%
+#   count()
+# wb_140_min_oda_year ch_140_min_oda_year     n
+# <int>               <int> <int>
+# 1                2000                2006     9
+# 2                2000                2008     3
+# 3                2002                2003     1
+# 4                2002                2005     6
+# 5                2003                2012    38
+# 6                2004                2013    50
+# 7                2007                2003    18
+# 8                2007                2009    19
+# 9                2008                2003     1
+# 10                2009                2003     7
+# 11                2010                2000     1
+# 12                2012                2003     5
+
 
 acquireImageRepFromDisk <- function(keys,training = F){
   imageHeight = 224  # 30m/pixel
@@ -123,16 +147,16 @@ acquireImageRepFromDisk <- function(keys,training = F){
   
   if (treat_count < 100) {
     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                " Skipping ",orig_fund_sect_param," because fewer than 100 treated (",
+                " Skipping ",fund_sect_param," because fewer than 100 treated (",
                 treat_count,")"))
     next 
   } else if (control_count == 0) {
     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                 " Skipping ",orig_fund_sect_param," because no controls"))
+                 " Skipping ",fund_sect_param," because no controls"))
     next 
   } else {
     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                 " Call AnalyzeImageConfounding for ",orig_fund_sect_param,
+                 " Call AnalyzeImageConfounding for ",fund_sect_param,
                  ", treat n:",treat_count,
                  ", control n: ",control_count
                  ))
@@ -264,11 +288,11 @@ acquireImageRepFromDisk <- function(keys,training = F){
              log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
              log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
              gdp_per_cap_USD2015,country_gini,polity2,log_trans_proj_cum_n)  
-    write.csv(input_df, paste0("./data/interim/input_",run,"_",orig_fund_sect_param,".csv"),row.names = FALSE)
+    write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
 
     if (nrow(input_df[!complete.cases(input_df),]) > 0) {
       print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
-                   run,"_",orig_fund_sect_param,".csv"))
+                   run,"_",fund_sect_param,".csv"))
     }
     else {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
@@ -300,16 +324,16 @@ acquireImageRepFromDisk <- function(keys,training = F){
         nSGD = 500,
         nDepthHidden_conv = 5L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
         figuresPath = "./figures/", # figures saved here
-        figuresTag = paste0(orig_fund_sect_param,"_",run),
+        figuresTag = paste0(fund_sect_param,"_",run),
         conda_env = NULL, # conda env to try to activate
         conda_env_required = F
       )
   
       ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-      output_df <- cbind(data.frame(run,orig_fund_sect_param,treat_count,control_count,ica_df))
+      output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,ica_df))
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                    " Writing to ./data/interim/ICA_",run,"_",orig_fund_sect_param,".csv"))
-      write.csv(output_df,paste0("./data/interim/ICA_",run,"_",orig_fund_sect_param,".csv"),row.names = FALSE)
+                    " Writing to ./data/interim/ICA_",run,"_",fund_sect_param,".csv"))
+      write.csv(output_df,paste0("./data/interim/ICA_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
   }
 }
          
