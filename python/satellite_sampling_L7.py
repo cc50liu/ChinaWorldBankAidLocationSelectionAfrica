@@ -11,7 +11,7 @@ from functools import partial
 
 from gee_exporter_L7 import GeeExporter
 
-DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2', 'TEMP1']
+DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']
 
 logging.basicConfig()
 
@@ -31,7 +31,7 @@ def export_images(survey_df: pd.DataFrame,
     :param survey_df: pd.DataFrame, contains columns ['lat', 'lon', 'country', 'year']
     :param save_dir: str, path to directory for storing .tif-files
     :param ms_bands: list, the multispectral bands exported. Defaults to
-        DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2', 'TEMP1']
+        DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']
     :param include_nl: bool, include nightlight images in the export
     :param scale: int, pixel scale in meters
     :param export_tile_diameter: int, side length of image in pixels
@@ -56,7 +56,7 @@ def export_images(survey_df: pd.DataFrame,
 
     # Create image covering entire country
     country_img = gee_exporter.get_timeseries_image(span_length)
-
+      
     # See https://docs.python.org/3/library/functools.html#functools.partial
     download_sample_img_x = partial(download_sample_img, country_img=country_img, save_dir=save_dir, 
                              buffer_dist=buffer_dist, tile_diameter=export_tile_diameter)
@@ -93,8 +93,8 @@ def download_sample_img(sample_row, country_img, save_dir, buffer_dist, tile_dia
     sample_region = point.buffer(buffer_dist).bounds()
     sample_img = country_img.clip(sample_region)
 
+   
     # Fetch the URL from which to download the image.
-
     url = sample_img.getDownloadURL({
         'region': sample_region,
         'dimensions': f'{tile_diameter}x{tile_diameter}',
