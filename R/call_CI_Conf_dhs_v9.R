@@ -1,9 +1,10 @@
-# call_CI_Conf_dhs_v8.R
+# call_CI_Conf_dhs_v9.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations.  
-#           v8 improves on v7 by:
-#             - adjusting start year of "both" funders to be min of CH and WB years
+#           v9 improves on v8 by:
+#             - using log of gdp and country_gini scaled for 0-10
+#             - producing boxplots and maps for the funder_sector
 # Use:  called from slurm script with command-line arg for funder_sector
 #       examples:  sbatch cl_sector_v8_dhs.slurm wb_140
 #                  sbatch cl_sector_v8_dhs.slurm ch_140
@@ -20,15 +21,17 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 #uncomment to test
-#fund_sect_param <- "both_140"
+#fund_sect_param <- "both_210"
+#fund_sect_param <- "wb_210"
+#fund_sect_param <- "ch_210"
 
-run <- "v8"
+run <- "v9"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
+sector <- unique(sub(".*_(\\d+).*", "\\1", fund_sect_param))
+
 if (substr(fund_sect_param,1,4)=="both") {
-  #get the both data out of the wb_sector column
-  sector <- substr(fund_sect_param,6,nchar(fund_sect_param))
   #create the necessary columns for the "both" case, using wb columns for t/c
   # and getting min treatment year from both wb and ch
   dhs_df <- dhs_df %>% 
@@ -39,26 +42,6 @@ if (substr(fund_sect_param,1,4)=="both") {
                                                            !!sym(paste0("ch_",sector,"_min_oda_year"))) 
     ) %>% ungroup() 
 }
-
-# dhs_df %>%
-#   select(both_140, wb_140_min_oda_year, ch_140_min_oda_year, both_140_min_oda_year) %>%
-#   filter(both_140==1 & wb_140_min_oda_year != ch_140_min_oda_year) %>%
-#   group_by(wb_140_min_oda_year, ch_140_min_oda_year) %>%
-#   count()
-# wb_140_min_oda_year ch_140_min_oda_year     n
-# <int>               <int> <int>
-# 1                2000                2006     9
-# 2                2000                2008     3
-# 3                2002                2003     1
-# 4                2002                2005     6
-# 5                2003                2012    38
-# 6                2004                2013    50
-# 7                2007                2003    18
-# 8                2007                2009    19
-# 9                2008                2003     1
-# 10                2009                2003     7
-# 11                2010                2000     1
-# 12                2012                2003     5
 
 
 acquireImageRepFromDisk <- function(keys,training = F){
@@ -172,25 +155,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
       mutate(cntl_count = round(control_count * proportion)) %>% 
       rename(treat_year = !!(paste0(fund_sect_param, "_min_oda_year")))
 
-    #produces this:
-    # A tibble: 10 × 4
-    # treat_year count proportion cntl_count
-    # <int> <int>      <dbl>      <dbl>
-    # 1       2000    10    0.0235         103
-    # 2       2002     2    0.00469         21
-    # 3       2003    32    0.0751         329
-    # 4       2005     6    0.0141          62
-    # 5       2006    41    0.0962         421
-    # 6       2007    29    0.0681         298
-    # 7       2008   125    0.293         1284
-    # 8       2009    19    0.0446         195
-    # 9       2012   112    0.263         1151
-    # 10       2013    50    0.117          514
-    
-    
-    #sum(year_props$cntl_count)
-    #sum(year_props$proportion)
-
     for (i in 1:nrow(year_props)) {
       #i=2  #uncomment to test
       
@@ -219,12 +183,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
       }
     }
     
-    #check results
-    # sub_dhs_df %>%
-    #   filter(!!sym(fund_sect_param) == 0) %>%
-    #   group_by(!!sym(paste0(fund_sect_param, "_min_oda_year"))) %>%
-    #   count()
-
     #adjust variables to be the year prior to each dhs point's first project year
     #in the sector. (or, for control points, the year assigned to match the
     #distribution of treatment first years)
@@ -287,16 +245,16 @@ acquireImageRepFromDisk <- function(keys,training = F){
              log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens,
              log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
              log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
-             gdp_per_cap_USD2015,country_gini,polity2,log_trans_proj_cum_n)  
+             log_gdp_per_cap_USD2015,country_gini,polity2)  
     write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
 
     #X[,apply(X,2,sd)>0]
-    
+    #nrow(input_df[!complete.cases(input_df),])
+        
     if (nrow(input_df[!complete.cases(input_df),]) > 0) {
       print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                    run,"_",fund_sect_param,".csv"))
-    }
-    else {
+    } else {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = run_df[[fund_sect_param]],
         obsY = run_df$iwi_2017_2019_est,  #lab's estimated iwi
@@ -306,12 +264,11 @@ acquireImageRepFromDisk <- function(keys,training = F){
            "log_avg_pop_dens"           =run_df$log_avg_pop_dens,            #scene level
            "log_3yr_pre_conflict_deaths"=run_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
            "leader_birthplace"          =run_df$leader_birthplace,           #inherited from ADM1
-           #"log_trans_proj_cum_n"       =run_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
            "log_dist_km_to_gold"        =run_df$log_dist_km_to_gold,         #scene level
            "log_dist_km_to_gems"        =run_df$log_dist_km_to_gems,         #scene level
            "log_dist_km_to_dia"         =run_df$log_dist_km_to_dia,          #scene level
            "log_dist_km_to_petro"       =run_df$log_dist_km_to_petro,        #scene level
-           "gdp_per_cap_USD2015"        =run_df$gdp_per_cap_USD2015,         #country level
+           "log_gdp_per_cap_USD2015"    =run_df$log_gdp_per_cap_USD2015,     #country level
            "country_gini"               =run_df$country_gini,                #country level
            "polity2"                    =run_df$polity2                      #country level
             )),center=TRUE, scale=TRUE),
@@ -336,6 +293,112 @@ acquireImageRepFromDisk <- function(keys,training = F){
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                     " Writing to ./data/interim/ICA_",run,"_",fund_sect_param,".csv"))
       write.csv(output_df,paste0("./data/interim/ICA_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
+
+      ##########################################################################
+      ##### generate boxplots for this run
+      library(tidyr)     
+      library(ggplot2)
+
+      long_funder <- case_when(
+        startsWith(fund_sect_param, "ch") ~ "China",
+        startsWith(fund_sect_param, "wb") ~ "World Bank",
+        startsWith(fund_sect_param, "both") ~ "Both China & World Bank"
+      )
+      
+      sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
+        mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")"))
+      
+      sector_name <- sector_names_df %>%
+        filter(ad_sector_codes==sector) %>%
+        pull(sec_pre_name)
+      
+      # Convert to long format for boxplots
+      long_input_df <- input_df %>%
+        select(-dhs_id, -country, -iso3, -lat, -lon, 
+               -!!sym(oda_year_column), -image_file) %>% 
+        gather(key=variable_name, value=value, -!!sym(fund_sect_param)) 
+      
+      #define variable order and names for boxplots
+      var_order <- c("iwi_2017_2019_est","log_avg_nl_pre_oda","log_avg_pop_dens",
+                     "log_avg_min_to_city",
+                     "log_dist_km_to_gold","log_dist_km_to_gems",        
+                     "log_dist_km_to_dia","log_dist_km_to_petro", 
+                     "leader_birthplace",
+                     "log_3yr_pre_conflict_deaths",
+                     "polity2","log_gdp_per_cap_USD2015","country_gini")
+      var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-1,log)","Pop Density (t-1,log)",
+                      "Minutes to City (2000,log)","Dist to Gold (km,log)",
+                      "Dist to Gems (km,log)","Dist to Diamonds (km,log)",
+                      "Dist to Oil (km,log)","Leader birthplace ADM1 (t-1)",
+                      "Conflict deaths (t-1,log)",
+                      "Country Polity2 (t-1)","Cntry GDP per cap (t-1,log)","Country gini (t-1)")
+      
+      combined_boxplot <- ggplot(long_input_df, aes(x = factor(.data[[fund_sect_param]]), y = value)) +
+        geom_boxplot() +
+        labs(title = "Distribution of Wealth Outcome and Confounders for Treated and Control DHS locations",
+             subtitle = paste("Funder:",long_funder,"     Sector:", sector_name),
+             x = "Treatment/Control: 0:control, 1:treated (this funder)",
+             y = "Value") +
+        facet_wrap(~ variable_name, scales = "free") +
+        facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
+        theme_bw()
+      
+      
+      ggsave(paste0("./figures/",fund_sect_param,"_boxplots.png"),
+             combined_boxplot,
+             width=8, height = 8, dpi=300,
+             bg="white", units="in")
+      
+      ##########################################################################
+      ##### generate treatment/control map
+      library(tmap)
+      tmap_options(check.and.fix = TRUE)
+      projection <- "ESRI:102023"
+      
+      #convert DHS points df to sf object
+      input_sf <- sf::st_as_sf(input_df, coords=c("lon","lat"),crs="EPSG:4326")  %>%
+        sf::st_transform(crs=sf::st_crs(projection))
+      
+      # Set the treated color based on funder
+      treat_color <- case_when(
+        startsWith(fund_sect_param, "ch") ~ "red",
+        startsWith(fund_sect_param, "wb") ~ "blue",
+        startsWith(fund_sect_param, "both") ~ "purple"
+      )
+      
+      ####################################################
+      #### Load administrative borders and ISO list excluding islands
+      africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
+      
+      country_borders <-  sf::read_sf("./data/country_regions/gadm28_adm0.shp") %>%
+        filter(ISO %in% africa_map_isos_df$iso3)
+      st_crs(country_borders) = "EPSG:4326"
+      country_borders <- sf::st_transform(country_borders,crs=sf::st_crs(projection))
+      country_borders <- sf::st_make_valid(country_borders)
+      
+      ####################################################
+      #### Generate map
+      treat_control_map <- tm_shape(country_borders) +
+        tm_borders(lwd=2) +
+        tm_shape(input_sf[input_sf[[fund_sect_param]] == 0, ]) +  
+        tm_dots(size=.3, col="gray", alpha=.3) +
+        tm_shape(input_sf[input_sf[[fund_sect_param]] == 1, ]) +  
+        tm_dots(size=.5, col=treat_color, alpha=.3) +
+        tm_add_legend(type = "fill"
+                      , col = c(treat_color,"gray")
+                      , labels = c("Treated","Control"))  +
+        tm_layout(main.title.size=1,
+                  main.title = paste(long_funder,sector_name,"\nTreatment and Control Locations (2001-2014)"),
+                  main.title.position=c("center","top")) +
+        tm_layout(legend.position = c("right", "bottom"),
+                  legend.text.size = 1,
+                  frame = F ,
+                  legend.outside = T, 
+                  outer.margins = c(0, 0, 0, 0), 
+                  legend.outside.size = .25
+        )
+      
+      tmap_save(treat_control_map,paste0("./figures/map_",run,"_",fund_sect_param,".png")) 
   }
 }
          

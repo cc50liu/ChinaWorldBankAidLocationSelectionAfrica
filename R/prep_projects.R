@@ -76,8 +76,8 @@ wb_africa_oda_df <- wb_africa_oda_p4_df %>%
   select(-name)
 
 #look at rows where recipients and site iso3 don't match.  
-# wb_africa_oda_df %>% 
-#   distinct(recipients_iso3, site_iso3) %>% 
+# wb_africa_oda_df %>%
+#   distinct(recipients_iso3, site_iso3) %>%
 #   filter(ifelse(is.na(recipients_iso3),"-2",recipients_iso3) != ifelse(is.na(site_iso3),"-1",site_iso3))
 
 # - Unspecified to something else is correct
@@ -128,7 +128,7 @@ rm(wb_africa_oda_p4_df)
 
 #create separate rows for each sector
 #read OEDC sector list to map to parent codes; adjustments to match China data
-oedc_sect_df <- readxl::read_excel('./data/DevFi_Classification.xlsx') %>% 
+oedc_sect_df <- readxl::read_excel('./data/OECD/DevFi_Classification.xlsx') %>% 
   rename(parent_code = "Parent code",
          code_name_e = "code name e",
          sect_code = code) %>% 
@@ -150,7 +150,6 @@ oedc_sect_df <- readxl::read_excel('./data/DevFi_Classification.xlsx') %>%
   select(sect_code, sect_code_name, parent_code) %>% 
   #add 330 Trade and Tourism which is used in Chinese data but isn't here
   add_row(sect_code="330",sect_code_name="Trade and Tourism",parent_code=NA)
-
 
 #create separate project rows for each sector, replace sub-sectors with parent sectors,
 #remove duplicate rows caused by multiple sub-sectors rolling up to one parent
@@ -219,7 +218,8 @@ ch_oda_p4_df <- ch_oda_df %>%
          #status %in% c("Completion","Implementation") & #dataset already limits to this
          #flow_class=="ODA-like" &  #dataset already limits to this
          umbrella==FALSE &    
-         year <= 2014 &
+         transactions_start_year <= 2014 &
+         transactions_start_year >= 2000 &
          !is.na(latitude)) 
 
 # some recipients_iso3 have problematic entries, resolved in code below
