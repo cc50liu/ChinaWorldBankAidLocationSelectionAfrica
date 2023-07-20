@@ -74,7 +74,8 @@ dhs_tc_est_df <- left_join(dhs_t_c_df,
          iwi_2014_2013_est=y_8,
          iwi_2017_2019_est=y_9
   )  %>% 
-  filter(!is.na(iwi_2017_2019_est))
+  filter(!is.na(iwi_2017_2019_est)) %>% 
+  mutate(across(starts_with("iwi_"),~ . * 100))
   #remove rows that don't have the post-project wealth estimate we need
 
 write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
