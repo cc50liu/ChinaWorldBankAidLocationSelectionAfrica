@@ -63,6 +63,8 @@ source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
 
 source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
 
+source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
+
 source("./code/R/consolidate_confounders_dhs.R", local=TRUE)
 # read.csv("./data/interim/dhs_treat_control_vector.csv") %>%
 # read.csv("./data/interim/dhs_treat_control_raster.csv") %>%

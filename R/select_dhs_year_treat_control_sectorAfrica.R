@@ -260,8 +260,6 @@ sectors_v <- unique(rbind(
             #          330  #Trade and Tourism
             #          ))  
 
-
-
 projection <- "ESRI:102023"
 
 ####################################################
