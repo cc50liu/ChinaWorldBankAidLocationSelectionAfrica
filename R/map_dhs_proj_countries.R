@@ -7,7 +7,7 @@ library(RColorBrewer)
 rm(list=ls())
 
 #load data, limit to non-islands
-#africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
+africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
 
 dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv") 
@@ -51,7 +51,6 @@ adm0_sf <- sf::st_make_valid(adm0_sf)
 adm0_sf <- adm0_sf %>% 
   dplyr::left_join(country_attr,by=join_by(ISO==iso3))
 
-
 dhs_oda_map <- tm_shape(adm0_sf) +
   tm_polygons(col="dhs_state", palette=brewer.pal(4, "YlOrBr"),title="DHS Availability") +
   tm_shape(adm0_sf) +
@@ -70,9 +69,8 @@ dhs_oda_map <- tm_shape(adm0_sf) +
   tm_legend(legend.position = c("left", "bottom"),
             legend.text.size = 1,
             frame = F,
-            legend.outside = T, 
-            outer.margins = c(0, 0, 0, 0), 
-            legend.outside.size=.4) 
+            legend.outside = F, 
+            outer.margins = c(0, 0, 0, 0)) 
 
 dhs_oda_map
 
