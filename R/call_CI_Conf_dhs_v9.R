@@ -206,11 +206,9 @@ acquireImageRepFromDisk <- function(keys,training = F){
           !!sym(oda_year_column) > 2003 ~ log_dist_km_to_petro_2003)
         ) %>% 
       #set population density to year prior to earliest aid project
-      #except for 2000, where we don't have 1999 density so use 2000
       rowwise() %>% mutate(
-        log_avg_pop_dens = ifelse(get(oda_year_column)==2000, log_avg_pop_dens_2000,
-                                   get(paste0("log_avg_pop_dens_", 
-                                             as.numeric(get(oda_year_column)) - 1)))
+        log_avg_pop_dens = get(paste0("log_avg_pop_dens_", 
+                                      as.numeric(get(oda_year_column)) - 1))
       ) %>% ungroup() %>% 
       #set leader_birthplace based on year prior to earliest aid project 
       rowwise() %>% mutate(
@@ -391,7 +389,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
         tm_layout(main.title.size=1,
                   main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2001-2014)"),
                   main.title.position=c("center","top")) +
-        tm_layout(legend.position = c("right", "bottom"),
+        tm_layout(legend.position = c("left", "bottom"),
                   legend.text.size = 1,
                   frame = F ,
                   legend.outside = T, 

@@ -59,6 +59,10 @@ source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
 # read.csv("./data/interim/dhs_treat_control_raster.csv")
 # write.csv(dhs_vector_df,"./data/interim/dhs_treat_control_vector.csv",row.names=FALSE)  n=9602
 
+source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
+
+source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
+
 source("./code/R/consolidate_confounders_dhs.R", local=TRUE)
 # read.csv("./data/interim/dhs_treat_control_vector.csv") %>%
 # read.csv("./data/interim/dhs_treat_control_raster.csv") %>%
@@ -101,29 +105,8 @@ chart_treatment_assignment.R
 #read.csv("./data/interim/dhs_treat_control_vector.csv")
 
 chart_treatment_assignment_sector.R
-#read.csv("./data/interim/dhs_treat_control_vector.csv") 
-#read.csv("./data/interim/dhs_treat_control_sector_year.csv") 
-# write.csv(dhs_df,"./data/interim/dhs_treat_control_sector_vector_year.csv",row.names = FALSE)
-################to do: remove this once have validated the new consolidate_confounders_dhs.R script
-# read.csv("./data/interim/sector_group_names.csv") 
 
-    .\code\R\map_dhs_proj_countries.R:africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-    .\code\R\map_dhs_proj_countries.R:dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv")
+source("./code/R/map_dhs_proj_countries.R", local=TRUE)
 
-    .\code\R\map_treat_control_sector_groupAfrica.R:wb_oda_df <- read.csv("./data/interim/wb_africa_oda_sector_group.csv") %>%
-    .\code\R\map_treat_control_sector_groupAfrica.R:ch_oda_df <- read.csv("./data/interim/ch_africa_oda_sector_group.csv") %>%
-    .\code\R\map_treat_control_sector_groupAfrica.R:africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-    .\code\R\map_treat_control_sector_groupAfrica.R:dhs_isos_v <- read.csv("./data/interim/dhs_clusters_id_est.csv") %>%
-    .\code\R\map_treat_control_sector_groupAfrica.R:dhs_sf <- read.csv("./data/interim/dhs_clusters_id_est.csv")  %>%
-    .\code\R\map_treat_control_sector_groupAfrica.R:write.csv(sector_stats,"./data/interim/sector_group_treat_control_Africa.csv")
-    
-    .\code\R\map_treat_control_sectorAfrica.R:africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-    .\code\R\map_treat_control_sectorAfrica.R:dhs_isos_v <- read.csv("./data/interim/dhs_clusters_id_est.csv") %>%
-    .\code\R\map_treat_control_sectorAfrica.R:dhs_sf <- read.csv("./data/interim/dhs_clusters_id_est.csv")  %>%
-    .\code\R\map_treat_control_sectorAfrica.R:write.csv(sector_stats,"./data/interim/sector_treat_control_Africa.csv")
-    
-    .\code\R\prep_desc_stats.R:oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
-    .\code\R\prep_desc_stats.R:dhs_df <- read.csv("./data/interim/dhs_treat_control_sector_vector_year.csv")
-    .\code\R\prep_desc_stats.R:write.csv(treat_control_stats,"./data/interim/treat_control_stats.csv",row.names = FALSE)
-    
+source("./code/R/prep_desc_stats.R", local=TRUE)
     

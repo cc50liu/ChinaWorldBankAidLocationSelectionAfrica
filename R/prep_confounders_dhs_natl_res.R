@@ -1,8 +1,6 @@
 #prep_confounders_dhs_natl_res.R
 #uses sf and nngeo libraries
 library(dplyr)
-library(tmap)
-library(ggplot2)
 rm(list=ls())
 
 ################################################
@@ -65,10 +63,10 @@ gems_sf <- sf::read_sf("./data/GEMDATA/GEMDATA.shp") %>%
   sf::st_transform(crs=sf::st_crs(projection))
 
 #n=255, 0 discovered after 1999
-# dhs_gems_df <- dhs_sf %>% 
-#   mutate(dist_km_to_gems = unlist(nngeo::st_nn(.,gems_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
-#   mutate(log_dist_km_to_gems = log(dist_km_to_gems + 1)) %>% 
-#   sf::st_drop_geometry()
+dhs_gems_df <- dhs_sf %>%
+  mutate(dist_km_to_gems = unlist(nngeo::st_nn(.,gems_sf,k=1,returnDist = TRUE)$dist) / 1000) %>%
+  mutate(log_dist_km_to_gems = log(dist_km_to_gems + 1)) %>%
+  sf::st_drop_geometry()
 
 ################################################
 ### Diamonds
@@ -80,13 +78,13 @@ dia_sf <- readxl::read_excel("./data/DIADATA/DIADATA_Excel_file.xls") %>%
   sf::st_transform(crs=sf::st_crs(projection))
 
 #n=477, 0 discovered after 1999
-# dhs_dia_df <- dhs_sf %>% 
-#   mutate(dist_km_to_dia = unlist(nngeo::st_nn(.,dia_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
-#   mutate(log_dist_km_to_dia = log(dist_km_to_dia + 1)) %>% 
-#   sf::st_drop_geometry()
+dhs_dia_df <- dhs_sf %>%
+  mutate(dist_km_to_dia = unlist(nngeo::st_nn(.,dia_sf,k=1,returnDist = TRUE)$dist) / 1000) %>%
+  mutate(log_dist_km_to_dia = log(dist_km_to_dia + 1)) %>%
+  sf::st_drop_geometry()
 
 ################################################
-### Petroleum and Natl Gas
+### Petroleum 
 petro_off_sf <- sf::read_sf("./data/PETRODATA/Petrodata_offshore_V1.2.shp") %>% 
   #limit to Africa (include Egypt which is listed as middle-east instead of Africa)
   filter(CONTCODE==4 | COUNTRY=="Egypt") %>%  
@@ -117,15 +115,15 @@ petro_on_sf <- sf::read_sf("./data/PETRODATA/Petrodata_Onshore_V1.2.shp") %>%
 #n=142, 3 discovered after 1999, make different sets for each
 petro_sf <- rbind(petro_off_sf, petro_on_sf)
 petro_2000_2002_sf <- petro_sf[!petro_sf$PRIMKEY=="CD002PET",]
-petro_1999_sf <- petro_2000_2002_sf[!petro_2000_2002_sf$PRIMKEY %in% c("OF311PET","OF310PET"),]
+#petro_1999_sf <- petro_2000_2002_sf[!petro_2000_2002_sf$PRIMKEY %in% c("OF311PET","OF310PET"),]
 
 dhs_petro_df <- dhs_sf %>% 
   mutate(dist_km_to_petro_2003 = unlist(nngeo::st_nn(.,petro_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
   mutate(log_dist_km_to_petro_2003 = log(dist_km_to_petro_2003 + 1)) %>% 
   mutate(dist_km_to_petro_2000_2002 = unlist(nngeo::st_nn(.,petro_2000_2002_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
   mutate(log_dist_km_to_petro_2000_2002 = log(dist_km_to_petro_2000_2002 + 1)) %>% 
-  mutate(dist_km_to_petro_1999 = unlist(nngeo::st_nn(.,petro_1999_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
-  mutate(log_dist_km_to_petro_1999 = log(dist_km_to_petro_1999 + 1)) %>% 
+  #mutate(dist_km_to_petro_1999 = unlist(nngeo::st_nn(.,petro_1999_sf,k=1,returnDist = TRUE)$dist) / 1000) %>% 
+  #mutate(log_dist_km_to_petro_1999 = log(dist_km_to_petro_1999 + 1)) %>% 
   sf::st_drop_geometry()
 # Warning message:
 #   In withCallingHandlers(expr, warning = function(w) if (inherits(w,  :
@@ -158,6 +156,7 @@ write.csv(dhs_natl_res_df,"./data/interim/dhs_natl_res.csv",row.names=FALSE)
 
 ################################################
 ### Map them all and create density plots
+library(tmap)
 tmap_options(check.and.fix = TRUE)
 africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
 
@@ -190,6 +189,7 @@ tmap_save(natl_res_map, "./figures/africa_natl_res_map.png")
 names(dhs_natl_res_df)
 
 #create density plots
+library(ggplot2)
 nr_density <- dhs_natl_res_df %>% 
   tidyr::pivot_longer(starts_with("dist"),names_to="variable_names",values_to="Distance") %>% 
   ggplot(aes(Distance)) +
@@ -199,7 +199,7 @@ nr_density <- dhs_natl_res_df %>%
                             dist_km_to_gold_2001 = "Gold (>= 2001)",
                             dist_km_to_gems = "Gems",
                             dist_km_to_dia = "Diamonds",
-                            dist_km_to_petro_1999 = "Oil (1999)",
+                            #dist_km_to_petro_1999 = "Oil (1999)",
                             dist_km_to_petro_2000_2002 = "Oil (2000-2002)",
                             dist_km_to_petro_2003 = "Oil (>= 2003)"))) +
   labs(title="Distance to Natural Resources from DHS",
@@ -218,7 +218,7 @@ nr_log_density <- dhs_natl_res_df %>%
                                               log_dist_km_to_gold_2001 = "Gold (>= 2001)",
                                               log_dist_km_to_gems = "Gems",
                                               log_dist_km_to_dia = "Diamonds",
-                                              log_dist_km_to_petro_1999 = "Oil (1999)",
+                                              #log_dist_km_to_petro_1999 = "Oil (1999)",
                                               log_dist_km_to_petro_2000_2002 = "Oil (2000-2002)",
                                               log_dist_km_to_petro_2003 = "Oil (>= 2003)"))) +                                              
   labs(title="Distance (log km) to Resources from DHS",
