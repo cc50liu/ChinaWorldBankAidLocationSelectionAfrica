@@ -21,9 +21,9 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 #uncomment to test
-#fund_sect_param <- "both_210"
-#fund_sect_param <- "wb_210"
-#fund_sect_param <- "ch_210"
+#fund_sect_param <- "both_150"
+#fund_sect_param <- "wb_150"
+#fund_sect_param <- "ch_150"
 
 run <- "v9"
 
@@ -249,7 +249,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
     write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
 
     #X[,apply(X,2,sd)>0]
-    #nrow(input_df[!complete.cases(input_df),])
+    nrow(input_df[!complete.cases(input_df),])
         
     if (nrow(input_df[!complete.cases(input_df),]) > 0) {
       print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
@@ -307,7 +307,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       
       sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
         mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")"))
-      
+
       sector_name <- sector_names_df %>%
         filter(ad_sector_codes==sector) %>%
         pull(sec_pre_name)
@@ -337,7 +337,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
         geom_boxplot() +
         labs(title = "Distribution of Wealth Outcome and Confounders for Treated and Control DHS locations",
              subtitle = paste("Funder:",long_funder,"     Sector:", sector_name),
-             x = "Treatment/Control: 0:control, 1:treated (this funder)",
+             x = paste0("Treatment/Control: 0:control (n ",control_count,"), 1:treated (n ",treat_count,")"),
              y = "Value") +
         facet_wrap(~ variable_name, scales = "free") +
         facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
@@ -386,9 +386,10 @@ acquireImageRepFromDisk <- function(keys,training = F){
         tm_dots(size=.5, col=treat_color, alpha=.3) +
         tm_add_legend(type = "fill"
                       , col = c(treat_color,"gray")
-                      , labels = c("Treated","Control"))  +
+                      , labels = c(paste("Treated (n",treat_count,")"),
+                                   paste("Control (n",control_count,")")))  +
         tm_layout(main.title.size=1,
-                  main.title = paste(long_funder,sector_name,"\nTreatment and Control Locations (2001-2014)"),
+                  main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2001-2014)"),
                   main.title.position=c("center","top")) +
         tm_layout(legend.position = c("right", "bottom"),
                   legend.text.size = 1,
