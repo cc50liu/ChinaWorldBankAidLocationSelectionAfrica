@@ -131,7 +131,7 @@ country_confounder_gdp_fill_df <- country_confounder_gini_fill_df %>%
 #convert gdp and gini scores to numbers, log the gdp & scale gini
 country_confounder_complete_df <- country_confounder_gdp_fill_df %>% 
   mutate(gdp_per_cap_USD2015 = as.double(gdp_per_cap_USD2015),
-         country_gini = as.double(country_gini) / 10,
+         country_gini = as.double(country_gini) / 100,
          log_gdp_per_cap_USD2015 = log(gdp_per_cap_USD2015 + 1)) 
 
 write.csv(country_confounder_complete_df,"./data/interim/country_confounders.csv",row.names=FALSE)  
