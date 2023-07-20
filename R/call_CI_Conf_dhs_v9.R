@@ -22,7 +22,7 @@ args <- commandArgs(trailingOnly = TRUE)
 fund_sect_param <- args[1]
 #uncomment to test
 #fund_sect_param <- "both_150"
-#fund_sect_param <- "wb_150"
+#fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_150"
 
 run <- "v9"
@@ -202,7 +202,13 @@ acquireImageRepFromDisk <- function(keys,training = F){
           !!sym(oda_year_column) > 2001 ~ log_dist_km_to_gold_2001),
         log_dist_km_to_petro = if_else(
           !!sym(oda_year_column) < 2003, 
-          log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003)
+          log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003),
+        #set dummy variables for the combination of satellite images in pre-project images
+        #Landsat 5 till 2012--included in all 3-year composite images in our timeframe
+        #Landsat 7 from 1999 to 2022
+        landsat7 = if_else(!!sym(oda_year_column) %in% 2000:2001,0,1),
+        #landsat 8 from 2013 to present
+        landsat8 = if_else(!!sym(oda_year_column)==2014,1,0)
         ) %>% 
       #set population density to year prior to earliest aid project
       rowwise() %>% mutate(
@@ -224,8 +230,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
       rowwise() %>% mutate(
         log_trans_proj_cum_n = get(paste0("log_trans_proj_cum_n_",
                                           as.numeric(get(oda_year_column)) - 1))
-      ) %>% ungroup()
-    
+      ) %>% ungroup()  
+
     #join to country-level parameters, which are year specific
     country_confounders_df <- read.csv("./data/interim/country_confounders.csv") %>% 
       select(-country) %>% 
@@ -235,10 +241,10 @@ acquireImageRepFromDisk <- function(keys,training = F){
       left_join(country_confounders_df,
                 by=join_by(iso3, !!sym(oda_year_column) == year))
     
-    #handle cases where we don't have country confounders 
-    run_df %>%
-      filter(if_any(c(log_gdp_per_cap_USD2015, country_gini, polity2), ~is.na(.)))
-    
+    #look for cases where we don't have country confounders 
+    # run_df %>%
+    #   filter(if_any(c(log_gdp_per_cap_USD2015, country_gini, polity2), ~is.na(.)))
+
     #write input data to file
     input_df <- run_df %>% 
       select(dhs_id, country, iso3, lat, lon, !!sym(fund_sect_param), 
@@ -246,11 +252,10 @@ acquireImageRepFromDisk <- function(keys,training = F){
              log_avg_nl_pre_oda,log_avg_min_to_city,log_avg_pop_dens,
              log_3yr_pre_conflict_deaths,leader_birthplace,log_dist_km_to_gold,
              log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
-             log_gdp_per_cap_USD2015,country_gini,polity2)  
+             log_gdp_per_cap_USD2015,country_gini,polity2,landsat7,landsat8)  
     write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
 
-    #X[,apply(X,2,sd)>0]
-    nrow(input_df[!complete.cases(input_df),])
+    #nrow(input_df[!complete.cases(input_df),])
         
     if (nrow(input_df[!complete.cases(input_df),]) > 0) {
       print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
@@ -269,10 +274,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
         "log_dist_km_to_petro"       =run_df$log_dist_km_to_petro,        #scene level
         "log_gdp_per_cap_USD2015"    =run_df$log_gdp_per_cap_USD2015,     #country level
         "country_gini"               =run_df$country_gini,                #country level
-        "polity2"                    =run_df$polity2                      #country level
+        "polity2"                    =run_df$polity2,                     #country level
+        "landsat7"                   =run_df$landsat7,                    #pre-treat image
+        "landsat8"                   =run_df$landsat8                     #pre-treat image 
       ))
-      #remove any columns that have 0 standard deviation
-      conf_matrix[,apply(conf_matrix,2,sd)>0]      
+      #remove any columns that have 0 standard deviation before passing to function
+      conf_matrix <- conf_matrix[,apply(conf_matrix,2,sd)>0]      
       
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = run_df[[fund_sect_param]],
@@ -331,13 +338,15 @@ acquireImageRepFromDisk <- function(keys,training = F){
                      "log_dist_km_to_dia","log_dist_km_to_petro", 
                      "leader_birthplace",
                      "log_3yr_pre_conflict_deaths",
-                     "polity2","log_gdp_per_cap_USD2015","country_gini")
+                     "polity2","log_gdp_per_cap_USD2015","country_gini","landsat7",
+                     "landsat8")
       var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-1,log)","Pop Density (t-1,log)",
                       "Minutes to City (2000,log)","Dist to Gold (km,log)",
                       "Dist to Gems (km,log)","Dist to Diamonds (km,log)",
                       "Dist to Oil (km,log)","Leader birthplace ADM1 (t-1)",
                       "Conflict deaths (t-1,log)",
-                      "Country Polity2 (t-1)","Cntry GDP per cap (t-1,log)","Country gini (t-1)")
+                      "Country Polity2 (t-1)","Cntry GDP per cap (t-1,log)","Country gini (t-1)",
+                      "Landsat 7", "Landsat 8")
       
       combined_boxplot <- ggplot(long_input_df, aes(x = factor(.data[[fund_sect_param]]), y = value)) +
         geom_boxplot() +
