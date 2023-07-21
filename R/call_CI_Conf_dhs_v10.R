@@ -23,7 +23,7 @@ fund_sect_param <- args[1]
 #uncomment to test
 #fund_sect_param <- "both_150"
 #fund_sect_param <- "wb_140"
-#fund_sect_param <- "ch_150"
+#fund_sect_param <- "ch_140"
 
 run <- "v10"
 
@@ -284,8 +284,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
       before_cols <-  colnames(conf_matrix)
       conf_matrix <- conf_matrix[,apply(conf_matrix,2,sd)>0] 
       
-      dropped_cols <- setdiff(before_cols, colnames(conf_matrix))
-      if (length(dropped_cols) > 0) {
+      dropped_cols <- paste(setdiff(before_cols, colnames(conf_matrix)),collapse=", ")
+      if (length(dropped_cols) > 1) {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
       
@@ -425,7 +425,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       tmap_save(treat_control_map,paste0("./figures/map_",run,"_",fund_sect_param,".png")) 
       
       #print this message again to be at the end of the logfile
-      if (length(dropped_cols) > 0) {
+      if (length(dropped_cols) > 1) {
         print(paste("Dropped confounders for 0 SD: ", dropped_cols))
       }
   }
