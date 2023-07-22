@@ -267,7 +267,7 @@ projection <- "ESRI:102023"
 adm2_borders <- sf::st_read("./data/country_regions/gadm2_clean.shp")  %>%
   filter(ISO %in% africa_isos_df$iso3)
 sf::st_crs(adm2_borders) = "EPSG:4326"
-adm2_borders <- st_transform(adm2_borders,crs=st_crs(projection))
+adm2_borders <- sf::st_transform(adm2_borders,crs=st_crs(projection))
 adm2_borders <- sf::st_make_valid(adm2_borders)
 unique(sf::st_is_valid(adm2_borders))
 
@@ -277,24 +277,25 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
 
 dhs_sf <- dhs_df  %>%
   st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
-  select(dhs_id,year,iso3,rural,geometry)  
+  select(dhs_id,year,iso3,rural,geometry) 
 
-if (exists("dhs_sf", inherits=TRUE)) {
-  dhs_sf <- st_transform(dhs_sf,crs=st_crs(projection))
-  if (debug_msg) print(paste("Obs in dhs_sf:",nrow(dhs_sf)))
+dhs_sf <- sf::st_transform(dhs_sf,crs=st_crs(projection))
+dhs_sf <- sf::st_make_valid(dhs_sf)
+unique(sf::st_is_valid(dhs_sf))
+
+if (debug_msg) print(paste("Obs in dhs_sf:",nrow(dhs_sf)))
   
   #put a 2k or 5k buffer around DHS points, according to rural/urban privacy offset
-  dhs_buff_sf <- rbind(
-    st_buffer(dhs_sf[dhs_sf$rural==1,], 5000,  #meter units
-              endCapStyle = "ROUND"),
-    st_buffer(dhs_sf[dhs_sf$rural==0,], 2000,  #meter units
-              endCapStyle = "ROUND")
-  )
-}
+  # dhs_buff_sf <- rbind(
+  #   st_buffer(dhs_sf[dhs_sf$rural==1,], 5000,  #meter units
+  #             endCapStyle = "ROUND"),
+  #   st_buffer(dhs_sf[dhs_sf$rural==0,], 2000,  #meter units
+  #             endCapStyle = "ROUND")
+  # )
 
 ####################################################
 output <- lapply(sectors_v, function(sector) {
-  process_sectors(sector, projection, dhs_buff_sf, wb_oda_df,
+  process_sectors(sector, projection, dhs_sf, wb_oda_df,
                   ch_oda_df, adm2_borders, debug_msg)
 })
 
