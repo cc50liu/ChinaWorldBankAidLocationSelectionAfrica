@@ -21,11 +21,11 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 #uncomment to test
-#fund_sect_param <- "both_150"
+#fund_sect_param <- "both_140"
 #fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_140"
 
-run <- "v10"
+run <- "v11"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
@@ -285,7 +285,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       conf_matrix <- conf_matrix[,apply(conf_matrix,2,sd)>0] 
       
       dropped_cols <- paste(setdiff(before_cols, colnames(conf_matrix)),collapse=", ")
-      if (length(dropped_cols) > 1) {
+      if (dropped_cols != "") {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
       
@@ -413,11 +413,11 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                    paste0("Control (n ",control_count,")")))  +
         tm_layout(main.title.size=1,
                   main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2001-2014)"),
-                  main.title.position=c("center","top")) +
-        tm_layout(legend.position = c("left", "bottom"),
+                  main.title.position=c("center","top"),
+                  legend.position = c("left", "bottom"),
                   legend.text.size = 1,
-                  frame = F ,
-                  legend.outside = T, 
+                  frame = T ,
+                  legend.outside = F, 
                   outer.margins = c(0, 0, 0, 0), 
                   legend.outside.size = .25
         )
@@ -425,8 +425,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
       tmap_save(treat_control_map,paste0("./figures/map_",run,"_",fund_sect_param,".png")) 
       
       #print this message again to be at the end of the logfile
-      if (length(dropped_cols) > 1) {
-        print(paste("Dropped confounders for 0 SD: ", dropped_cols))
+      if (dropped_cols != "") {
+        print(paste("Dropped for 0 SD: ", dropped_cols))
       }
   }
 }
