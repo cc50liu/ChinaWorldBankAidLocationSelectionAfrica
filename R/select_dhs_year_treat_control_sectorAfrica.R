@@ -337,7 +337,7 @@ for (i in 1:length(output)) {
     mutate(!!wb_colname := ifelse(get(wb_colname) == 0 & get(ch_colname) == 1, -1, get(wb_colname)),
            !!ch_colname := ifelse(get(ch_colname) == 0 & get(wb_colname) == 1, -1, get(ch_colname)),
            !!wb_colname := ifelse(get(wb_colname) == 1 & get(ch_colname) == 1,  2, get(wb_colname)),
-           !!ch_colname := ifelse(get(ch_colname) == 1 & get(wb_colname) == 1,  2, get(ch_colname))
+           !!ch_colname := ifelse(get(ch_colname) == 1 & get(wb_colname) %in% c(1,2),  2, get(ch_colname))
            )
   
 }

@@ -46,12 +46,31 @@ post_iso3_year <- dhs_df %>%
     ungroup()
 
 dhs_t_c_year <- rbind(iso3_year,post_iso3_year)
+
+#change cameroon from 1991 to 2004, to avoid duplicate lat/lons
+#CAF has duplicates, but also no better option
+dhs_t_c_year <- dhs_t_c_year %>% 
+  mutate(year=case_match(iso3,
+                         "CMR" ~ 2004,
+                         .default=year))
+
+#write the list of years to a file
 write.csv(dhs_t_c_year,"./data/interim/dhs_treat_control_year.csv",row.names=FALSE)
 #dhs_t_c_year <- read.csv("./data/interim/dhs_treat_control_year.csv")
 rm(iso3_year,post_iso3_year)
 
 #create a subset of DHS records that will be used for treatments and controls
 dhs_t_c_df <- semi_join(dhs_df, dhs_t_c_year, by=c("year","iso3")) 
+
+#test for duplicates
+dhs_t_c_df %>%
+  filter((duplicated(lat, lon))) %>%
+  group_by(country, iso3, year) %>%
+  distinct(country, iso3, year)
+# country                  iso3   year
+# <chr>                    <chr> <int>
+# 1 cameroon                 CMR    1991  #change to 2004
+# 2 central_african_republic CAF    1995  #no better year
 
 #include outcome estimates
 #csv outcome estimates from Markus over DHS points
@@ -75,8 +94,21 @@ dhs_tc_est_df <- left_join(dhs_t_c_df,
          iwi_2017_2019_est=y_9
   )  %>% 
   filter(!is.na(iwi_2017_2019_est)) %>% 
-  mutate(across(starts_with("iwi_"),~ . * 100))
   #remove rows that don't have the post-project wealth estimate we need
+  mutate(across(starts_with("iwi_"),~ . * 100))
+
+#verify that wealth estimate consistent across duplicate lat/lon points
+dhs_tc_est_df %>%
+  filter(iso3=="CAF") %>%
+  group_by(year,lat,lon,iwi_2017_2019_est) %>%
+  count() %>%
+  filter(n > 1)
+
+#Pre n: 9929, post n: 9910
+#retain only one DHS point for each duplicated lat/lon
+dhs_tc_est_df <- dhs_tc_est_df %>%
+  group_by(lat,lon) %>%
+  slice_head()
 
 write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
 
