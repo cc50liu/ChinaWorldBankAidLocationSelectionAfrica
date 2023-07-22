@@ -65,13 +65,13 @@ def export_images(survey_df: pd.DataFrame,
     # Get samples as list, since multiprocessing doesn't work with dataframes
     survey_clusters = [row for _, row in survey_df.iterrows()]
 
-    pool = multiprocessing.Pool(5)
+    pool = multiprocessing.Pool(2)
     pool.map(download_sample_img_x, survey_clusters)
     pool.close()
     pool.join()
 
 
-@retry(tries=10, delay=1, backoff=2)
+@retry(tries=-1, delay=2, backoff=2)
 def download_sample_img(sample_row, country_img, save_dir, buffer_dist, tile_diameter):
     """
     Samples and downloads a .tif-file from the country image for the given location.

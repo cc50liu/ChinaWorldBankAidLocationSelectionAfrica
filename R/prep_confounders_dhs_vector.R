@@ -93,11 +93,12 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
   
   #create a density plot to look at the distribution of the values
   udcp_density <- ucdp_adm1_sum_df %>% 
-    pivot_longer(starts_with("deaths"), names_to = "variable", values_to = "deaths") %>%
-    ggplot(aes(deaths)) +
+    pivot_longer(starts_with("deaths"), names_to = "death_years", values_to = "deaths") %>%
+    ggplot(aes(deaths, color=death_years)) +
     geom_density() +
-    labs(x = "Total Deaths (prec<=4)", y = "Density across ADM1s") +
-    facet_wrap(~ variable, scales = "free", ncol = 2)
+    labs(x = "Total Deaths (prec<=4)", y = "Density across ADM1s",
+         title="Conflict Deaths across ADM1s",color="Year")  +
+    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) 
   
   #highy right skewed - use the log
   ggsave("./figures/udcp_density.png",udcp_density, width=6, height = 10, dpi=300,
@@ -112,11 +113,12 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
   
   # Generate density plots for each logged variable
   udcp_log_density <- ucdp_adm1_log_sum_df %>%
-    pivot_longer(starts_with("log_deaths"), names_to = "variable", values_to = "log_deaths") %>%
-    ggplot(aes(log_deaths)) +
+    pivot_longer(starts_with("log_deaths"), names_to = "death_years", values_to = "log_deaths") %>%
+    ggplot(aes(log_deaths, color=death_years)) +
     geom_density() +
-    labs(x = "Log Total Deaths (prec<=4)", y = "Density across ADM1s") +
-    facet_wrap(~ variable, scales = "free", ncol = 2)
+    labs(x = "Log Total Deaths (prec<=4)", y = "Density across ADM1s",
+         title="Conflict Deaths (log) across ADM1s",color="Year")  +
+    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) 
   
   ggsave("./figures/udcp_log_density.png", udcp_log_density, width = 6, height = 10, dpi = 300, bg = "white", units = "in")
   rm(udcp_log_density)
@@ -148,7 +150,9 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
       tm_borders(lwd = 2) +
       tm_shape(gadm1_udcp_log_map_sf) +
       tm_polygons(col = column, title = paste(map_years,"Total(log)")) +
-      tm_layout(legend.outside = TRUE, main.title = map_title)
+      tm_layout(legend.outside = F, 
+                legend.position = c("left", "bottom"),
+                main.title = map_title)
     
     tmap_save(africa_log_conflict_map, paste0("./figures/africa_conflict_map_", column, ".png"))
   }
@@ -238,7 +242,7 @@ plad_africa_adm1_sf <- sf::st_join(gadm1_sf, plad_sf, left=FALSE)
 gadm1_map_sf <- gadm1_sf[gadm1_sf$ISO %in% africa_map_isos_df$iso3, ]
 plad_africa_adm1_map_sf <- plad_africa_adm1_sf[plad_africa_adm1_sf$ISO %in% africa_map_isos_df$iso3, ]
 
-# Loop through each year to create a map of Conflict Deaths
+# Loop through each year to create a map of Leader Birthplaces
 for (year in 1999:2013) {
   #year <- 1999  #uncomment to test
   map_title <- paste("Birthplaces (ADM1) of leaders in power in",year)

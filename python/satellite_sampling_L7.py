@@ -64,7 +64,7 @@ def export_images(survey_df: pd.DataFrame,
     # Get samples as list, since multiprocessing doesn't work with dataframes
     survey_clusters = [row for _, row in survey_df.iterrows()]
 
-    pool = multiprocessing.Pool(25)
+    pool = multiprocessing.Pool(1)
     pool.map(download_sample_img_x, survey_clusters)
     pool.close()
     pool.join()

@@ -94,14 +94,10 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
         avg_pop_dens <- base::mean(terra::as.matrix(pop_dens_r), na.rm = TRUE)
       }, error = function(e) {
         if (grepl("extents do not overlap", e$message)) {
-          print(paste("Skipping crop error i:",i,"dhs_id",dhs_df$dhs_id,
+          print(paste("Skipping crop error i:",i,"dhs_id",dhs_df$dhs_id[i],
                       "lat",dhs_df$lat[i],"lon",dhs_df$lon[i],file_path,
                       get(paste0("cntry_pop_dens",pop_dens_year,"_filename"))))
-        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2000_1km_UNadj.tif"
-        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2003_1km_UNadj.tif"
-        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2006_1km_UNadj.tif"
-        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2009_1km_UNadj.tif"
-        #   [1] "Skipping crop error i: 5051 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2012_1km_UNadj.tif"
+        #  "Skipping crop error i: 9561 dhs_id 48270 lat 27.157745012716 lon -13.1897010778989 ./data/dhs_tifs/morocco_2003/00118.tif ./data/WorldPop/mar_pd_2013_1km_UNadj.tif"
           }
       })
       
@@ -120,7 +116,6 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   #write to file for later use
   dhs_df %>% 
     write.csv(.,"./data/interim/dhs_treat_control_raster_no_log.csv",row.names=FALSE)  
-  
   #dhs_df <- read.csv("./data/interim/dhs_treat_control_raster_no_log.csv")
   
 
@@ -129,7 +124,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
     select(dhs_id,country,starts_with("avg_pop_dens_"),image_file) %>% 
     filter(!complete.cases(.))
     
-  #exclude points where pop density could not be determined, n now 9606
+  #exclude points where pop density could not be determined, n now 9909
   dhs_df <- dhs_df %>%
     filter(complete.cases(.))
   
@@ -137,7 +132,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   dhs_df %>%
     filter(if_any(starts_with("avg_pop_dens_"), ~.x == 0))
   
-  #exclude 5 rows in DR congo where pop density is 0, n now 9601
+  #exclude 5 rows in DR congo where pop density is 0, n now 9904
   #dhs_id's 8359 8361 8364 8369 8376
   dhs_df <- dhs_df %>%
     filter(!if_any(starts_with("avg_pop_dens_"), ~.x == 0))  
@@ -155,22 +150,27 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   
 #plot the distribution of nightlights       
 nl_density <- dhs_log_df %>% 
-  ggplot(aes(avg_nl_1996_1998)) +
+  tidyr::pivot_longer(cols = starts_with("avg_nl_"), names_to = "avg_nl_year", values_to = "density") %>%
+  ggplot(aes(density, color=avg_nl_year)) +
   geom_density() +
-  labs(x="Avg nightlights 1996-1998", y="Density per DHS point",
-       title="Avg nightlights 1996-1998")
+  labs(x="Avg nightlights", y="Density across DHS clusters",
+       title="Nightlights across DHS Clusters (avg)",
+       color="Years") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x))
 
 nl_density
 
-ggsave("./figures/nl_density_1996_1998.png",nl_density, width=6, height = 4, dpi=300,
+ggsave("./figures/nl_density.png",nl_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
-#density plot of the log
+#density plot of log nightlights
 log_nl_density <-  dhs_log_df %>% 
-  ggplot(aes(log_avg_nl_1996_1998)) +
+  tidyr::pivot_longer(cols = starts_with("log_avg_nl_"), names_to = "log_avg_nl_year", values_to = "density") %>%
+  ggplot(aes(density, color=log_avg_nl_year)) +
   geom_density() +
-  labs(x="Log avg nightlights 1996-1998", y="Density per DHS point",
-       title="Log avg nightlights 1996-1998")
+  labs(x="Nightlights (avg, log)", y="Density per DHS cluster",
+       title="Average nightlights (log) across DHS clusters") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x))
 
 log_nl_density
 ggsave("./figures/log_nl_density.png",log_nl_density, width=6, height = 4, dpi=300,
@@ -181,7 +181,7 @@ ggsave("./figures/log_nl_density.png",log_nl_density, width=6, height = 4, dpi=3
 minutes_travel_density <- dhs_log_df %>% 
   ggplot(aes(avg_min_to_city)) +
   geom_density() +
-  labs(x="Avg min to >50K City", y="Density across DHS points",
+  labs(x="Avg min to >50K City", y="Density across DHS clusters",
        title="Travel minutes to >50k City in 2000")
 
 minutes_travel_density
@@ -193,7 +193,7 @@ ggsave("./figures/minutes_travel_density.png",minutes_travel_density, width=6, h
 log_minutes_travel_density <-  dhs_log_df %>% 
   ggplot(aes(log_avg_min_to_city)) +
   geom_density() +
-  labs(x="Log Avg min to >50K City", y="Density across DHS points",
+  labs(x="Log Avg min to >50K City", y="Density across DHS clusters",
        title="Log Travel minutes to >50k City in 2000")
 
 log_minutes_travel_density
@@ -205,8 +205,8 @@ population_density <- dhs_log_df %>%
   tidyr::pivot_longer(cols = starts_with("avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x = "Average population density", y = "Density across DHS points",
-       title = "Population density across DHS points", color="Year") +
+  labs(x = "Average population density", y = "Density across DHS clusters",
+       title = "Population density across DHS clusters", color="Year") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
 
 population_density
@@ -217,8 +217,8 @@ log_avg_pop_dens_density <-  dhs_log_df %>%
   tidyr::pivot_longer(cols = starts_with("log_avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x = "Average(log) population density", y = "Density (log) across DHS points",
-       title = "Population density (log) across DHS points", color="Year") +
+  labs(x = "Average(log) population density", y = "Density (log) across DHS clusters",
+       title = "Population density (log) across DHS clusters", color="Year") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
 
 
