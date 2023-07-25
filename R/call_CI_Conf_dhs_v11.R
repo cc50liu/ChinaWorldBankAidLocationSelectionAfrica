@@ -23,11 +23,17 @@ fund_sect_param <- args[1]
 #uncomment to test
 #fund_sect_param <- "both_140"
 #fund_sect_param <- "wb_140"
-#fund_sect_param <- "ch_140"
+fund_sect_param <- "ch_140"
 
-run <- "v11"
+run <- "v11-1"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
+
+#get "both" counts by sector
+# wb_columns <- grep("^wb_\\d{3}$", names(dhs_df), value = TRUE)
+# dhs_df %>%
+#   summarise(across(all_of(wb_columns), ~sum(. == 2, na.rm = TRUE)))
+  
 
 sector <- unique(sub(".*_(\\d+).*", "\\1", fund_sect_param))
 
@@ -282,7 +288,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       ))
       #remove any columns that have 0 standard deviation before passing to function
       before_cols <-  colnames(conf_matrix)
-      conf_matrix <- conf_matrix[,apply(conf_matrix,2,sd)>0] 
+      conf_matrix <- conf_matrix[,which(apply(conf_matrix,2,sd)>0)] 
       
       dropped_cols <- paste(setdiff(before_cols, colnames(conf_matrix)),collapse=", ")
       if (dropped_cols != "") {
@@ -303,6 +309,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
         samplingType = "balancedTrain",
         nSGD = 500,
         nDepthHidden_conv = 5L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
+        nFilters = 50L,
         figuresPath = "./figures/", # figures saved here
         figuresTag = paste0(fund_sect_param,"_",run),
         conda_env = NULL, # conda env to try to activate

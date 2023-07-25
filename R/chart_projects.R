@@ -16,15 +16,14 @@ proj_year_count <- oda_df %>%
 ggplot(aes(x = transactions_start_year, y = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "African aid projects by start year",
-       x = "Transaction Start Year", y = "Count") +
+       x = "Transaction Start Year", y = "Count of Projects in distinct Sectors") +
   theme_minimal() + 
   scale_x_continuous(breaks = unique(oda_df$transactions_start_year), 
                      labels = unique(oda_df$transactions_start_year)) + 
   guides(fill = guide_legend(title = "Funder")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China","World Bank")) +
-  theme_bw()
+                    labels = c("China","World Bank")) 
 
 ggsave("./figures/proj_year_counts.png",proj_year_count, width=6, height = 4, dpi=300,
        bg="white", units="in")
@@ -62,8 +61,7 @@ proj_year_prec_count <- oda_df %>%
                      labels = c("1 Exact", "2 Near", "3 ADM2", "4 ADM1")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China","World Bank")) +
-  theme_bw()
+                    labels = c("China","World Bank")) 
 
 
 ggsave("./figures/proj_year_prec_counts.png",proj_year_prec_count, width=6, height = 4, dpi=300,
@@ -83,8 +81,7 @@ proj_prec_count <- oda_df %>%
   scale_x_discrete(labels = c("1 Exact", "2 Near", "3 ADM2", "4 ADM1")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China","World Bank")) +
-  theme_bw()
+                    labels = c("China","World Bank")) 
 
 ggsave("./figures/proj_prec_counts.png", proj_prec_count, width = 6, height = 4, dpi = 300,
        bg = "white", units = "in")
@@ -123,8 +120,7 @@ ggplot(aes(y = reorder(location_type_name,n), x = n, fill = funder, alpha=geogra
   scale_alpha_manual(values = c(.5, 1),
                      labels = c("1 Exact", "2 Approximate")) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China", "World Bank")) +
-  theme_bw()
+                    labels = c("China", "World Bank")) 
 
 ggsave("./figures/top_loc_types.png",loc_type_plot, width=6, height = 4, dpi=300,
        bg="white", units="in")
@@ -142,8 +138,7 @@ country_plot <- oda_df %>%
   theme_minimal() + 
   guides(fill = guide_legend(title = "Funder")) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China", "World Bank")) +
-  theme_bw()
+                    labels = c("China", "World Bank")) 
 
 ggsave("./figures/country_counts.png",country_plot, width=6, height = 8, dpi=300,
        bg="white", units="in")
@@ -152,17 +147,18 @@ ggsave("./figures/country_counts.png",country_plot, width=6, height = 8, dpi=300
 sector_plot <- oda_df %>% 
   filter(precision_code %in% c(1,2,3)) %>% 
   group_by(funder, ad_sector_names) %>% 
+  mutate(ad_sector_names = paste0(substr(ad_sector_names, 1, 30),
+                                 " (",ad_sector_codes,")")) %>%
   count() %>% 
   ggplot(aes(y = ad_sector_names, x = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "African Aid projects 2000-2014 by sector and funder",
-       subtitle = "Aid Project Precision 1, 2, and 3",
+  labs(title = "African Aid projects 2001-2014 by sector and funder",
+       subtitle = "Aid Project Precisions: Exact, Near, and ADM2",
        y = "Sector", x = "Count") +
   theme_minimal() + 
   guides(fill = guide_legend(title = "Funder")) +
   scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
-                    labels = c("China", "World Bank")) +
-  theme_bw()
+                    labels = c("China", "World Bank")) 
 
 ggsave("./figures/sector_counts.png",sector_plot, width=8, height = 8, dpi=300,
        bg="white", units="in")
