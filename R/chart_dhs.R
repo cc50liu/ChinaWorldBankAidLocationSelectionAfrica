@@ -8,7 +8,7 @@ library(ggplot2)
 rm(list=ls())
 
 #read file that contains sector-level treatment and control variables
-dhs_df <- read.csv("./data/interim/dhs_treat_control_vector.csv")
+dhs_df <- read.csv("./data/interim/dhs_treat_control_confounders.csv")
 
 names(dhs_df)
 
@@ -34,7 +34,7 @@ dhs_sector_treated_portion <- mean_df %>%
   scale_fill_manual(values = c("blue", "red"),
                     breaks = c(FALSE, TRUE),
                     labels = c("World Bank", "China")) +
-  theme_minimal()
+  theme_bw()
 
 ggsave("./figures/dhs_sector_treated_portion.png",dhs_sector_treated_portion, 
        width=8, height = 6, dpi=300,
@@ -130,7 +130,8 @@ pre_nl_ct_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name, -Me
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
-                               title = "Funder & Treated"))
+                               title = "Funder & Treated")) +
+  theme_bw()
 
 pre_nl_ct_sector
 
@@ -188,7 +189,8 @@ pre_deaths_tc_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name,
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
-                              title = "Funder & Treated"))
+                              title = "Funder & Treated")) +
+  theme_bw()
 
 pre_deaths_tc_sector
 
@@ -218,7 +220,8 @@ pr_ldrbrthtc_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name, 
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
-                              title = "Funder & Treated"))
+                              title = "Funder & Treated")) +
+  theme_bw()
 
 pr_ldrbrthtc_sector
 
