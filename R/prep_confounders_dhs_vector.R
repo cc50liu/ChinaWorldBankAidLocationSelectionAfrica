@@ -98,7 +98,8 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
     geom_density() +
     labs(x = "Total Deaths (prec<=4)", y = "Density across ADM1s",
          title="Conflict Deaths across ADM1s",color="Year")  +
-    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) 
+    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) +
+    theme_bw()
   
   #highy right skewed - use the log
   ggsave("./figures/udcp_density.png",udcp_density, width=6, height = 10, dpi=300,
@@ -116,11 +117,12 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
     pivot_longer(starts_with("log_deaths"), names_to = "death_years", values_to = "log_deaths") %>%
     ggplot(aes(log_deaths, color=death_years)) +
     geom_density() +
-    labs(x = "Log Total Deaths (prec<=4)", y = "Density across ADM1s",
-         title="Conflict Deaths (log) across ADM1s",color="Year")  +
-    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) 
+    labs(x = "Log Total Deaths (prec<=ADM1)", y = "Density across ADM1s",
+         title="Conflict Deaths (log) across ADM1s",color="3-year sum")  +
+    scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) +
+    theme_bw()
   
-  ggsave("./figures/udcp_log_density.png", udcp_log_density, width = 6, height = 10, dpi = 300, bg = "white", units = "in")
+  ggsave("./figures/udcp_log_density.png", udcp_log_density, width = 6, height = 6, dpi = 300, bg = "white", units = "in")
   rm(udcp_log_density)
   rm(ucdp_adm1_sum_df)
   
@@ -171,7 +173,7 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
     sf::st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
     sf::st_transform(crs=sf::st_crs(projection))
   
-  #do a spatial join to get the adm2 id and log deaths for each each dhs point
+  #do a spatial join to get the adm1 id and log deaths for each each dhs point
   dhs_deaths_sf <- sf::st_join(dhs_sf, gadm1_udcp_log_sf, join = sf::st_intersects, left=FALSE) %>% 
     select(-ISO,-part_area)
 

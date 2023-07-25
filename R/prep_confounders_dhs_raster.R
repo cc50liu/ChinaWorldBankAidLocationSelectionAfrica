@@ -147,6 +147,7 @@ dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv")
   #write to file for later use
   dhs_log_df %>% 
     write.csv(.,"./data/interim/dhs_treat_control_raster.csv",row.names=FALSE)    
+  #dhs_log_df <- read.csv("./data/interim/dhs_treat_control_raster.csv")    
   
 #plot the distribution of nightlights       
 nl_density <- dhs_log_df %>% 
@@ -156,7 +157,8 @@ nl_density <- dhs_log_df %>%
   labs(x="Avg nightlights", y="Density across DHS clusters",
        title="Nightlights across DHS Clusters (avg)",
        color="Years") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x))
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 nl_density
 
@@ -169,8 +171,10 @@ log_nl_density <-  dhs_log_df %>%
   ggplot(aes(density, color=log_avg_nl_year)) +
   geom_density() +
   labs(x="Nightlights (avg, log)", y="Density per DHS cluster",
-       title="Average nightlights (log) across DHS clusters") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x))
+       title="Average nightlights (log) across DHS clusters",
+       color="Years") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 log_nl_density
 ggsave("./figures/log_nl_density.png",log_nl_density, width=6, height = 4, dpi=300,
@@ -182,7 +186,8 @@ minutes_travel_density <- dhs_log_df %>%
   ggplot(aes(avg_min_to_city)) +
   geom_density() +
   labs(x="Avg min to >50K City", y="Density across DHS clusters",
-       title="Travel minutes to >50k City in 2000")
+       title="Travel minutes to >50k City in 2000")  +
+  theme_bw()
 
 minutes_travel_density
 
@@ -194,7 +199,8 @@ log_minutes_travel_density <-  dhs_log_df %>%
   ggplot(aes(log_avg_min_to_city)) +
   geom_density() +
   labs(x="Log Avg min to >50K City", y="Density across DHS clusters",
-       title="Log Travel minutes to >50k City in 2000")
+       title="Log Travel minutes to >50k City in 2000") +
+  theme_bw()
 
 log_minutes_travel_density
 ggsave("./figures/log_minutes_travel_density.png",log_minutes_travel_density, width=6, height = 4, dpi=300,
@@ -207,7 +213,8 @@ population_density <- dhs_log_df %>%
   geom_density() +
   labs(x = "Average population density", y = "Density across DHS clusters",
        title = "Population density across DHS clusters", color="Year") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 population_density
 ggsave("./figures/population_density.png",population_density, width=6, height = 4, dpi=300,
@@ -219,7 +226,8 @@ log_avg_pop_dens_density <-  dhs_log_df %>%
   geom_density() +
   labs(x = "Average(log) population density", y = "Density (log) across DHS clusters",
        title = "Population density (log) across DHS clusters", color="Year") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 
 log_avg_pop_dens_density

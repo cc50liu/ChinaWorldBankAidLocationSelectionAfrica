@@ -7,7 +7,7 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-run_version <-"v10"
+#run_version <-"v11"
 
 filename_pattern <- paste0("ICA_",run_version,"_(wb|ch|both)_\\d{3}.csv")
 

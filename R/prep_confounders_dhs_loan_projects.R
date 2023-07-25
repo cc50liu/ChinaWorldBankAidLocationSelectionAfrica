@@ -112,15 +112,17 @@ dhs_final_df <- dhs_df %>%
   mutate(across(starts_with("trans_"), ~ log(. + 1), .names = "log_{.col}"))  
 
 write.csv(dhs_final_df,"./data/interim/dhs_loan_projs.csv",row.names=FALSE)
+#dhs_final_df <- read.csv("./data/interim/dhs_loan_projs.csv")
 
 #plot the distribution of loan-based transport projects        
 transport_projs <- dhs_final_df %>%
   tidyr::pivot_longer(cols = starts_with("trans_proj_cum_n_"), names_to = "transactions_start_year", values_to = "cum_projects_n") %>%
   ggplot(aes(cum_projects_n, color = transactions_start_year)) +
   geom_density() +
-  labs(x = "Count of Cumulative loan-based transport projects", y = "Density across DHS points",
-       title = "Cumulative loan-based transport project counts across DHS points", color="Year") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
+  labs(x = "Cumulative count of loan-based transport projects", y = "Density across DHS clusters",
+       title = "Cumulative loan-based transport project counts across DHS", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 transport_projs
 ggsave("./figures/transport_projs.png",transport_projs, width=6, height = 4, dpi=300,
@@ -129,10 +131,11 @@ ggsave("./figures/transport_projs.png",transport_projs, width=6, height = 4, dpi
 log_transport_projs <-  dhs_final_df %>%
   tidyr::pivot_longer(cols = starts_with("log_trans_proj_cum_n_"), names_to = "transactions_start_year", values_to = "log_cum_projects_n") %>%
   ggplot(aes(log_cum_projects_n, color = transactions_start_year)) +
-  geom_density() +
-  labs(x = "Count (log) of Cumulative loan-based transport projects", y = "Density across DHS points",
-       title = "Cumulative loan-based transport project counts (log) across DHS points", color="Year") +
-  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x))
+  geom_density(aes(y=after_stat(density))) +
+  labs(x = "Cumulative count (log) of loan-based transport projects", y = "Density across DHS clusters",
+       title = "Loan-based transport project counts (log) across DHS", color="Year") +
+  scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
+  theme_bw()
 
 log_transport_projs
 ggsave("./figures/log_transport_projs.png",log_transport_projs, width=6, height = 4, dpi=300,
