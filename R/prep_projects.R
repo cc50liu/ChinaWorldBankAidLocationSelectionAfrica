@@ -214,10 +214,11 @@ ch_oda_df <- read.csv("./data/AiddataChinav1.1.1/GeoCoded_China_Data_Merged_File
 
 #limit to projects with location details and study years
 ch_oda_p4_df <- ch_oda_df %>%
-         filter(precision_code<=4 &  # 1=exact, 2=up to 25km, 3=adm2, or 4=adm1
+         #include all precisions for desc stats; filtered to <=3 in select_dhs_year_treat_control_sectorAfrica
+         #filter(precision_code<=4 &  # 1=exact, 2=up to 25km, 3=adm2, or 4=adm1
          #status %in% c("Completion","Implementation") & #dataset already limits to this
          #flow_class=="ODA-like" &  #dataset already limits to this
-         umbrella==FALSE &    
+         filter(umbrella==FALSE &    
          transactions_start_year <= 2014 &
          transactions_start_year >= 2001 &
          !is.na(latitude)) 

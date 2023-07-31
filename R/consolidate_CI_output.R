@@ -7,9 +7,10 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-#run_version <-"v11"
+run_version <-"v12_100"
 
 filename_pattern <- paste0("ICA_",run_version,"_(wb|ch|both)_\\d{3}.csv")
+#filename_pattern <- paste0("ICA_(wb|ch|both)_\\d{3}",run_version,".csv")
 
 # Get the list files from the run in the directory
 matching_files <- list.files("./data/interim/", pattern = filename_pattern,
@@ -27,3 +28,19 @@ consolidated_df <- rbindlist(lapply(matching_files, read_and_process_file),
 
 write.csv(consolidated_df,paste0("./data/interim/ICA_",run_version,"_all.csv"),
                                  row.names=FALSE)
+library(dplyr)
+consolidated_df %>% 
+  select(fund_sect_param, treat_count,control_count, 
+         tauHat_propensityHajek, tauHat_propensityHajek_se) %>% 
+  rename(fund_sec = fund_sect_param,
+         treat_n = treat_count,
+         control_n = control_count,
+         tauHat_prop = tauHat_propensityHajek,
+         tauHat_prop_se = tauHat_propensityHajek_se
+         ) %>% 
+  mutate(sig = ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.96, "***",
+               ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.645, "**", 
+               ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.282, "*", "")))) %>%
+  arrange(as.integer(substr(fund_sec, nchar(fund_sec) - 2, nchar(fund_sec))))
+
+  

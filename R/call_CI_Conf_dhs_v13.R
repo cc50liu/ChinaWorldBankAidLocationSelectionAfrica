@@ -1,15 +1,7 @@
-# call_CI_Conf_dhs_v9.R
+# call_CI_Conf_dhs_v13_100.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations.  
-#           v9 improves on v8 by:
-#             - using log of gdp and country_gini scaled for 0-10
-#             - producing boxplots and maps for the funder_sector
-# Use:  called from slurm script with command-line arg for funder_sector
-#       examples:  sbatch cl_sector_v8_dhs.slurm wb_140
-#                  sbatch cl_sector_v8_dhs.slurm ch_140
-#                  sbatch cl_sector_v8_dhs.slurm both_140
-# Runs:  approximately 12 to 16 hours on SNIC/NAISS
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -25,7 +17,7 @@ fund_sect_param <- args[1]
 #fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_140"
 
-run <- "v11-1"
+run <- "v13_100"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
@@ -49,6 +41,22 @@ if (substr(fund_sect_param,1,4)=="both") {
     ) %>% ungroup() 
 }
 
+#define variable order and names for boxplots and dropped cols variables
+var_order <- c("iwi_2017_2019_est","log_avg_nl_pre_oda","log_avg_pop_dens",
+               "log_avg_min_to_city",
+               "log_dist_km_to_gold","log_dist_km_to_gems",        
+               "log_dist_km_to_dia","log_dist_km_to_petro", 
+               "leader_birthplace","log_trans_proj_cum_n",
+               "log_3yr_pre_conflict_deaths",
+               "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
+               "landsat578")
+var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-3,log)","Pop Density (t-1,log)",
+                "Minutes to City (2000,log)","Dist to Gold (km,log)",
+                "Dist to Gems (km,log)","Dist to Diam (km,log)",
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
+                "Conflict deaths (t-1,log)",
+                "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
+                "Landsat 5 & 7", "Landsat 5,7,& 8")
 
 acquireImageRepFromDisk <- function(keys,training = F){
   imageHeight = 224  # 30m/pixel
@@ -80,7 +88,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   array_ <- sapply(keys,function(key_){
     #comment out to test 
     #key_ = "./data/dhs_tifs/angola_2006/00000.tifNA"
-    #key_ = "./data/dhs_tifs/angola_2006/00000.tif2001"
+    key_ = "./data/dhs_tifs/angola_2006/00000.tif2001"
 
     min_oda_year <- sub(".*\\.tif(.*)", "\\1", key_)
     image_file <- sub("(.*\\.tif).*", "\\1", key_)
@@ -249,10 +257,6 @@ acquireImageRepFromDisk <- function(keys,training = F){
       left_join(country_confounders_df,
                 by=join_by(iso3, !!sym(oda_year_column) == year))
     
-    #look for cases where we don't have country confounders 
-    # run_df %>%
-    #   filter(if_any(c(log_gdp_per_cap_USD2015, country_gini, polity2), ~is.na(.)))
-
     #write input data to file
     input_df <- run_df %>% 
       select(dhs_id, country, iso3, lat, lon, !!sym(fund_sect_param), 
@@ -264,14 +268,14 @@ acquireImageRepFromDisk <- function(keys,training = F){
     write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
 
     #nrow(input_df[!complete.cases(input_df),])
-    input_df %>%
-      filter(if_any(everything(), ~is.na(.)))
+    # input_df %>%
+    #   filter(if_any(everything(), ~is.na(.)))
         
     if (nrow(input_df[!complete.cases(input_df),]) > 0) {
       print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                    run,"_",fund_sect_param,".csv"))
     } else {
-      conf_matrix <- data.matrix(data.frame(
+      conf_matrix <- as.matrix(data.frame(
         "log_avg_nl_pre_oda"         =run_df$log_avg_nl_pre_oda,          #scene level
         "log_avg_min_to_city"        =run_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =run_df$log_avg_pop_dens,            #scene level
@@ -291,19 +295,52 @@ acquireImageRepFromDisk <- function(keys,training = F){
       #remove any columns that have 0 standard deviation before passing to function
       before_cols <-  colnames(conf_matrix)
       conf_matrix <- conf_matrix[,which(apply(conf_matrix,2,sd)>0)] 
-      
-      dropped_cols <- paste(setdiff(before_cols, colnames(conf_matrix)),collapse=", ")
+      dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
       if (dropped_cols != "") {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
+
+      #drop columns if either the treatment or control groups have 0 sd
+      before_cols <- colnames(conf_matrix)
+      conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 1,],2,sd)>0)]
+      t_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
+      if (t_dropped_cols != "") {
+        print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
+      }      
       
-      # sd(run_df$iwi_2017_2019_est)
-      # summary(run_df[[fund_sect_param]])
+      before_cols <- colnames(conf_matrix)
+      conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 0,],2,sd)>0)] 
+      c_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
+      if (c_dropped_cols != "") {
+        print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
+      }      
+
+      # keys = paste0(run_df$image_file,
+      #      ifelse(is.na(run_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
+      #                   run_df[[paste0(fund_sect_param,"_min_oda_year")]]))                  
+      #    
+      # counter<-0;
+      # for(key in keys){ 
+      #   counter <- counter + 1
+      #   test <- sum( acquireImageRepFromDisk( key ) ) 
+      #   if (is.na(test)) {
+      #     print(paste("NA found in ",key))
+      #     browser()
+      #   }
+      #   if(counter %% 10==0) {
+      #     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"] iteration :",
+      #                  counter))
+      #     }
+      #   
+      # }
+      #                          
+      # sum(run_df$iwi_2017_2019_est)
+      # sum(run_df[[fund_sect_param]])
       
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = run_df[[fund_sect_param]],
         obsY = run_df$iwi_2017_2019_est,  #lab's estimated iwi
-        X = scale(conf_matrix,center=TRUE, scale=TRUE),
+        X = conf_matrix,
         long = run_df$lon,
         lat = run_df$lat,
         #concatenate the image file location and project year into a single keys parameter
@@ -312,7 +349,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
                                    run_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
         acquireImageRepFxn = acquireImageRepFromDisk,
         samplingType = "balancedTrain",
-        nSGD = 500,
+        nSGD = 100,
         nDepthHidden_conv = 5L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
         nFilters = 50L,
         figuresPath = "./figures/", # figures saved here
@@ -322,10 +359,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
       )
   
       ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-      output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,ica_df))
+      output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
+                                    dropped_cols,t_dropped_cols,c_dropped_cols,
+                                    ica_df))
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                    " Writing to ./data/interim/ICA_",run,"_",fund_sect_param,".csv"))
-      write.csv(output_df,paste0("./data/interim/ICA_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
+                    " Writing to ./data/interim/ICA_",fund_sect_param,"_",run,".csv"))
+      write.csv(output_df,paste0("./data/interim/ICA_",fund_sect_param,"_",run,".csv"),row.names = FALSE)
 
       ##########################################################################
       ##### generate boxplots for this run
@@ -351,27 +390,17 @@ acquireImageRepFromDisk <- function(keys,training = F){
                -!!sym(oda_year_column), -image_file) %>% 
         gather(key=variable_name, value=value, -!!sym(fund_sect_param)) 
       
-      #define variable order and names for boxplots
-      var_order <- c("iwi_2017_2019_est","log_avg_nl_pre_oda","log_avg_pop_dens",
-                     "log_avg_min_to_city",
-                     "log_dist_km_to_gold","log_dist_km_to_gems",        
-                     "log_dist_km_to_dia","log_dist_km_to_petro", 
-                     "leader_birthplace","log_trans_proj_cum_n",
-                     "log_3yr_pre_conflict_deaths",
-                     "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-                     "landsat578")
-      var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-3,log)","Pop Density (t-1,log)",
-                      "Minutes to City (2000,log)","Dist to Gold (km,log)",
-                      "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                      "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
-                      "Conflict deaths (t-1,log)",
-                      "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                      "Landsat 5 & 7", "Landsat 5,7,& 8")
+
+      sub_l1 <- paste("Funder:",long_funder,"     Sector:", sector_name)
+      sub_l2 <- paste0("Dropped due to no variation in control and/or treatment groups: ", dropped_cols,
+                       ifelse(nzchar(t_dropped_cols), paste0("; ", t_dropped_cols), ""),
+                       ifelse(nzchar(c_dropped_cols), paste0("; ", c_dropped_cols), ""))
+      
       
       combined_boxplot <- ggplot(long_input_df, aes(x = factor(.data[[fund_sect_param]]), y = value)) +
         geom_boxplot() +
         labs(title = "Distribution of Wealth Outcome and Confounders for Treated and Control DHS locations",
-             subtitle = paste("Funder:",long_funder,"     Sector:", sector_name),
+             subtitle = paste(sub_l1,sub_l2,sep="\n"),
              x = paste0("Treatment/Control: 0:control (n ",control_count,"), 1:treated (n ",treat_count,")"),
              y = "Value") +
         facet_wrap(~ variable_name, scales = "free") +
@@ -434,12 +463,18 @@ acquireImageRepFromDisk <- function(keys,training = F){
                   legend.outside.size = .25
         )
       
-      tmap_save(treat_control_map,paste0("./figures/map_",run,"_",fund_sect_param,".png")) 
+      tmap_save(treat_control_map,paste0("./figures/",fund_sect_param,"_",run,"_map.png")) 
       
-      #print this message again to be at the end of the logfile
+      #print these messages again to be at the end of the logfile
       if (dropped_cols != "") {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
+      if (t_dropped_cols != "") {
+        print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
+      }      
+      if (c_dropped_cols != "") {
+        print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
+      } 
   }
 }
          
