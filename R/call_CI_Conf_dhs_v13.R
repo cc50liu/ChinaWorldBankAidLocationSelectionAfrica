@@ -300,20 +300,20 @@ acquireImageRepFromDisk <- function(keys,training = F){
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
 
-      #drop columns if either the treatment or control groups have 0 sd
-      before_cols <- colnames(conf_matrix)
-      conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 1,],2,sd)>0)]
-      t_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
-      if (t_dropped_cols != "") {
-        print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
-      }      
-      
-      before_cols <- colnames(conf_matrix)
-      conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 0,],2,sd)>0)] 
-      c_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
-      if (c_dropped_cols != "") {
-        print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
-      }      
+      # #drop columns if either the treatment or control groups have 0 sd
+      # before_cols <- colnames(conf_matrix)
+      # conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 1,],2,sd)>0)]
+      # t_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
+      # if (t_dropped_cols != "") {
+      #   print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
+      # }      
+      # 
+      # before_cols <- colnames(conf_matrix)
+      # conf_matrix <- conf_matrix[,which(apply(conf_matrix[run_df[[fund_sect_param]] == 0,],2,sd)>0)] 
+      # c_dropped_cols <- paste(var_labels[match(setdiff(before_cols, colnames(conf_matrix)),var_order)],collapse="; ")
+      # if (c_dropped_cols != "") {
+      #   print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
+      # }      
 
       # keys = paste0(run_df$image_file,
       #      ifelse(is.na(run_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
@@ -360,7 +360,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   
       ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
       output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
-                                    dropped_cols,t_dropped_cols,c_dropped_cols,
+                                    dropped_cols,              #t_dropped_cols,c_dropped_cols,
                                     ica_df))
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                     " Writing to ./data/interim/ICA_",fund_sect_param,"_",run,".csv"))
@@ -392,9 +392,10 @@ acquireImageRepFromDisk <- function(keys,training = F){
       
 
       sub_l1 <- paste("Funder:",long_funder,"     Sector:", sector_name)
-      sub_l2 <- paste0("Dropped due to no variation in control and/or treatment groups: ", dropped_cols,
-                       ifelse(nzchar(t_dropped_cols), paste0("; ", t_dropped_cols), ""),
-                       ifelse(nzchar(c_dropped_cols), paste0("; ", c_dropped_cols), ""))
+      sub_l2 <- paste0("Dropped due to no variation: ", dropped_cols)
+      
+                       # ifelse(nzchar(t_dropped_cols), paste0("; ", t_dropped_cols), ""),
+                       # ifelse(nzchar(c_dropped_cols), paste0("; ", c_dropped_cols), ""))
       
       
       combined_boxplot <- ggplot(long_input_df, aes(x = factor(.data[[fund_sect_param]]), y = value)) +
@@ -469,12 +470,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
       if (dropped_cols != "") {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
-      if (t_dropped_cols != "") {
-        print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
-      }      
-      if (c_dropped_cols != "") {
-        print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
-      } 
+      # if (t_dropped_cols != "") {
+      #   print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
+      # }      
+      # if (c_dropped_cols != "") {
+      #   print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
+      # } 
   }
 }
          
