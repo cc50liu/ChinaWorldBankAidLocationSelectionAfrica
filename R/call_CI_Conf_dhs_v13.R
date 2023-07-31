@@ -88,7 +88,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   array_ <- sapply(keys,function(key_){
     #comment out to test 
     #key_ = "./data/dhs_tifs/angola_2006/00000.tifNA"
-    key_ = "./data/dhs_tifs/angola_2006/00000.tif2001"
+    #key_ = "./data/dhs_tifs/angola_2006/00000.tif2001"
 
     min_oda_year <- sub(".*\\.tif(.*)", "\\1", key_)
     image_file <- sub("(.*\\.tif).*", "\\1", key_)

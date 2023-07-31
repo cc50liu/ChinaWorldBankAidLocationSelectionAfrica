@@ -29,7 +29,7 @@ consolidated_df <- rbindlist(lapply(matching_files, read_and_process_file),
 write.csv(consolidated_df,paste0("./data/interim/ICA_",run_version,"_all.csv"),
                                  row.names=FALSE)
 library(dplyr)
-consolidated_df %>% 
+outcome_df <- consolidated_df %>% 
   select(fund_sect_param, treat_count,control_count, 
          tauHat_propensityHajek, tauHat_propensityHajek_se) %>% 
   rename(fund_sec = fund_sect_param,
@@ -38,9 +38,31 @@ consolidated_df %>%
          tauHat_prop = tauHat_propensityHajek,
          tauHat_prop_se = tauHat_propensityHajek_se
          ) %>% 
-  mutate(sig = ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.96, "***",
+  mutate(sector = as.integer(sub(".*_(\\d+).*", "\\1", fund_sec)),
+         funder = sub("(wb|ch|both).*", "\\1", fund_sec),
+         sig = ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.96, "***",
                ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.645, "**", 
-               ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.282, "*", "")))) %>%
-  arrange(as.integer(substr(fund_sec, nchar(fund_sec) - 2, nchar(fund_sec))))
+               ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.282, "*", ""))),
+         treat_prob = paste0(round(tauHat_prop,2)," (",
+                             round(tauHat_prop_se,2),")",sig)
+         ) %>%
+  arrange(sector)
 
   
+sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
+  mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")")) %>% 
+  select(ad_sector_codes, sec_pre_name)
+
+outcome_sector_df <- outcome_df %>%
+  left_join(sector_names_df,join_by(sector==ad_sector_codes)) %>% 
+  select(sec_pre_name, funder, treat_prob) %>% 
+  pivot_wider(names_from=funder, values_from=treat_prob) %>% 
+  rename(Both=both,
+         China=ch,
+         World_Bank=wb)
+
+
+
+
+
+
