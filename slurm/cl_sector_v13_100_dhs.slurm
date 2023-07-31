@@ -8,7 +8,7 @@ start_time=$(date +%s)
 
 FUNDER_SECTOR=$@
 
-apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs_v13_100.R "$FUNDER_SECTOR"
+apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs_v13.R "$FUNDER_SECTOR"
 
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
