@@ -7,13 +7,13 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-run_version <-"v12_100"
+#run_version <-"v14"
 
-filename_pattern <- paste0("ICA_",run_version,"_(wb|ch|both)_\\d{3}.csv")
-#filename_pattern <- paste0("ICA_(wb|ch|both)_\\d{3}",run_version,".csv")
+#filename_pattern <- paste0("ICA_",run_version,"_(wb|ch|both)_\\d{3}.csv")
+filename_pattern <- paste0("ICA_(wb|ch|both)_\\d{3}_",run_version,".csv")
 
 # Get the list files from the run in the directory
-matching_files <- list.files("./data/interim/", pattern = filename_pattern,
+matching_files <- list.files("./results/", pattern = filename_pattern,
                              full.names = TRUE)
 
 # function to read files and exclude cols with individual point probabilities
@@ -26,7 +26,7 @@ read_and_process_file <- function(file) {
 consolidated_df <- rbindlist(lapply(matching_files, read_and_process_file), 
                              use.names = TRUE, fill = TRUE)
 
-write.csv(consolidated_df,paste0("./data/interim/ICA_",run_version,"_all.csv"),
+write.csv(consolidated_df,paste0("./results/ICA_",run_version,"_all.csv"),
                                  row.names=FALSE)
 library(dplyr)
 outcome_df <- consolidated_df %>% 
@@ -62,7 +62,8 @@ outcome_sector_df <- outcome_df %>%
          World_Bank=wb)
 
 
+outcome_sector_df
 
-
-
+write.csv(outcome_sector_df,paste0("./results/outcome_",run_version,".csv"),
+          row.names=FALSE)
 
