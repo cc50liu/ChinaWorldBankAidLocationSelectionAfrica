@@ -121,7 +121,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       im <- im * 255
       # place the image in the correct place in the array
       array_shell[,,,i] <-
-        as.matrix(terra::im)
+        as.matrix(im)
     }
     return( array_shell )
   },
