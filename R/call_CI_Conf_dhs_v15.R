@@ -114,6 +114,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
     # iterate over all image bands
     for(i in 1:NBANDS) {
       band_ <- bands_to_select[i]
+      #rescale for RGB printing
+      band_ <- band_ * 255
       # place the image in the correct place in the array
       array_shell[,,,i] <-
         as.matrix(terra::rast(image_file,
