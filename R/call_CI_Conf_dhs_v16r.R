@@ -17,7 +17,7 @@ fund_sect_param <- args[1]
 #fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_140"
 
-run <- "v16"
+run <- "v16r"
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
@@ -113,15 +113,17 @@ acquireImageRepFromDisk <- function(keys,training = F){
 
     # iterate over all image bands
     for(i in 1:NBANDS) {
+      #uncomment to test
+      #i <- 1
       band_ <- bands_to_select[i]
       im <- raster::raster(image_file,
                         bands=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
       #rescale for RGB printing
-      im <- im * 255
+      im_rescaled <- raster::as.matrix(im) * 255
+
       # place the image in the correct place in the array
-      array_shell[,,,i] <-
-        as.matrix(im)
+      array_shell[,,,i] <- im_rescaled
     }
     return( array_shell )
   },
