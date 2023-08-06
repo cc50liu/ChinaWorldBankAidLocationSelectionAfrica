@@ -302,7 +302,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
         keys = paste0(input_df$image_file,
                       ifelse(is.na(input_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
                              input_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
-        acquireImageRepFxn = acquireImageRepFromDisk,
+        acquireImageFxn = acquireImageRepFromDisk,
         samplingType = "balancedTrain",
         nSGD = 2,
         nDepthHidden_conv = 5L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
