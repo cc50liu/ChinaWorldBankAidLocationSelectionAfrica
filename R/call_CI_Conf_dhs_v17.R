@@ -120,7 +120,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       #rescale for RGB printing
       im <- im * 1000
       # place the image in the correct place in the array
-      array_shell[,,,i] <- as.matrix(im)
+      array_shell[,,,i] <- matrix(im, byrow = T, nrow = imageHeight, ncol = imageWidth)
     }
     return( array_shell )
   },
@@ -293,15 +293,15 @@ acquireImageRepFromDisk <- function(keys,training = F){
       }
      
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
-        obsW = run_df[[fund_sect_param]],
-        obsY = run_df$iwi_2017_2019_est,  #lab's estimated iwi
+        obsW = input_df[[fund_sect_param]],
+        obsY = input_df$iwi_2017_2019_est,  #lab's estimated iwi
         X = conf_matrix,
-        long = run_df$lon,
-        lat = run_df$lat,
+        long = input_df$lon,
+        lat = input_df$lat,
         #concatenate the image file location and project year into a single keys parameter
-        keys = paste0(run_df$image_file,
-                      ifelse(is.na(run_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
-                                   run_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
+        keys = paste0(input_df$image_file,
+                      ifelse(is.na(input_df[[paste0(fund_sect_param,"_min_oda_year")]]),"NA",
+                             input_df[[paste0(fund_sect_param,"_min_oda_year")]])), 
         acquireImageRepFxn = acquireImageRepFromDisk,
         samplingType = "balancedTrain",
         nSGD = 2,

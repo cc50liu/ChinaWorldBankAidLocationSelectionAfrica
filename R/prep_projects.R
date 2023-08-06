@@ -48,8 +48,10 @@ wb_proj_ancillary <- read.csv("./data/AiddataWB1.4.2/projects_ancillary.csv") %>
 
 #narrow to projects in Africa and study context
 wb_africa_oda_p4_df <- semi_join(wb_geocoded, wb_proj_ancillary, by=c("project_id"="PROJECT.ID")) %>%
-  filter(transactions_start_year > 2000 & 
-           precision_code <=3)  # 1=exact, 2=up to 25km, 3=adm2
+  filter(transactions_start_year > 2000 )
+
+#do not limit by precision here, to be able to include these in desc stats
+#           precision_code <=3)  # 1=exact, 2=up to 25km, 3=adm2
 
 #remove the objects that were used to construct wb_africa_oda_p4_df
 rm(wb_proj)
@@ -105,7 +107,7 @@ wb_africa_oda_df <- wb_africa_oda_df %>%
   mutate(site_iso3 = if_else(project_location_id == "P117764_10344471", recipients_iso3, site_iso3))
 
 
-# write a file of the 645 projects whose site_iso3 doesn't match recipients_iso3
+# write a file of the projects whose site_iso3 doesn't match recipients_iso3
 wb_africa_oda_df %>%
   filter(recipients_iso3 != site_iso3) %>%
   write.csv("./data/interim/wb_iso3_mismatch.csv", row.names=FALSE)
