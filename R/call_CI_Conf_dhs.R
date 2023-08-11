@@ -13,14 +13,14 @@ args <- commandArgs(trailingOnly = TRUE)
 # The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
 fund_sect_param <- args[1]
 run <- args[2]
-iterations <- args[3]
+iterations <- as.integer(args[3])
 
 #uncomment to test
 #fund_sect_param <- "both_140"
 #fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_140"
 
-#run <- "i2tag"
+#run <- "test"
 #iterations <- 2
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
@@ -48,7 +48,7 @@ var_order <- c("iwi_2017_2019_est","log_avg_nl_pre_oda","log_avg_pop_dens",
                "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
                "landsat578")
-var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-3,log)","Pop Density (t-1,log)",
+var_labels <- c("Wealth 2017-2019 (est)","Nightlights (t-3,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
@@ -353,8 +353,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
       long_input_df <- input_df %>%
         select(-dhs_id, -country, -iso3, -lat, -lon, 
                -!!sym(oda_year_column), -image_file) %>% 
-        gather(key=variable_name, value=value, -!!sym(fund_sect_param)) 
-      
+        tidyr::pivot_longer(c(-!!sym(fund_sect_param)),names_to="variable_name", values_to="value") 
 
       sub_l1 <- paste("Funder:",long_funder,"     Sector:", sector_name)
       sub_l2 <- ifelse(nzchar(dropped_cols),
@@ -376,11 +375,37 @@ acquireImageRepFromDisk <- function(keys,training = F){
         theme_bw()
       
       
-      ggsave(paste0("./figures/",fund_sect_param,"_",run,"_boxplots.pdf"),
+      ggsave(paste0("./results/",fund_sect_param,"_",run,"_boxplots.pdf"),
              combined_boxplot,
              width=10, height = 8, dpi=300,
              bg="white", units="in")
       
+      ##########################################################################
+      ##### create a line plot comparing to outcome variable
+      #Convert to longer format for density plots, leaving outcome as separate column
+      hybrid_input_df <- input_df %>%
+        select(-dhs_id, -country, -iso3, -lat, -lon, 
+               -!!sym(oda_year_column), -image_file) %>% 
+        pivot_longer(c(-!!sym(fund_sect_param),-iwi_2017_2019_est),names_to="variable_name", values_to="value")  
+
+
+      outcome_confounders_plot <- ggplot(hybrid_input_df, aes(x = iwi_2017_2019_est, y=value, color = factor(.data[[fund_sect_param]]))) +
+        geom_line(alpha = 0.3) +
+        facet_wrap(~ variable_name, scales = "free_y", ncol = 3) +
+        facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
+        labs(title = "Confounders vs. Estimated wealth for Treated and Control DHS locations",
+             subtitle = paste(sub_l1,sub_l2,sep="\n"),
+             x = "Estimated Wealth Index 2017-2019",
+             y = "Value",
+             color="Treated") +
+        scale_color_discrete(labels=c("Control","Treated")) +
+        theme_bw()
+      
+      ggsave(paste0("./results/",fund_sect_param,"_",run,"_conf_iwi.pdf"),
+             outcome_confounders_plot,
+             width=10, height = 8, dpi=300,
+             bg="white", units="in")
+
       ##########################################################################
       ##### generate treatment/control map
       library(tmap)
@@ -431,18 +456,12 @@ acquireImageRepFromDisk <- function(keys,training = F){
                   legend.outside.size = .25
         )
       
-      tmap_save(treat_control_map,paste0("./figures/",fund_sect_param,"_",run,"_map.pdf")) 
+      tmap_save(treat_control_map,paste0("./results/",fund_sect_param,"_",run,"_map.pdf")) 
       
       #print these messages again to be at the end of the logfile
       if (dropped_cols != "") {
         print(paste("Dropped for 0 SD: ", dropped_cols))
       }
-      # if (t_dropped_cols != "") {
-      #   print(paste("Dropped for 0 SD in treatment group: ", t_dropped_cols))
-      # }      
-      # if (c_dropped_cols != "") {
-      #   print(paste("Dropped for 0 SD in control group: ", c_dropped_cols))
-      # } 
   }
 }
          
