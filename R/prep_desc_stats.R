@@ -84,7 +84,7 @@ donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_
                                 "project_precision 2" ~ "Near (<25km) locations available (precision 2)", 
                                 "project_precision 3" ~ "ADM2 locations available (precision 3)", 
                                 "project_precision >=4" ~ "Excluded Less precise locations (precision 4-8)",
-                                "portion_no_end_date" ~ "Portion lacking end date",
+                                "portion_no_end_date" ~ "Portion lacking end date (precision <=3)",
                                 .default = description))
 
 # Table 1:  Funder Comparison: China and World Bank
@@ -100,7 +100,7 @@ donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_
 # 8 Near (<25km) locations available (precision 2)         189     288   
 # 9 ADM2 locations available (precision 3)                 252    3238   
 # 10 Excluded Less precise locations (precision 4-8)        291    3662   
-# 11 Portion lacking end date                                 0.69    0.17
+# 11 Portion lacking end date (precision <=3)                0.69    0.17
 
 #higher than Gehring et al, because they exclude countries with less than 1 million people
 
