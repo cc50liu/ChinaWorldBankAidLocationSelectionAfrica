@@ -56,10 +56,22 @@ donor_recipient_site_mismatch_df <- oda_sect_group_df %>%
   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
 
+no_end_date_df <- oda_sect_group_df %>%
+  filter(precision_code < 4) %>% 
+  select(funder,end_actual_isodate) %>%
+  group_by(funder) %>% 
+  summarize(portion_no_end_date = mean(end_actual_isodate=="")) %>% 
+  mutate(portion_no_end_date = round(portion_no_end_date,2)) %>% 
+  pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
+  pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
-desired_order <- c(3, 4, 1, 2, 8, 9, 5, 6, 7, 10)
+
+
+
+desired_order <- c(3, 4, 1, 2, 8, 9, 5, 6, 7, 10,11)
 donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_unspecified_df,
-                             donor_recipient_site_mismatch_df,excluded_precision_count) %>%
+                             donor_recipient_site_mismatch_df,excluded_precision_count,
+                             no_end_date_df) %>%
   slice(match(desired_order, row_number())) %>% 
   mutate(description = case_match(description,
                                 "site_iso3" ~ "Countries hosting projects count",
@@ -72,21 +84,23 @@ donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_
                                 "project_precision 2" ~ "Near (<25km) locations available (precision 2)", 
                                 "project_precision 3" ~ "ADM2 locations available (precision 3)", 
                                 "project_precision >=4" ~ "Excluded Less precise locations (precision 4-8)",
+                                "portion_no_end_date" ~ "Portion lacking end date",
                                 .default = description))
 
 # Table 1:  Funder Comparison: China and World Bank
 # description                                              CH    WB
-# <chr>                                                 <int> <int>
-# 1 Countries hosting projects count                         50    44
-# 2 Sectors funded                                           22    13
-# 3 Aid project count                                       819   594
-# 4 Aid project location count                             1529  8248
-# 5 Locations labeled `Regional` or `Unspecified` country    71   644
-# 6 Locations where recipient and site country differ        23     1
-# 7 Exact locations available (precision 1)                1088  4722
-# 8 Near (<25km) locations available (precision 2)          189   288
-# 9 ADM2 locations available (precision 3)                  252  3238
-# 10Excluded Less precise locations (precision 4-8)         291  3662
+# <chr>                                                   <dbl>   <dbl>
+# 1 Countries hosting projects count                        50      44   
+# 2 Sectors funded                                          22      13   
+# 3 Aid project count                                      819     594   
+# 4 Aid project location count                            1529    8248   
+# 5 Locations labeled `Regional` or `Unspecified` country   71     644   
+# 6 Locations where recipient and site country differ       23       1   
+# 7 Exact locations available (precision 1)               1088    4722   
+# 8 Near (<25km) locations available (precision 2)         189     288   
+# 9 ADM2 locations available (precision 3)                 252    3238   
+# 10 Excluded Less precise locations (precision 4-8)        291    3662   
+# 11 Portion lacking end date                                 0.69    0.17
 
 #higher than Gehring et al, because they exclude countries with less than 1 million people
 
