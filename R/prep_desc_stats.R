@@ -4,6 +4,8 @@ library(tidyr)
 
 rm(list=ls())
 
+#############################################################
+#### Projects by funder
 oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
 
 excluded_precision_count <- oda_sect_group_df %>%
@@ -66,8 +68,6 @@ no_end_date_df <- oda_sect_group_df %>%
   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
 
-
-
 desired_order <- c(3, 4, 1, 2, 8, 9, 5, 6, 7, 10,11)
 donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_unspecified_df,
                              donor_recipient_site_mismatch_df,excluded_precision_count,
@@ -113,21 +113,42 @@ oda_sect_group_df %>%
   group_by(funder, ad_sector_codes, ad_sector_names) %>% 
   count()
 
-#descriptive stats about treatments and controls by sector
+
+#############################################################
+#### Treatments and controls by sector
 dhs_df <- read.csv("./data/interim/dhs_treat_control_confounders.csv")
 names(dhs_df)
 
 communities_df <- dhs_df %>% 
-  select(country,survey_start_year,rural,households) %>% 
+  mutate(never_treated = if_all(all_of(sector_t_c), ~ .==0)) %>% 
+  select(dhs_id,sector_t_c, country, never_treated,survey_start_year,rural,households) %>% 
   group_by(country, survey_start_year) %>% 
   summarize(
     clusters = n(),
-    perc_rural = round(mean(rural),2),
+    perc_rural = round(mean(rural),2)*100,
     mean_hhlds = round(mean(households),2),
-    sd_hhlds = round(sd(households),2)
+    sd_hhlds = round(sd(households),2),
+    never_treated_count = sum(never_treated),
+    ever_treated_count = sum(!never_treated),
+    perc_never_treated=round(never_treated_count/(ever_treated_count + never_treated_count),2)*100
   ) %>% 
   mutate(country = gsub("_"," ",country),
-         country = stringr::str_to_title(country))
+         country = stringr::str_to_title(country)) %>% 
+  select(-never_treated_count, -ever_treated_count)
+
+# country                      survey_start_year clusters perc_rural mean_hhlds sd_hhlds perc_neve…¹
+# <chr>                                    <int>    <int>      <dbl>      <dbl>    <dbl>       <dbl>
+#   1 Angola                                    2006       62         35      22.2      3.57          40
+# 2 Benin                                     1996      190         53      16.6     10.5            3
+# 3 Burkina Faso                              1998       81         62       9.31     8.24          25
+# 4 Burundi                                   2010      307         88      22.9      1.25          41
+# 5 Cameroon                                  2004      464         48      19.9      9.05           9
+# 6 Central African Republic                  1994       66         65      17.3      9.74          86
+# 7 Chad                                      2014      235         59      27.7      4.41          20
+# 8 Comoros                                   2012      242         56      17.7      1.96           0
+# 9 Democratic Republic Of Congo              2007      286         57      27.8      4.81           0
+# 10Egypt                                     1995        7         14      15.9      7.54         100
+
 # %>% 
 #   rename("Survey Year" = survey_start_year,
 #          "Cluster Locations"=clusters,
@@ -136,12 +157,6 @@ communities_df <- dhs_df %>%
 #          "Households (sd)"=sd_hhlds)
 
 write.csv(communities_df,"./tables/communities.csv",row.names = FALSE)
-
-
-columns_of_interest <- c("rural", "iwi_2017_2019_est", "wb_110", "wb_110_min_oda_year",
-                         "log_avg_nl_1996_1998", "log_avg_min_to_city",
-                         "log_avg_pop_dens_2000", "log_deaths1995_1999",
-                         "leader_birthplace")
 
 sector_t_c <- names(dhs_df)[grep("^(?:wb|ch)_\\d{3}$",names(dhs_df))]
             
@@ -171,7 +186,7 @@ sector_min_years <- names(dhs_df)[grep("^(?:wb|ch)_\\d{3}_min_oda_year",names(dh
 
 #get the earliest project year by sector      
 sector_min_years_df <- dhs_df %>% 
-  summarize(across(sector_min_years, ~ min(.,na.rm=TRUE))) %>% 
+  summarize(across(all_of(sector_min_years), ~ min(.,na.rm=TRUE))) %>% 
   mutate(across(everything(), ~ replace(., is.infinite(.), NA))) %>% 
   pivot_longer(everything()) %>% 
   separate_wider_regex(cols=name,patterns=c(funder="^(?:wb|ch)_",
@@ -196,3 +211,21 @@ sector_stats_df <-  sector_treat_control_df %>%
   select(sector_name, ch_treat_n, ch_first_oda_year, wb_treat_n,wb_first_oda_year,both_treat_n,control_n,-sector)
 
 write.csv(sector_stats_df,"./tables/sector_treat_control.csv",row.names = FALSE)
+
+# sector_name                                        ch_tr…¹ ch_fi…² wb_tr…³ wb_fi…⁴ both_…⁵ contr…⁶
+# <chr>                                                <int>   <dbl>   <int>   <dbl>   <int>   <int>
+#   1 Education (110)                                        318    2001    2477    2001     603    6506
+# 2 Health (120)                                           613    2001    2506    2001    1013    5772
+# 3 Population Policies / Programmes and Reproductive…      44    2003       0      NA       0    9860
+# 4 Water Supply and Sanitation (140)                      217    2002    4243    2001     216    5228
+# 5 Government and Civil Society (150)                     136    2001    4782    2001    1051    3935
+# 6 Other Social Infrastructure and Services (160)         188    2001    3890    2001     478    5348
+# 7 Transport and Storage (210)                            223    2001    4612    2001     785    4284
+# 8 Communications (220)                                   431    2001    1460    2001     205    7808
+# 9 Energy Generation and Supply (230)                     279    2002    2679    2001     283    6663
+# 10Banking and Financial Services (240)                     0      NA    1562    2001       0    8342
+# 
+
+
+
+  
