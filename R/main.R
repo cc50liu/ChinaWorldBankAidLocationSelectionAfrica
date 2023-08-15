@@ -74,23 +74,21 @@ source("./code/R/consolidate_confounders_dhs.R", local=TRUE)
 ##############################################################################
 # Call Causal Image Confounding Analysis, consolidate output files
 ##############################################################################
-#balance dist of pre-project years in treatments and controls
+#balance dist of pre-project years in treatments and controls, and call analyzeimageconfounding
 source("./code/R/call_CI_Conf_dhs_5bands_year_v4_cl_funder_sector.R", local=TRUE)
 # read.csv("./data/interim/dhs_treat_control_sector_vector_year.csv")
 # write.csv(output_df,paste0("./data/interim/ICA_",run,"_",orig_fund_sect_param,".csv")
 
-#consolidate output of above into a single file
-source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
-#to do: in consolidation scripts, move files into a subdirectory
+#on server, reorder names of output files from CausalImages function
+#sh rename_output.sh
 
-#1996-1998 for pre-treatment images for both treatments and controls
-source("./code/R/call_CI_Conf_v3_dhs_5bands_cl_funder_sector.R", local=TRUE)
-#read.csv("./data/interim/dhs_treat_control_sector_vector.csv")
-#write.csv(output_df,paste0("./data/interim/ICA_",run,"_",orig_fund_sect_param,".csv"),row.names = FALSE)
+#copy files to a results directory on laptop
+#run script to convert png maps to pdfs and then consolidate into single pdf file
+#combine_results_png_pdf.bat
 
-#consolidate output of above into a single file
-source("./code/R/consolidate_CI_output_v3.R", local=TRUE)
-#to do: in consolidation scripts, move files into a subdirectory
+#consolidate csv output for all sectors/funders into a single file
+#create separate files to compare tabular and logistic regression for each funder/sector
+source("./code/R/consolidate_CI_output.R", local=TRUE)
 
 ##############################################################################
 # Maps, Charts and descriptive statistics 
