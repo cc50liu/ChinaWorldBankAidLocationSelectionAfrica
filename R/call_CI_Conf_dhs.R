@@ -18,10 +18,10 @@ iterations <- as.integer(args[3])
 #uncomment to test
 #fund_sect_param <- "both_140"
 #fund_sect_param <- "wb_140"
-#fund_sect_param <- "ch_140"
+#fund_sect_param <- "ch_520"
 
-#run <- "test"
-#iterations <- 2
+#run <- "no_trans_death"
+#iterations <- 1000
 
 dhs_df <-  read.csv("./data/interim/dhs_treat_control_confounders.csv") 
 
@@ -331,6 +331,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
       write.csv(output_df,paste0("./results/ICA_",fund_sect_param,"_",run,"_i",
                                  iterations,".csv"),row.names = FALSE)
 
+     
+      
       ##########################################################################
       ##### generate boxplots for this run
       library(tidyr)     
@@ -456,7 +458,47 @@ acquireImageRepFromDisk <- function(keys,training = F){
                   legend.outside.size = .25
         )
       
-      tmap_save(treat_control_map,paste0("./results/",fund_sect_param,"_",run,"_map.pdf")) 
+      tmap_save(treat_control_map,paste0("./results/",fund_sect_param,"_",run,"_map.png"))
+      #pdf files are too large - convert png to pdf in later step
+      #tmap_save(treat_control_map,paste0("./results/",fund_sect_param,"_",run,"_map.pdf")) 
+      
+      ####################################################
+      ##### logistical regression for treatment probabilities with tabular confounders
+      conf_df <- as.data.frame(scale(conf_matrix))
+      log_formula <- paste("input_df[[fund_sect_param]] ~", 
+                           paste(names(conf_df), collapse = " + "))
+
+      treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
+
+      #save to file for later comparison with other sectors and runs
+      # saveRDS(treat_prob_log,
+      #         paste0("./results/",fund_sect_param, "_", run,"_treat_prob_log.rds"))
+
+      #save coeff table to dataframe, write to csv
+      treat_prob_log_df <- broom::tidy(treat_prob_log)
+      write.csv(treat_prob_log_df,
+                paste0("./results/",fund_sect_param, "_", run,"_treat_prob_log.csv"),
+                row.names = FALSE)
+
+      predicted_probs <- stats::predict(treat_prob_log, type="response")
+      propensity_df <- data.frame(Treatment = input_df[[fund_sect_param]], Propensity = predicted_probs)
+      
+      tab_conf_density <- ggplot(propensity_df, aes(x = Propensity, fill = factor(Treatment))) +
+        geom_density(alpha = 0.5) +
+        labs(title = "Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
+             subtitle = paste(sub_l1,sub_l2,sep="\n"),
+             x = "Predicted Propensity",
+             y = "Density",
+             fill="Status") +
+        scale_fill_manual(values = c("#F8766D","#00BFC4"),labels = c("Control", "Treated")) +
+        theme_bw()
+      
+      #use this name so it will sort well in consolidated pdf
+      ggsave(paste0("./results/",fund_sect_param,"_",run,"_htreat_prop.pdf"),
+             tab_conf_density,
+             width=6, height = 4, dpi=300,
+             bg="white", units="in")
+      
       
       #print these messages again to be at the end of the logfile
       if (dropped_cols != "") {
