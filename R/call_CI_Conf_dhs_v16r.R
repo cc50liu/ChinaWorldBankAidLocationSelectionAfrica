@@ -6,6 +6,8 @@ library(causalimages)
 library(dplyr)
 library(tensorflow)
 
+tf$sqrt(1.)
+
 rm(list=ls())
 setwd("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb")
 args <- commandArgs(trailingOnly = TRUE)
@@ -52,10 +54,13 @@ var_labels <- c("Wealth 2017-2019 (est)","Nighlights (t-3,log)","Pop Density (t-
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                 "Landsat 5 & 7", "Landsat 5,7,& 8")
 
+
+
+
 acquireImageRepFromDisk <- function(keys,training = F){
   imageHeight = 224  # 30m/pixel
   imageWidth = 224
-  NBANDS = 5
+  NBANDS = 1
   #will use bands BGR,NIR,SWIR1
   #specific layers will depend on year aid started; 
   #images have these years in these bands:
@@ -79,10 +84,27 @@ acquireImageRepFromDisk <- function(keys,training = F){
   # iterate over keys:
   # -- images are referenced to keys
   # -- keys are referenced to units (to allow for duplicate images uses)
+  keys <- "./data/dhs_tifs/south_africa_2016/00738.tif2007"
+  
   array_ <- sapply(keys,function(key_){
     #comment out to test 
     #key_ = "./data/dhs_tifs/angola_2006/00000.tifNA"
     #key_ = "./data/dhs_tifs/angola_2006/00000.tif2001"
+    
+    #key_ = "./data/dhs_tifs/namibia_2000/00195.tif2007"
+    key_ <- "./data/dhs_tifs/south_africa_2016/00738.tif2007"
+    # lat      lon
+    # 1 -34.05371 18.64091
+    
+    # treat_file <- "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data/dhs_tifs/zimbabwe_1999/00024.tif"
+    
+    dhs_df %>% 
+      filter(image_file=="./data/dhs_tifs/south_africa_2016/00738.tif") %>% 
+      select(dhs_id,lat,lon)
+    
+    dhs_df %>% 
+      filter(image_file=="./data/dhs_tifs/namibia_2000/00195.tif") %>% 
+      select(dhs_id,lat,lon)
 
     min_oda_year <- sub(".*\\.tif(.*)", "\\1", key_)
     image_file <- sub("(.*\\.tif).*", "\\1", key_)
@@ -114,24 +136,31 @@ acquireImageRepFromDisk <- function(keys,training = F){
     # iterate over all image bands
     for(i in 1:NBANDS) {
       #uncomment to test
-      #i <- 1
+      i <- 1
       band_ <- bands_to_select[i]
       im <- raster::raster(image_file,
                         bands=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
+      
+      
+      
+      #image2(raster::as.matrix(im))
       #rescale for RGB printing
-      im_rescaled <- raster::as.matrix(im) * 255
+      #im_rescaled <- raster::as.matrix(im) * 255
 
       # place the image in the correct place in the array
-      array_shell[,,,i] <- im_rescaled
+      array_shell[,,,i] <- raster::as.matrix(im)
     }
     return( array_shell )
   },
-  simplify="array")  #using simplify = "array" combines images slices together
+  simplify="array") #using simplify = "array" combines images slices together
 
+  image2(raster::as.matrix(im))
   # convert images to tensorflow array for further processing
   array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float32),0L)
+  image2(as.array(array_)[,,1,1])
   array_ <- tensorflow::tf$transpose(array_,c(3L,0L,1L,2L))
+  image2(as.array(array_)[1,,,1])
   return( array_ )
 }
 
