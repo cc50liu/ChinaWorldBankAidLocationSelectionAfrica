@@ -364,7 +364,7 @@ if (treat_count < 100) {
       "landsat578"                 =input_df$landsat578                   #pre-treat image 
     ))
     
-    conf_matrix <- cbind(conf_matrix,country_matrix)
+    conf_matrix <- cbind(conf0_matrix,country_matrix)
 
     #remove any columns that have 0 standard deviation before passing to function
     before_cols <-  colnames(conf_matrix)
