@@ -17,7 +17,7 @@ iterations <- as.integer(args[3])
 
 #uncomment to test
 #fund_sect_param <- "both_140"
-# fund_sect_param <- "wb_140"
+# fund_sect_param <- "wb_110"
 # fund_sect_param <- "ch_140"
 # run <- "v1long"
 # iterations <- 1000
@@ -33,7 +33,9 @@ dhs_confounders_df <- read.csv("./data/interim/dhs_confounders.csv") %>%
   select(-year)  #remove survey year column that could be confused with oda year
 
 dhs_t_df <- read.csv("./data/interim/dhs_treat_control_long.csv") %>% 
-  filter(sector==sector_param & funder==funder_param)
+  filter(sector==sector_param & funder==funder_param & 
+           dhs_id %in% dhs_confounders_df$dhs_id) 
+           #exclude 5 DHS points where confounder data not available 
 
 dhs_iso3_df <- dhs_confounders_df %>% 
   distinct(dhs_id,iso3)
@@ -47,7 +49,9 @@ funder_sector_iso3 <- dhs_confounders_df %>%
 dhs_c_df <- read.csv("./data/interim/dhs_treat_control_long.csv") %>% 
   filter(sector==sector_param & funder=="control") %>% 
   inner_join(dhs_iso3_df,by="dhs_id") %>% 
-  filter(iso3 %in% funder_sector_iso3$iso3)
+  filter(iso3 %in% funder_sector_iso3$iso3 & 
+         dhs_id %in% dhs_confounders_df$dhs_id) 
+         #exclude 5 DHS points where confounder data not available )
     
 
 #define variable order and names for boxplots and dropped cols variables
@@ -142,7 +146,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
 ################################################################################
 treat_year_props <- dhs_t_df %>%
   group_by(image_group,start_year,max_end_year) %>%
-  summarize(count = n()) %>%
+  summarize(count = n(), .groups = "drop") %>%
   ungroup() %>%
   group_by(image_group) %>% 
   mutate(image_group_count= sum(count)) %>% 
@@ -315,24 +319,6 @@ if (treat_count < 100) {
                                         start_year - 1))
     ) %>% ungroup()  
   
-  #spot checks to verify results
-  # obs_year_df %>%
-  #   filter(log_trans_proj_cum_n > 0 & start_year==2013) %>%
-  #   select(dhs_id,start_year,log_trans_proj_cum_n,log_trans_proj_cum_n_2012)
-  # 
-  # obs_year_df %>% 
-  #   filter(log_3yr_pre_conflict_deaths > 0 & start_year==2007) %>% 
-  #   select(dhs_id,start_year,log_3yr_pre_conflict_deaths,log_deaths2004_2006) 
-  # 
-  # obs_year_df %>% 
-  #   filter(dhs_id==48842) %>% 
-  #   select(dhs_id,start_year,leader_birthplace,starts_with("leader")) 
-  # 
-  # obs_year_df %>% 
-  #   filter(dhs_id==48842) %>% 
-  #   select(dhs_id,start_year,log_avg_pop_dens,starts_with("log_avg_pop_dens")) 
-  
-  
   #join to country-level parameters, which are year specific
   country_confounders_df <- read.csv("./data/interim/country_confounders.csv") %>% 
     select(-country) %>% 
@@ -352,8 +338,6 @@ if (treat_count < 100) {
            log_gdp_per_cap_USD2015,country_gini,polity2,landsat57,landsat578)  
   write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
   
-
-     
   if (nrow(input_df[!complete.cases(input_df),]) > 0) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                  run,"_",fund_sect_param,".csv"))
