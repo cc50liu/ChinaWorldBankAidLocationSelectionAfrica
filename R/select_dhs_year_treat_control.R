@@ -320,4 +320,76 @@ dhs_treat_control_long <- rbind(all_sectors_w_both,control_points)
 write.csv(dhs_treat_control_long,"./data/interim/dhs_treat_control_long.csv",row.names=FALSE)
 #dhs_treat_control_long <- read.csv("./data/interim/dhs_treat_control_long.csv")
 
+# dhs_treat_control_long %>% 
+#   group_by(funder,sector) %>% 
+#   count() %>% 
+#   arrange(n) %>% 
+#   print(n=65)
 
+# funder  sector     n
+# <chr>    <int> <int>
+#   1 both       230     2
+# 2 ch         998     2
+# 3 ch         410     3
+# 4 ch         530     3
+# 5 ch         330    31
+# 6 ch         130    44
+# 7 both       110    47
+# 8 both       220    49
+# 9 both       160    53
+# 10 ch         920    58
+# 11 both       140    70
+# 12 both       310    82
+# 13 ch         420    93
+# 14 ch         600    93
+# 15 ch         430   125
+# 16 ch         520   128
+# 17 ch         320   145
+# 18 both       210   208
+# 19 both       120   225
+# 20 ch         700   239
+# 21 wb         330   359
+# 22 ch         140   366
+# 23 wb         410   543
+# 24 ch         230   565
+# 25 both       150   585
+# 26 ch         310   703
+# 27 ch         220   711
+# 28 ch         160   746
+# 29 ch         210  1320
+# 30 wb         220  1392
+# 31 wb         240  1425
+# 32 ch         110  1476
+# 33 ch         150  1670
+# 34 wb         320  2219
+# 35 wb         310  3798
+# 36 wb         110  3964
+# 37 wb         230  3969
+# 38 wb         120  4385
+# 39 ch         120  5097
+# 40 wb         160  5542
+# 41 wb         140  6426
+# 42 wb         210  8356
+# 43 wb         150 12327
+# 44 control    150 48364
+# 45 control    210 50732
+# 46 control    120 51869
+# 47 control    140 53085
+# 48 control    160 53480
+# 49 control    110 54769
+# 50 control    230 55099
+# 51 control    310 55401
+# 52 control    320 57257
+# 53 control    220 57366
+# 54 control    240 58035
+# 55 control    410 58914
+# 56 control    330 59070
+# 57 control    700 59221
+# 58 control    520 59332
+# 59 control    430 59335
+# 60 control    420 59367
+# 61 control    600 59367
+# 62 control    920 59402
+# 63 control    130 59416
+# 64 control    530 59457
+# 65 control    998 59458

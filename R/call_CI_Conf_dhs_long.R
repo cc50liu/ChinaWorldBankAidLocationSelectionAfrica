@@ -351,12 +351,16 @@ if (treat_count < 100) {
            log_dist_km_to_gems,log_dist_km_to_dia,log_dist_km_to_petro,
            log_gdp_per_cap_USD2015,country_gini,polity2,landsat57,landsat578)  
   write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
+  
+
      
   if (nrow(input_df[!complete.cases(input_df),]) > 0) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                  run,"_",fund_sect_param,".csv"))
   } else {
-    conf_matrix <- as.matrix(data.frame(
+    country_matrix <- model.matrix(~ iso3 - 1, input_df)
+    
+    conf0_matrix <- as.matrix(data.frame(
       "start_year"                 =input_df$start_year,
       "start_year_squared"         =input_df$start_year^2,
       "log_avg_nl_pre_oda"         =input_df$log_avg_nl_pre_oda,          #scene level
@@ -375,6 +379,9 @@ if (treat_count < 100) {
       "landsat57"                  =input_df$landsat57,                   #pre-treat image
       "landsat578"                 =input_df$landsat578                   #pre-treat image 
     ))
+    
+    conf_matrix <- cbind(conf_matrix,country_matrix)
+
     #remove any columns that have 0 standard deviation before passing to function
     before_cols <-  colnames(conf_matrix)
     conf_matrix <- conf_matrix[,which(apply(conf_matrix,2,sd)>0)] 
