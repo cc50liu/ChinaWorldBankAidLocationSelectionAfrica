@@ -1,6 +1,6 @@
 rem To run from windows command line:
 rem C:\Documents(Local)\MastersCSS\Thesis\ThesisCodeData\eoml_ch_wb\results\no_trans_death
-rem ..\..\code\slurm\combine_results_png_pdf.bat png_test . 
+rem ..\..\code\slurm\combine_results_png_pdf.bat no_trans_death . 
 
 rem adjust runName and resultsDirectory before run
 @echo off

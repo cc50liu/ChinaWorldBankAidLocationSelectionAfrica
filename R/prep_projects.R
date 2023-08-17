@@ -6,9 +6,9 @@ library(dplyr)
 library(sf)
 
 rm(list=ls())
-########################################################################
-####  Get list of Africa ISO country codes                          ####
-########################################################################
+################################################################################
+# Get list of Africa ISO country codes                          
+################################################################################
 africa_isos_df <- read.csv("./data/all.csv",na.strings="") %>%
   #use na.strings so NA of Namibia isn't interpreted as not available
  filter(region=="Africa") %>%
@@ -49,9 +49,7 @@ wb_proj_ancillary <- read.csv("./data/AiddataWB1.4.2/projects_ancillary.csv") %>
 #narrow to projects in Africa and study context
 wb_africa_oda_p4_df <- semi_join(wb_geocoded, wb_proj_ancillary, by=c("project_id"="PROJECT.ID")) %>%
   filter(transactions_start_year > 2000 )
-
-#do not limit by precision here, to be able to include these in desc stats
-#           precision_code <=3)  # 1=exact, 2=up to 25km, 3=adm2
+#do not yet limit by precision or end date here; will do so later
 
 #remove the objects that were used to construct wb_africa_oda_p4_df
 rm(wb_proj)
@@ -386,9 +384,9 @@ write.csv(ch_sect_group_df,"./data/interim/ch_africa_oda_sector_group.csv",row.n
 #ch_sect_group_df <- read.csv("./data/interim/ch_africa_oda_sector_group.csv")
 
 
-# ######################################
-# # Create a single dataset with projects from both funders
-# ######################################
+################################################################################
+# Create a dataset with projects from both funders, exclude projects end > 2016
+################################################################################
 #identify columns in both datasets
 intersecting_columns <- intersect(names(wb_sect_group_df), 
           names(ch_sect_group_df))
@@ -401,10 +399,66 @@ oda_sect_group_df <- bind_rows(ch_sect_group_df %>%
                                wb_sect_group_df %>% 
                                  select(all_of(intersecting_columns)) %>% 
                                  mutate(funder="WB"),
-                               )
+                               ) 
 
-write.csv(oda_sect_group_df,"./data/interim/africa_oda_sector_group.csv",row.names = FALSE)
-#oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
+# oda_sect_group_df %>% 
+#   mutate(isna_txn_end_year=if_else(transactions_end_year=="",TRUE,FALSE),
+#          isna_end_actual_isodate=if_else(end_actual_isodate=="",TRUE,FALSE)) %>% 
+#   group_by(status,isna_txn_end_year,isna_end_actual_isodate) %>% 
+#   count()
+# status         isna_txn_end_year isna_end_actual_isodate     n
+# <chr>          <lgl>             <lgl>                   <int>
+# 1 Completion     FALSE             FALSE                   14905
+# 2 Completion     FALSE             TRUE                     3776
+# 3 Implementation FALSE             FALSE                   10507
+# 4 Implementation FALSE             TRUE                     2482
+
+# oda_sect_group_df %>% 
+#   filter(funder=="WB") %>% 
+#   group_by(status,transactions_start_year,transactions_end_year,end_actual_isodate) %>% 
+#   rename(t_start=transactions_start_year,
+#          t_end=transactions_end_year,
+#          end_act=end_actual_isodate) %>% 
+#   count() %>% 
+#   print(n=50)
+
+
+################################################################################
+# Impute missing end years for projects, based on median length of projects by funder/sector
+# transactions_end_year is not a reliable source (= transactions_start_year for CH)
+#
+# Both CH and WB datasets were published in 2017: 
+#     If status=Completed assume 2016 end if imputed end year is later
+#
+# Impute end dates even for Implemenation status projects, due to data collection.
+#   official completion info may not be available
+################################################################################
+oda_sect_group_end_df <- oda_sect_group_df %>% 
+  mutate(end_year=as.integer(sub("^(\\d{4})-.*","\\1",end_actual_isodate))) %>% 
+  group_by(funder, ad_sector_codes) %>% 
+  mutate(all_na_end_years = all(is.na(end_year)),
+         median_proj_years = ifelse(all_na_end_years,1,
+                                    median(end_year - as.numeric(transactions_start_year), na.rm=TRUE)),
+         imputed_end_year = as.integer(transactions_start_year + median_proj_years),
+         imputed_end_year = if_else((status=="Completion" & imputed_end_year > 2016),
+                                    2016,imputed_end_year),
+         end_year_imputed = if_else(is.na(end_year),TRUE,FALSE),
+         end_year = if_else(end_year_imputed,imputed_end_year,end_year)) %>% 
+  select(-median_proj_years, -imputed_end_year, -all_na_end_years) %>% 
+  ungroup()
+
+################################################################################
+# Exclude projects with end year > 2016 (no IWI estimates available after then)
+################################################################################
+#write them to a file first 
+oda_sect_group_end_df %>% 
+  filter(end_year > 2016) %>% 
+  write.csv("./data/interim/oda_excluded_end_after_2016.csv")
+
+#write file for use in further analysis
+oda_sect_group_end_df %>% 
+  filter(end_year <= 2016) %>% 
+write.csv("./data/interim/africa_oda_sector_group_end.csv",row.names = FALSE)
 
 #write the sector codes and names to a csv file for later use
 oda_sect_group_df %>% 

@@ -344,7 +344,7 @@ for (i in 1:length(output)) {
 }
 
 write.csv(dhs_sect_prec_df,"./data/interim/dhs_treat_control_sect_prec_year.csv",row.names=FALSE)
-write.csv(dhs_sect_df,"./data/interim/dhs_treat_control_sector_year.csv",row.names=FALSE)
+write.csv(dhs_sect_df,"./data/interim/dhs_treat_control_sector_year_collapse_time.csv",row.names=FALSE)
 
 
 

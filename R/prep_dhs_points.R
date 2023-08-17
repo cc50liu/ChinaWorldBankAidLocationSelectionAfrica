@@ -90,11 +90,11 @@ dhs_tc_est_df <- left_join(dhs_t_c_df,
          iwi_2005_2007_est=y_5,
          iwi_2008_2010_est=y_6,
          iwi_2011_2013_est=y_7,
-         iwi_2014_2013_est=y_8,
+         iwi_2014_2016_est=y_8,
          iwi_2017_2019_est=y_9
   )  %>% 
-  filter(!is.na(iwi_2017_2019_est)) %>% 
-  #remove rows that don't have the post-project wealth estimate we need
+  #remove rows that don't have the post-project wealth estimates we need
+  filter(!rowSums(across(starts_with("iwi"),is.na)) > 0) %>% 
   mutate(across(starts_with("iwi_"),~ . * 100))
 
 #verify that wealth estimate consistent across duplicate lat/lon points
@@ -111,6 +111,4 @@ dhs_tc_est_df <- dhs_tc_est_df %>%
   slice_head()
 
 write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
-
-
-
+#dhs_tc_est_df <- read.csv("./data/interim/dhs_est_iwi.csv")
