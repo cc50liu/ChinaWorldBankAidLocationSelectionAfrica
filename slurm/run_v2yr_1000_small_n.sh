@@ -34,9 +34,6 @@ submit_and_wait small_n_cl_sector_dhs_long.slurm ch_220 v2yr 1000
 # Energy Generation and Supply
 submit_and_wait small_n_cl_sector_dhs_long.slurm ch_230 v2yr 1000
 
-# Banking and Financial Services
-submit_and_wait small_n_cl_sector_dhs_long.slurm wb_240 v2yr 1000
-
 # Sector Group: Production
 # Agriculture, Forestry and Fishing
 submit_and_wait small_n_cl_sector_dhs_long.slurm ch_310 v2yr 1000
