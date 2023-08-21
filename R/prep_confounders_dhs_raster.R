@@ -170,7 +170,7 @@ log_nl_density <-  dhs_log_df %>%
   tidyr::pivot_longer(cols = starts_with("log_avg_nl_"), names_to = "log_avg_nl_year", values_to = "density") %>%
   ggplot(aes(density, color=log_avg_nl_year)) +
   geom_density() +
-  labs(x="Nightlights (avg, log)", y="Density per DHS cluster",
+  labs(x="Nightlights (avg, log)", y="Density across DHS clusters",
        title="Average nightlights (log) across DHS clusters",
        color="Years") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4}_\\d{4})$", "\\1", x)) +

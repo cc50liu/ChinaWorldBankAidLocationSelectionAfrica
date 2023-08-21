@@ -7,8 +7,8 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-#run_version <-"no_trans_death"
-#run_directory <- "./results/no_trans_death"
+run_version <-"v3ongoing"
+run_directory <- "./results/v3ongoing"
 
 #filename_pattern <- paste0("ICA_",run_version,"_(wb|ch|both)_\\d{3}.csv")
 filename_pattern <- paste0("ICA_(wb|ch|both)_\\d{3}_",run_version,".*.csv")
@@ -68,38 +68,21 @@ outcome_sector_df <- outcome_df %>%
 write.table(outcome_sector_df,paste0(run_directory,"/outcome_",run_version,".csv"),
           sep=";",dec=".",row.names=FALSE)
 
-# var_order <- c("log_avg_nl_pre_oda","log_avg_pop_dens",
-#                "log_avg_min_to_city",
-#                "log_dist_km_to_gold","log_dist_km_to_gems",        
-#                "log_dist_km_to_dia","log_dist_km_to_petro", 
-#                "leader_birthplace","log_trans_proj_cum_n",
-#                "log_3yr_pre_conflict_deaths",
-#                "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-#                "landsat578")
-# var_labels <- c("Nightlights (t-3,log)","Pop Density (t-1,log)",
-#                 "Minutes to City (2000,log)","Dist to Gold (km,log)",
-#                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-#                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
-#                 "Conflict deaths (t-1,log)",
-#                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-#                 "Landsat 5 & 7", "Landsat 5,7,& 8")
-
-#remove "log_trans_proj_cum_n"/"Prior Transport Projs", and
-#   "log_3yr_pre_conflict_deaths" /  "Conflict deaths (t-1,log)",
 var_order <- c("log_avg_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city",
-               "log_dist_km_to_gold","log_dist_km_to_gems",        
-               "log_dist_km_to_dia","log_dist_km_to_petro", 
-               "leader_birthplace",
+               "log_dist_km_to_gold","log_dist_km_to_gems",
+               "log_dist_km_to_dia","log_dist_km_to_petro",
+               "leader_birthplace","log_trans_proj_cum_n",
+               "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
                "landsat578")
 var_labels <- c("Nightlights (t-3,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-1)",
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
+                "Conflict deaths (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                 "Landsat 5 & 7", "Landsat 5,7,& 8")
-
 
 
 #tabular confounding variables by sector
