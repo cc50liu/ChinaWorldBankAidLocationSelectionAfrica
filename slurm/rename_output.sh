@@ -1,6 +1,6 @@
 #!/bin/bash
-
-cd /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/results/no_trans_death/
+# cd to the specific results directory and then submit this script as 
+# sh ../../ChinaWorldBankAidLocationSelectionAfrica/slurm/rename_output.sh
 # Loop through each Causal Salience Map in the directory
 for file in CSM_KW3_AvePool1_Tag*; do
     # Extract the part after "Tag"
