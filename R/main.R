@@ -4,7 +4,43 @@
 # I ran most of these manually and haven't tested running them automated through here
 
 ##############################################################################
-# Basic Data preparation
+# Run:  shallow_collapse
+##############################################################################
+#Basic data prep
+source("./code/R/prep_projects_end_no_impute.R", local=TRUE)
+source("./code/R/prep_dhs_points.R", local=TRUE)
+#Determine treatments/controls
+source("./code/R/select_dhs_year_treat_control_collapse_time_end.R", local=TRUE)
+#writes a long format dhs_treat_control_collaps_end_dates.csv file 
+# used in call_CI_Conf_dhs_shallow_collapse.R
+
+#Prepare Confounder Data for each dhs point/scene
+source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
+#considate all confounder data in a wide format, one row per dhs point
+source("./code/R/consolidate_confounders_wide_dhs.R", local=TRUE)
+
+# Call Causal Image Confounding Analysis, consolidate output files
+source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
+#shell script to submit slurm scripts every minute:  slurm/run_shallow_collapse.sh
+# which calls call_shallow_collapse.slurm
+
+#after runs complete, create a directory below /results for the run and move output files there
+#run sh rename_output.sh on server to rename output files for consolidation
+
+#copy files to a results directory on laptop
+#run script to convert png maps to pdfs and then consolidate into single pdf file
+#combine_results_png_pdf.bat
+
+#create separate files to compare tabular and logistic regression for each funder/sector
+source("./code/R/consolidate_CI_output.R", local=TRUE)
+
+
+##############################################################################
+# Run: others
 ##############################################################################
 source("./code/R/prep_projects.R", local=TRUE)
 
@@ -36,6 +72,8 @@ source("./code/R/call_CI_Conf_dhs_long.R", local=TRUE)
 
 #I have shell scripts that submit the slurm scripts for all funder/sector combinations
 # every 10 minutes
+
+#on server, create a directory below results for the run and move files there
 
 #on server, reorder names of output files from CausalImages function
 #sh rename_output.sh
