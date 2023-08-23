@@ -360,7 +360,7 @@ if (treat_count < 100) {
       long = input_df$lon,
       lat = input_df$lat,
       #concatenate the image file location and oda start year into a single keys parameter
-      keys = paste0(input_df$image_file,input_df$min_start_year), 
+      imageKeysOfUnits = paste0(input_df$image_file,input_df$min_start_year), 
       acquireImageFxn = acquireImageRepFromDisk,
       samplingType = "balancedTrain",
       nSGD = iterations,
