@@ -9,7 +9,7 @@ FUNDER_SECTOR=$1
 RUN_NAME=$2
 ITERATIONS=$3
 
-apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs_shallow_collapse_randomEmbeds.R "$FUNDER_SECTOR" "$RUN_NAME" "$ITERATIONS" 
+apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs_collapse_randomEmbeds.R "$FUNDER_SECTOR" "$RUN_NAME" "$ITERATIONS" 
 
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
