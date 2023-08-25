@@ -34,7 +34,7 @@ funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_param)
 ######################
 # Process nightlights 
 ######################
-nl_df <- read.csv("./data/per_cap_nl_dhs_WorldPop.csv") %>%  
+nl_df <- read.csv("./data/GEE/per_cap_nl_dhs_WorldPop.csv") %>%  
   #add 1 to the three points that have 0 pop_counts
   mutate(across(starts_with("pop_count"), ~ ifelse(. == 0, 1, .))) 
 
@@ -378,7 +378,7 @@ if (treat_count < 100) {
       samplingType = "balancedTrain",
       nSGD = iterations,
       nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
-	  modelClass = "randomizedEmbeds",
+	    modelClass = "randomizedEmbeds",
       nBoot=50L,
       nFilters = 50L,
       dropoutRate = 0.1, 

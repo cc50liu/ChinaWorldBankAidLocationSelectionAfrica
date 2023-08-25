@@ -34,7 +34,7 @@ funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_param)
 ######################
 # Process nightlights 
 ######################
-nl_df <- read.csv("./data/per_cap_nl_dhs_WorldPop.csv") %>%  
+nl_df <- read.csv("./data/GEE/per_cap_nl_dhs_WorldPop.csv") %>%  
   #add 1 to the three points that have 0 pop_counts
   mutate(across(starts_with("pop_count"), ~ ifelse(. == 0, 1, .))) 
 
