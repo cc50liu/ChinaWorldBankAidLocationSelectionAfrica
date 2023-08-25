@@ -379,6 +379,7 @@ if (treat_count < 100) {
       nSGD = iterations,
       nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
       nFilters = 50L,
+      modelClass = "cnn",
       dropoutRate = 0.1, 
       figuresPath = "./results/", # figures saved here
       plotBands=c(3,2,1),  #red, green, blue

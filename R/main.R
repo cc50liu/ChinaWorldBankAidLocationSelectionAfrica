@@ -4,6 +4,19 @@
 # I ran most of these manually and haven't tested running them automated through here
 
 ##############################################################################
+# Download images and per-capita nightlights from Google Earth Engine
+##############################################################################
+#download images over all DHS points, for a 30-year period using a python
+# jupyter notebook:
+# ./code/python/0_download_images.ipynb
+#           uses ./code/python/gee_exporter.py
+#                ./code/python/satelitte_sampling.py
+
+#download csv file with per capita nightlight info over points used in this 
+#study, from 2001-2013
+#./code/python/0_download_percapita_nl_WorldPop.ipynb
+
+##############################################################################
 # Run:  shallow_collapse
 ##############################################################################
 #Basic data prep
@@ -29,7 +42,7 @@ source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
 # which calls call_shallow_collapse.slurm
 
 #after runs complete, create a directory below /results for the run and move output files there
-#run sh rename_output.sh on server to rename output files for consolidation
+#run sh slurm/rename_output.sh on server to rename output files for consolidation
 
 #copy files to a results directory on laptop
 #run script to convert png maps to pdfs and then consolidate into single pdf file
