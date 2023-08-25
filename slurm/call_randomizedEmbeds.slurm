@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -A SNIC2022-3-38 -p alvis      	#project
 #SBATCH -N 1 --gpus-per-node=A40:1      # 1 node on A40
-#SBATCH -t 0-01:0:00                  	#max walltime job should run - 1 hour
+#SBATCH -t 0-05:00:00                  	#max walltime job should run - 5 hours
 #SBATCH -o "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/logs/%j.out"
 
 start_time=$(date +%s)
