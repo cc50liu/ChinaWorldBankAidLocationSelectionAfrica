@@ -19,14 +19,108 @@ dhs_loan_transp_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>%
 #get iwi estimate and all other attributes here
 dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi.csv")
 
-#join them all into a consolidated df
+################################
+# Process per-capita nightlights 
+################################
+dhs_nl_df <- read.csv("./data/GEE/per_cap_nl_dhs_WorldPop.csv") %>%  
+  #exclude three points with 0 pop_counts, so they don't show high per capita nightlights 
+  filter(!if_any(starts_with("pop_count"), ~ . == 0))
+
+#initialize pc_dhs_nl_df and then loop over it, calculating per capita nightlights each year
+pc_dhs_nl_df <- dhs_nl_df
+for (year in 2000:2013) {
+  pc_dhs_nl_df <- pc_dhs_nl_df %>% 
+    mutate(!!paste0("pc_nl_",year) := get(paste0("nl",year)) / get(paste0("pop_count",year)))
+}
+
+#create logged variables
+pc_nl_log_df <- pc_dhs_nl_df %>% 
+  mutate(
+    across(starts_with("pc_nl_"), ~ log(. + 1), .names = "log_{.col}")
+  )
+
+#since the data is highly right skewed, trim it at the 99th percentile
+pc_nl_log_trim_df <- pc_nl_log_df 
+for (year in 2000:2013) {
+  #uncomment to test
+  #year <- 2000
+  
+  log_col <- paste0("log_pc_nl_",year)
+  q99 <- quantile(pc_nl_log_df[[log_col]],.99)
+  
+  pc_nl_log_trim_df <- pc_nl_log_trim_df %>% 
+    mutate(!!sym(log_col) := ifelse(!!sym(log_col) > q99,q99,
+                                    !!sym(log_col)))
+}
+
+#remove the variables used to construct this
+rm(dhs_nl_df,pc_dhs_nl_df)
+
+# pc_nl_log_df %>% 
+#   summarise(across(starts_with("log_pc_nl"), ~ max(.)))
+# pc_nl_log_trim_df %>% 
+#   summarise(across(starts_with("log_pc_nl"), ~ max(.)))
+
+############################################
+# join all into a consolidated df
+############################################
 dhs_confounders_df <- dhs_iwi_df %>% 
   inner_join(dhs_vector_df, by="dhs_id") %>% 
   inner_join(dhs_raster_df, by="dhs_id") %>% 
   inner_join(dhs_natl_res_df, by="dhs_id") %>%  
-  inner_join(dhs_loan_transp_df, by="dhs_id") 
+  inner_join(dhs_loan_transp_df, by="dhs_id") %>% 
+  inner_join(pc_nl_log_trim_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
+              
 
 write.csv(dhs_confounders_df,"./data/interim/dhs_confounders.csv",row.names=FALSE)
 
+############################################
+# Descriptive stats for per capita nightlights
+############################################
+#plot the distribution of nightlights       
+pc_nl_density <- pc_nl_log_df %>% 
+  tidyr::pivot_longer(cols = starts_with("pc_nl_"), names_to = "pc_nl_year", values_to = "density") %>%
+  ggplot(aes(density, color=pc_nl_year)) +
+  geom_density() +
+  labs(x="Nightlights per capita", y="Density across DHS clusters",
+       title="Nightlights per capita across DHS Clusters",
+       color="Years") +
+  scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
+  theme_bw()
 
+pc_nl_density
 
+ggsave("./figures/nl_pc_density.png",pc_nl_density, width=6, height = 4, dpi=300,
+       bg="white", units="in")
+
+#density plot of log nightlights
+log_pc_nl_density <-  pc_nl_log_df %>% 
+  tidyr::pivot_longer(cols = starts_with("log_pc_nl_"), names_to = "log_pc_nl_year", values_to = "density") %>%
+  ggplot(aes(density, color=log_pc_nl_year)) +
+  geom_density() +
+  labs(x="Nightlights per capita (log)", y="Density across DHS clusters",
+       title="Nightlights per capita (log) across DHS clusters",
+       color="Years") +
+  scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
+  theme_bw()
+
+log_pc_nl_density
+ggsave("./figures/nl_pc_log_density.png",log_pc_nl_density, width=6, height = 4, dpi=300,
+       bg="white", units="in")
+
+#density plot of trimmed log nightlights
+log_pc_nl_trim_density <-  pc_nl_log_trim_df %>% 
+  tidyr::pivot_longer(cols = starts_with("log_pc_nl_"), names_to = "log_pc_nl_year", values_to = "density") %>%
+  ggplot(aes(density, color=log_pc_nl_year)) +
+  geom_density() +
+  labs(x="Nightlights per capita (log, trimmed at 99th percentile)", y="Density across DHS clusters",
+       title="Nightlights per capita (log, trimmed at 99th percentile) across DHS clusters",
+       color="Years") +
+  scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
+  theme_bw()
+
+log_pc_nl_trim_density
+ggsave("./figures/nl_pc_log_trim99_density.png",log_pc_nl_trim_density, width=6, height = 4, dpi=300,
+       bg="white", units="in")
+
+  
