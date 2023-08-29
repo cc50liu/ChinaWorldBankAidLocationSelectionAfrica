@@ -43,6 +43,9 @@ source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
 
 #after runs complete, create a directory below /results for the run and move output files there
 #run sh slurm/rename_output.sh on server to rename output files for consolidation
+#(another option:  slurm/rename_output_sector_groups.sh to group them into Infrastructure, 
+#Interventions, BasicServices, and Other groups)
+
 
 #copy files to a results directory on laptop
 #run script to convert png maps to pdfs and then consolidate into single pdf file
