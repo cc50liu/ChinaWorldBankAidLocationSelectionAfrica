@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH -A NAISS2023-6-205 -p alvis      	#project
+#SBATCH -A NAISS2023-5-321 -p alvis      	#project
 #SBATCH -N 1 --gpus-per-node=A40:1      # 1 node on A40
 #SBATCH -t 0-20:00:00                  	#max walltime job should run - 20 hours
 #SBATCH -o "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/logs/%j.out"
