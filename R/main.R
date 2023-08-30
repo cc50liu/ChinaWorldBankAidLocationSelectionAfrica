@@ -41,15 +41,17 @@ source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
 #shell script to submit slurm scripts every minute:  slurm/run_shallow_collapse.sh
 # which calls call_shallow_collapse.slurm
 
-#after runs complete, create a directory below /results for the run and move output files there
+#run will create a subdirectory named after the run, where all the output files will be
 #run sh slurm/rename_output.sh on server to rename output files for consolidation
 #(another option:  slurm/rename_output_sector_groups.sh to group them into Infrastructure, 
 #Interventions, BasicServices, and Other groups)
 
-
 #copy files to a results directory on laptop
 #run script to convert png maps to pdfs and then consolidate into single pdf file
 #combine_results_png_pdf.bat
+#updated to create separate files by funder and subdirectory:
+
+#can also combine only treatment propensity charts using combine_results_treatprop.bat
 
 #create separate files to compare tabular and logistic regression for each funder/sector
 source("./code/R/consolidate_CI_output_v2.R", local=TRUE)
