@@ -19,13 +19,15 @@ args <- commandArgs(trailingOnly = TRUE)
 fund_sect_param <- args[1]
 run <- args[2]
 iterations <- as.integer(args[3])
+time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "both_110"
 #fund_sect_param <- "wb_140"
 #fund_sect_param <- "ch_140"
 #run <- "tfrec_rand_emb"
-#iterations <- 1000
+#iterations <- 2
+#time_approach <- "collapsed"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -214,7 +216,7 @@ if (treat_count < 100) {
   next 
 } else {
   print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-               " Call AnalyzeImageConfounding for ",fund_sect_param,
+               " Processing ",fund_sect_param,
                ", treat n:",treat_count,
                ", control n: ",control_count,
                ", run: ",run,
@@ -336,10 +338,10 @@ if (treat_count < 100) {
        dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3)
     
     ################################################################################
-    # Generate tf_records file for this sector/funder/run, if doesn't already exist 
+    # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
-    tf_rec_filename <- paste0("./data/interim/tfrec_",fund_sect_param,"_",
-                              run,".tfrecord")
+    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                              time_approach,".tfrecord")
 
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -348,7 +350,7 @@ if (treat_count < 100) {
       causalimages::WriteTfRecord(file = tf_rec_filename,
                                   imageKeysOfUnits = paste0(input_df$image_file,
                                                      input_df$min_start_year),
-                                  acquireImageRepFxn = acquireImageRepFromDisk
+                                  acquireImageFxn = acquireImageRepFromDisk
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Finished creating tfrecord file: ",tf_rec_filename))
