@@ -24,10 +24,10 @@ time_approach <- args[4]
 #uncomment to test
 #fund_sect_param <- "both_110"
 #fund_sect_param <- "wb_140"
-#fund_sect_param <- "ch_140"
-# run <- "tfrec_rand_emb"
-# iterations <- 2
-# time_approach <- "collapsed"   #other option: "annual"
+ # fund_sect_param <- "ch_140"
+ # run <- "tfrec_rand_emb"
+ # iterations <- 2
+ # time_approach <- "collapsed"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -373,7 +373,7 @@ if (treat_count < 100) {
       samplingType = "balancedTrain",
       nSGD = iterations,
       nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
-      modelClass = "embeddings",
+      modelClass = "randomizedEmbeds",
 	    nBoot=2L,
       nFilters = 50L,
       figuresPath = results_dir, # figures saved here
@@ -393,6 +393,7 @@ if (treat_count < 100) {
                  ,iterations,".csv"))
     write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_param,"_",run,"_i",
                                iterations,".csv"),row.names = FALSE)
+    
     ############################################################################
     # use output to identify 3 least/most likely locations to receive aid
     ############################################################################   
@@ -695,36 +696,23 @@ if (treat_count < 100) {
       right_join(tab_conf_salience_df, join_by(term==name)) %>% 
       rename(Salience_AIC=value)
     
+    names(tab_conf_compare_df)
+    
     #write to file
     write.csv(tab_conf_compare_df,
               paste0(results_dir,fund_sect_param, "_", run,"_tab_conf_compare.csv"),
               row.names = FALSE)
     
-
     #plot these
-    #determine the limits of the plot
-    max_abs_value <- ceiling(max(c(abs(min(tab_conf_compare_df$ridge_est)),
-                                 abs(max(tab_conf_compare_df$ridge_est)),
-                                 abs(min(tab_conf_compare_df$Salience_AIC)),
-                                 abs(max(tab_conf_compare_df$Salience_AIC))
-                   )))
-        
-    
-    tab_est_images <- tab_conf_compare_df %>% 
-      mutate(term=ifelse(term=="ctyDemocratic_republic_of_congo",
-                         "ctyDR_Congo",term)) %>% 
-      ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
+    tab_est_images <- ggplot(data = tab_conf_compare_df, aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
-      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color) + 
+      ggrepel::geom_text_repel(box.padding = 0.1,max.overlaps=20,color=treat_color) + 
       geom_vline(xintercept=0,color="black") +
       geom_hline(yintercept=0, color="black") +
-      geom_abline(intercept=0, slope=1, linetype="dashed",color="black") +
       labs(title = "Tabular confounder estimates with and without images",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Tabular confounders only: Ridge estimate",
-           y = "Salience with Image Confounding") +   
-      coord_fixed(ratio=1,xlim=c(-1*max_abs_value,max_abs_value),
-                  ylim=c(-1*max_abs_value,max_abs_value)) +
+           y = "Salience with Image Confounding") +      
       theme_bw()
     
     #save
