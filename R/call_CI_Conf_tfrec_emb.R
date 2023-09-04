@@ -1,4 +1,4 @@
-# call_CI_Conf_tfrec_rand_emb.R
+# call_CI_Conf_tfrec_emb.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations. 
@@ -374,8 +374,9 @@ if (treat_count < 100) {
       nSGD = iterations,
       nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
       modelClass = "embeddings",
-	    nBoot=2L,
+	  nBoot=30L,
       nFilters = 50L,
+	  nEmbedDim = 128L,		   
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
