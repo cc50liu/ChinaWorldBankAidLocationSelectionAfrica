@@ -687,11 +687,18 @@ if (treat_count < 100) {
     ##### add SalienceX to df, save, and plot ridge and SalienceX values
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
-    tab_conf_salience_df <- ica_df %>% 
-      select(starts_with("SalienceX."))  %>% 
-      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>% 
-      pivot_longer(cols=everything())
     
+    # tab_conf_salience_df <- ica_df %>% 
+    #   select(starts_with("SalienceX."))  %>% 
+    #   rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>% 
+    #   pivot_longer(cols=everything())
+    
+    conf_cols <- intersect(names(ica_df), names(conf_df))
+    
+    tab_conf_salience_df <- ica_df %>%
+      select(all_of(conf_cols)) %>%
+      pivot_longer(cols = everything())
+
     #join to dataframe with logistic and ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
       right_join(tab_conf_salience_df, join_by(term==name)) %>% 
