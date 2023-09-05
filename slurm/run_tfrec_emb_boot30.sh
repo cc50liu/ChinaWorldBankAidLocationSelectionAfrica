@@ -2,7 +2,7 @@
 
 # Submit slurm scripts every minute
 submit_and_wait() {
-  sbatch "$1" "$2" "$3" "$4"   # Submit the Slurm script with parameters
+  sbatch "$1" "$2" "$3" "$4" "$5"  # Submit the Slurm script with parameters
   sleep 1m     # Sleep for 1 minute
 }
 
