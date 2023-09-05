@@ -688,16 +688,16 @@ if (treat_count < 100) {
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
     
-    # tab_conf_salience_df <- ica_df %>% 
-    #   select(starts_with("SalienceX."))  %>% 
-    #   rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>% 
-    #   pivot_longer(cols=everything())
-    
-    conf_cols <- intersect(names(ica_df), names(conf_df))
-    
     tab_conf_salience_df <- ica_df %>%
-      select(all_of(conf_cols)) %>%
-      pivot_longer(cols = everything())
+      select(starts_with("SalienceX."))  %>%
+      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
+      pivot_longer(cols=everything())
+    
+    # conf_cols <- intersect(names(ica_df), names(conf_df))
+    # 
+    # tab_conf_salience_df <- ica_df %>%
+    #   select(all_of(conf_cols)) %>%
+    #   pivot_longer(cols = everything())
 
     #join to dataframe with logistic and ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
