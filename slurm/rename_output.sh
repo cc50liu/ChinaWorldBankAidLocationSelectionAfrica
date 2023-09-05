@@ -2,7 +2,7 @@
 # cd to the specific results directory and then submit this script as 
 # sh ../../ChinaWorldBankAidLocationSelectionAfrica/slurm/rename_output.sh
 # Loop through each Causal Salience Map in the directory
-for file in CSM_KW3_AvePool1_*; do
+for file in CSM_KW*; do
     # Extract the part after "Tag"
     suffix="${file#*Tag}"
     suffix="${suffix%.pdf}"
@@ -20,7 +20,7 @@ done
 
 
 # Loop through each Propensity Histogram in the directory
-for file in Hist_KW3_AvePool1_*; do
+for file in Hist_KW*; do
     # Extract the part after "Tag"
     suffix="${file#*Tag}"
     suffix="${suffix%.pdf}"

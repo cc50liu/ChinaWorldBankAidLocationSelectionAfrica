@@ -23,10 +23,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "both_110"
-#fund_sect_param <- "wb_140"
+#fund_sect_param <- "wb_230"
 #fund_sect_param <- "ch_140"
-# run <- "tfrec_rand_emb"
-# iterations <- 2
+# run <- "tfrec_emb_boot30"
+# iterations <- 1000
 # time_approach <- "collapsed"   #other option: "annual"
 
 ################################################################################
@@ -374,9 +374,9 @@ if (treat_count < 100) {
       nSGD = iterations,
       nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
       modelClass = "embeddings",
-	  nBoot=30L,
+	    nBoot=30L,
       nFilters = 50L,
-	  nEmbedDim = 128L,		   
+	    nEmbedDim = 128L,		   
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
@@ -386,6 +386,7 @@ if (treat_count < 100) {
     )    
     
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
+    #ica_df <- read.csv(paste0(results_dir,"ICA_wb_230_tfrec_emb_boot30_i1000.csv"))
     output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
