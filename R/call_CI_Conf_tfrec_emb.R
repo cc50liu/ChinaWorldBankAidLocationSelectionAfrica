@@ -2,7 +2,7 @@
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations. 
-#        Collapses time and uses a randomizedEmbeds model class with nBoot=10L
+#        Collapses time and uses a embedded model class with nBoot=30L
 #        Uses per-capital nighlights instead of avg nightlights
 #        Excludes country-level variables other than country
 #        Generates an xy plot comparing salience of tab conf w & w/o images
@@ -335,8 +335,8 @@ if (treat_count < 100) {
     #cleanup unneeded objects in memory before calling function
     rm(year_props, obs_df,
        dhs_c_df,dhs_confounders_df,
-       dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3)
-    
+       dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3)   
+	   
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
@@ -386,7 +386,7 @@ if (treat_count < 100) {
     )    
     
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-    #ica_df <- read.csv("./results/tfrec_emb_boot30/BasicServices/ICA_both_110_tfrec_emb_boot30_i1000.csv")
+
     output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
@@ -454,6 +454,7 @@ if (treat_count < 100) {
     long_input_df <- input_df %>%
       select(treated,all_of(var_order)) %>%
       tidyr::pivot_longer(c(-treated),names_to="variable_name", values_to="value")
+
 	  
     long_most_likely_df <- most_likely_df %>%
       select(treated,rank,all_of(var_order)) %>% 
@@ -693,12 +694,6 @@ if (treat_count < 100) {
       rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
       pivot_longer(cols=everything())
     
-    # conf_cols <- intersect(names(ica_df), names(conf_df))
-    # 
-    # tab_conf_salience_df <- ica_df %>%
-    #   select(all_of(conf_cols)) %>%
-    #   pivot_longer(cols = everything())
-
     #join to dataframe with logistic and ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
       right_join(tab_conf_salience_df, join_by(term==name)) %>% 

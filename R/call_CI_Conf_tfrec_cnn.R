@@ -19,7 +19,7 @@ args <- commandArgs(trailingOnly = TRUE)
 fund_sect_param <- args[1]
 run <- args[2]
 iterations <- as.integer(args[3])
-time_approach <- args[4]						
+time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "both_110"
@@ -38,8 +38,6 @@ results_dir <- paste0("./results/",run,"/")
 if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
-  
-
 sector_param <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
 funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_param)
 
@@ -304,7 +302,7 @@ if (treat_count < 100) {
   } else {
     conf_matrix <- cbind(
       as.matrix(data.frame(
-        "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
+        "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,          #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
@@ -340,11 +338,10 @@ if (treat_count < 100) {
        dhs_c_df,dhs_confounders_df,
        dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3)
     ################################################################################
-    # Generate tf_records file for this sector/funder/run, if doesn't already exist 
+    # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
                               time_approach,".tfrecord")
-
 
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -453,7 +450,7 @@ if (treat_count < 100) {
     # Convert to long format for boxplots
     long_input_df <- input_df %>%
       select(treated,all_of(var_order)) %>%
-      tidyr::pivot_longer(c(-treated),names_to="variable_name", values_to="value") 
+      tidyr::pivot_longer(c(-treated),names_to="variable_name", values_to="value")
 
     long_most_likely_df <- most_likely_df %>%
       select(treated,rank,all_of(var_order)) %>% 
@@ -691,18 +688,16 @@ if (treat_count < 100) {
     ##### add SalienceX to df, save, and plot ridge and SalienceX values
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
-    tab_conf_salience_df <- ica_df %>% 
-      select(starts_with("SalienceX."))  %>% 
-      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>% 
+    tab_conf_salience_df <- ica_df %>%
+      select(starts_with("SalienceX."))  %>%
+      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
       pivot_longer(cols=everything())
     
     #join to dataframe with logistic and ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
       right_join(tab_conf_salience_df, join_by(term==name)) %>% 
       rename(Salience_AIC=value)
-    
-    names(tab_conf_compare_df)
-    
+      
     #write to file
     write.csv(tab_conf_compare_df,
               paste0(results_dir,fund_sect_param, "_", run,"_tab_conf_compare.csv"),
@@ -720,6 +715,21 @@ if (treat_count < 100) {
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=ifelse(term=="ctyDemocratic_republic_of_congo",
                          "ctyDR_Congo",term)) %>% 
+      mutate(term=case_match(term,
+                             "ctyDemocratic_republic_of_congo" ~ "ctyDR_Congo",
+                             "log_pc_nl_pre_oda" ~ "percap_nightlights",
+                             "log_avg_min_to_city" ~ "min_to_city",
+                             "log_avg_pop_dens" ~ "pop_dens",
+                             "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
+                             "log_trans_proj_cum_n" ~ "ch_transp_projs",
+                             "log_dist_km_to_gold" ~ "dist_to_gold",
+                             "log_dist_km_to_gems" ~ "dist_to_gems",
+                             "log_dist_km_to_dia" ~ "dist_to_dia",
+                             "log_dist_km_to_petro" ~ "dist_to_petro",
+                             .default=term
+                             ),
+             term = sub("cty", "", term)
+             ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
       ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color) + 
