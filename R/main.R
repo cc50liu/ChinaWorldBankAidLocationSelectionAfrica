@@ -1,7 +1,37 @@
 # main.R
-# show sequence of scripts called for Image Confounding Analysis of WB and CH
-# aid projects
+# This shows the environment setup and sequence of scripts I ran for the 
+# Image Confounding Analysis of WB and CH aid projects
 # I ran most of these manually and haven't tested running them automated through here
+
+##############################################################################
+# Configure NAISS high performance cluster environment apptainers
+##############################################################################
+#all steps below are from /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/
+#
+# To rebuild the apptainer environment to include updates to the causalimages package:
+# 1. Move current image to a backup name, so the new image can be created:
+#    mv ../images/final_upg_causalimages.sif ../images/final_upg_causalimages.bck
+# 2. Build the new image with Connor's updated software
+#  apptainer build ../images/final_upg_causalimages.sif final_upg_causalimages.def &> final_upg_causalimages.log
+# 3. Review logfile created by previous step to ensure there were no build errors
+#
+# To add additional R packages to the apptainer environment:
+# 1. Edit the final.def file in the recipes directory to include the package in
+#    the line starting with R --slave -e 'install.packages(c("areal"....
+#    (keep them in alphabetical order to avoid duplicates)
+# 2. Move current image to a backup name, so the new image can be created:
+#    mv ../images/final.sif ../images/final.bck
+# 3. Build the new image:
+#     apptainer build ../images/final.sif final.def &> final.log
+# 4. Review logfile created by previous step to ensure there were no build errors
+# 5. Rebuild the final_upg_causalimages.sif using the steps in the first paragraph
+#
+# To create/update the python environment apptainer:
+# 1. Move current image to a backup name, so the new image can be created:
+#    mv ../images/cindy_python.sif ../images/cindy_python.bck
+# 2. Build the new image with any python environment changes:
+#    apptainer build ../images/cindy_python.sif cindy_python.def &> cindy_python.log
+# 3. Review logfile created by previous step to ensure there were no build errors
 
 ##############################################################################
 # Download images and per-capita nightlights from Google Earth Engine
