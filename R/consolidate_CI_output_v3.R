@@ -10,8 +10,8 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-run_version <-"rank_pcnl_sh_co_d1"
-run_directory <- "./results/rank_pcnl_sh_co_d1/"
+run_version <-"tfrec_emb_boot30"
+run_directory <- "./results/tfrec_emb_boot30/"
 
 subdirectories <- c("BasicServices","Infrastructure","Interventions","Other")
 
@@ -90,11 +90,14 @@ process_subdir <-  function(run_dir,sub_dir) {
   ate_plot <- ggplot(outcome_sector_dt,aes(x=tauHat_prop,y=sec_pre_name,color=funder)) +
     geom_pointrange(aes(xmin=tauHat_prop-(tauHat_prop_se*1.96),
                         xmax=tauHat_prop+(tauHat_prop_se*1.96)),
-                    position = position_jitter(height=0.1)) +
+                    position = position_jitter(height=0.2)) +
+    geom_vline(xintercept=0,color="black") +
     scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
                        labels = c("ch" = "China","wb"="World Bank","both"="Both")) +  
     labs(title = "Average Treatment Effect (est) on Wealth by Funder and Sector",
-         subtitle = ifelse(sub_dir=="BasicServices","Basic Services",sub_dir),
+         subtitle = paste0("Sectors:  ",
+                           ifelse(sub_dir=="BasicServices","Basic Services",sub_dir),
+                           "     Run: ",run_version),
          x = "Estimated ATE with 95% confidence intervals",
          y = "",
          color="Funder") +
