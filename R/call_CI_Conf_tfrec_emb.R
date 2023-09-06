@@ -386,7 +386,7 @@ if (treat_count < 100) {
     )    
     
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-    #ica_df <- read.csv(paste0(results_dir,"ICA_wb_230_tfrec_emb_boot30_i1000.csv"))
+    #ica_df <- read.csv("./results/tfrec_emb_boot30/BasicServices/ICA_both_110_tfrec_emb_boot30_i1000.csv")
     output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
@@ -720,8 +720,21 @@ if (treat_count < 100) {
         
     
     tab_est_images <- tab_conf_compare_df %>% 
-      mutate(term=ifelse(term=="ctyDemocratic_republic_of_congo",
-                         "ctyDR_Congo",term)) %>% 
+      mutate(term=case_match(term,
+                             "ctyDemocratic_republic_of_congo" ~ "ctyDR_Congo",
+                             "log_pc_nl_pre_oda" ~ "percap_nightlights",
+                             "log_avg_min_to_city" ~ "min_to_city",
+                             "log_avg_pop_dens" ~ "pop_dens",
+                             "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
+                             "log_trans_proj_cum_n" ~ "ch_transp_projs",
+                             "log_dist_km_to_gold" ~ "dist_to_gold",
+                             "log_dist_km_to_gems" ~ "dist_to_gems",
+                             "log_dist_km_to_dia" ~ "dist_to_dia",
+                             "log_dist_km_to_petro" ~ "dist_to_petro",
+                             .default=term
+                             ),
+             term = sub("cty", "", term)
+             ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
       ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color) + 
