@@ -1,0 +1,14 @@
+. 2023-06-24 15:25:25.305 Changing directory to "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data".
+> 2023-06-24 15:25:25.305 cd "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data" ; echo "WinSCP: this is end-of-file:$?"
+. 2023-06-24 15:25:42.000 Waiting for data timed out, asking user what to do.
+. 2023-06-24 15:25:42.000 Asking user:
+. 2023-06-24 15:25:42.000 **Host is not communicating for 15 seconds.
+. 2023-06-24 15:25:42.000 
+. 2023-06-24 15:25:42.001 Wait for another 15 seconds?** ()
+. 2023-06-24 15:26:42.108 Answer: No
+. 2023-06-24 15:26:42.109 Attempt to close connection due to fatal exception:
+* 2023-06-24 15:26:42.109 **Timeout waiting for server to respond.**
+. 2023-06-24 15:26:42.109 Closing connection.
+. 2023-06-24 15:26:42.109 Sending special code: 1
+* 2023-06-24 15:26:42.650 (ESshFatal) **Timeout waiting for server to respond.**
+* 2023-06-24 15:26:42.650 Error changing directory to '/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data'.

@@ -1,0 +1,38 @@
+In many of the runs, received error just after summarizing statistics, and before the message:
+[1] "Done with image confounding analysis!"
+Causing it to fail to write a PropHist_KW3_AvePool1... file 
+
+Error in if (all(i)) return(x) : missing value where TRUE/FALSE needed
+Calls: AnalyzeImageConfounding ... <Anonymous> -> <Anonymous> -> .local -> .fullFilename
+Execution halted
+
+Runs with the problem:
+  slurm-1158469.out   ch_920,  (this only had one funder) 
+  slurm-1158467.out   ch_600,  (this only had one funder)
+  slurm-1158465.out   ch_520,  (this only had one funder)
+  slurm-1158464.out   ch_430,  (this only had one funder)
+  slurm-1158459.out   wb_310,  (this only had one funder)
+  slurm-1158260.out   wb_140   (this only had one funder)
+  slurm-1158257.out   ch_130,  (this only had one funder)
+  slurm-1157985.out   wb_110,  (succeeded writing wb_110, failed when writing both_110)
+
+Runs that didn't have the problem:
+  slurm-1158470.out - ch_998
+  slurm-1158463.out - ch_420
+  slurm-1158267.out - ch_250 
+  slurm-1158266.out - wb_240
+
+Still running:
+  slurm-1158468.out
+  slurm-1158466.out
+  slurm-1158462.out
+  slurm-1158461.out
+  slurm-1158460.out
+  slurm-1158265.out
+  slurm-1158264.out
+  slurm-1158263.out
+  slurm-1158262.out
+  slurm-1158261.out
+  
+
+to do: beta-like parameters for tabular confounders?

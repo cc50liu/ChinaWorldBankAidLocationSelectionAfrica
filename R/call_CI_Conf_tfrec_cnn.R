@@ -368,7 +368,7 @@ if (treat_count < 100) {
       #concatenate the image file location and oda start year into a single keys parameter
       imageKeysOfUnits = paste0(input_df$image_file,input_df$min_start_year), 
       #acquireImageFxn = acquireImageRepFromDisk,
-	  file = tf_rec_filename,
+	    file = tf_rec_filename,
       samplingType = "balancedTrain",
       nSGD = iterations,
       nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
