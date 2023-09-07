@@ -376,7 +376,7 @@ if (treat_count < 100) {
       file = tf_rec_filename,
       samplingType = "balancedTrain",
       nSGD = iterations,
-      nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
+      nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 9L,
       modelClass = "embeddings",
       nBoot=30L,
       nFilters = 50L,
