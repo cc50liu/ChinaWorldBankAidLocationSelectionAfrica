@@ -36,6 +36,23 @@ for file in Hist_KW*; do
     mv "$file" "$new_filename"
 done
 
+# Loop through each Loss diagram in the directory
+for file in Loss_KW*; do
+    # Extract the part after "Tag"
+    suffix="${file#*Tag}"
+    suffix="${suffix%.pdf}"
+
+
+    # Extract the part before "Tag"
+    prefix="${file%%Tag*}"
+    prefix="${prefix%_}"
+
+
+    # Rename the file, reversing order of the parts
+    new_filename="${suffix}_${prefix}.pdf"
+    mv "$file" "$new_filename"
+done
+
 mkdir Infrastructure
 mkdir Interventions
 mkdir Other
