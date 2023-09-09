@@ -121,8 +121,6 @@ source("./code/R/call_CI_Conf_dhs_long.R", local=TRUE)
 #I have shell scripts that submit the slurm scripts for all funder/sector combinations
 # every 10 minutes
 
-#on server, create a directory below results for the run and move files there
-
 #on server, reorder names of output files from CausalImages function
 #sh rename_output.sh
 
