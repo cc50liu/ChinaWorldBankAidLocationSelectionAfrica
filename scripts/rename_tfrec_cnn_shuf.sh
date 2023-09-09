@@ -2,6 +2,7 @@
 # repair file names for a run I called tfrec_cnn that should have been tfrec_cnn_shuf 
 # (funder/sector both_110 was correct, so I moved it to a "correct" directory while I did this
 # cd ./results/tfrec_cnn_shuf
+# sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_tfrec_cnn_shuf.sh
 # Loop through each Causal Salience Map in the directory
 for file in ./*tfrec_cnn*; do
   # Check if the file exists
