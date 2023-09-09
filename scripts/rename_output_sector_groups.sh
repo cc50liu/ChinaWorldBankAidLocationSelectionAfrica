@@ -1,6 +1,6 @@
 #!/bin/bash
 # cd to the specific results directory and then submit this script as 
-# sh ../../ChinaWorldBankAidLocationSelectionAfrica/slurm/rename_output_sector_groups.sh
+# sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_sector_groups.sh
 # Loop through each Causal Salience Map in the directory
 for file in CSM_KW*; do
     # Extract the part after "Tag"
