@@ -122,7 +122,8 @@ source("./code/R/call_CI_Conf_dhs_long.R", local=TRUE)
 # every 10 minutes
 
 #on server, reorder names of output files from CausalImages function
-#sh rename_output.sh
+#sh rename_output.sh or 
+#sh rename_output_sector_groups.sh
 
 #copy files to a results directory on laptop
 #run script to convert png maps to pdfs and then consolidate into single pdf file
@@ -130,7 +131,7 @@ source("./code/R/call_CI_Conf_dhs_long.R", local=TRUE)
 
 #consolidate csv output for all sectors/funders into a single file
 #create separate files to compare tabular and logistic regression for each funder/sector
-source("./code/R/consolidate_CI_output.R", local=TRUE)
+source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
 
 ##############################################################################
 # Maps, Charts and descriptive statistics 

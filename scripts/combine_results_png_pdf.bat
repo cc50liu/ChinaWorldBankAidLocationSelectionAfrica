@@ -1,6 +1,6 @@
 rem To run from windows command line:
 rem change directory to the results directory, then change run name and funder (wb|ch|both) in command below
-rem ..\..\..\code\slurm\combine_results_png_pdf.bat tfrec_emb_boot30 ch . 
+rem ..\..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_boot30 ch . 
 
 rem adjust runName and resultsDirectory before run
 @echo off

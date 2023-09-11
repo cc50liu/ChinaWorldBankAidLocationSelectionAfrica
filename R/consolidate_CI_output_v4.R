@@ -11,8 +11,8 @@ rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 run_version <- args[1]
 #uncomment to test
-run_version <-"tfrec_emb_boot30"
-run_directory <- "./results/tfrec_emb_boot30/"
+run_version <-"tfrec_cnn_shuf"
+run_directory <- "./results/tfrec_cnn_shuf/"
 
 subdirectories <- c("BasicServices","Infrastructure","Interventions","Other")
 
