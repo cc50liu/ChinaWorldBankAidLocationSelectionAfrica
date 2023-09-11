@@ -612,7 +612,7 @@ if (treat_count < 100) {
                          paste(names(conf_df), collapse = " + "))
     
     #call within a tryCatch block so script will continue even if this fails
-    tryCatch({
+    try({
       treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
       
       #save coeff table to dataframe

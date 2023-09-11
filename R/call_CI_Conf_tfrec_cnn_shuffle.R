@@ -610,8 +610,8 @@ if (treat_count < 100) {
     log_formula <- paste("input_df$treated ~", 
                          paste(names(conf_df), collapse = " + "))
     
-    #call within a tryCatch block so script will continue even if this fails
-    tryCatch({
+    #call within a try block so script will continue even if this fails
+    try({
       treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
       
       #save coeff table to dataframe
@@ -716,7 +716,6 @@ if (treat_count < 100) {
                                    abs(min(tab_conf_compare_df$Salience_AIC)),
                                    abs(max(tab_conf_compare_df$Salience_AIC))
     )))
-    
     
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
