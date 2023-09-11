@@ -601,7 +601,7 @@ if (treat_count < 100) {
                 legend.outside.size = .25
       )
     
-    tmap_save(treat_control_map,paste0(results_dir,fund_sect_param,"_",run,"_map.png"))
+    tmap_save(treat_control_map,paste0(results_dir,fund_sect_param,"_10map_",run,".png"))
     
     ###########################################################################
     #logistical regression for treatment probabilities with tabular confounders
