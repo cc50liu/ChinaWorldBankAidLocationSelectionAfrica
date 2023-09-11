@@ -558,7 +558,7 @@ if (treat_count < 100) {
     least_likely_sf <- sf::st_as_sf(least_likely_df, coords=c("lon","lat"),crs="EPSG:4326")  %>%
       sf::st_transform(crs=sf::st_crs(projection))
 
-###############################################################
+    ###############################################################
     #### Load administrative borders and ISO list excluding islands
     ###############################################################
     africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
@@ -758,6 +758,60 @@ if (treat_count < 100) {
     ggsave(paste0(results_dir,fund_sect_param,"_90xy_tab_conf_images_",run,".pdf"),
            tab_est_images,
            width=6, height = 6, dpi=300,
+           bg="white", units="in")
+    
+    ##############################################################################
+    # x-y plot for model quality measures
+    ##############################################################################
+    ica_eval_df <- ica_df %>% 
+      select(starts_with("LatitudeAnalysis") | starts_with("ModelEvaluationMetrics")) %>% 
+      pivot_longer(cols = starts_with("LatitudeAnalysis") |
+                     starts_with("ModelEvaluationMetrics"))
+
+    #determine the limits of the plot
+    max_abs_lat_long <- ceiling(ica_eval_df %>% 
+      filter(startsWith(name,"LatitudeAnalysis.")) %>% 
+      summarize(max_abs_lat_long = max(abs(value)))) %>% 
+      pull(max_abs_lat_long)
+
+    ica_eval_wider_df <- rbind(
+      ica_eval_df %>% 
+        filter(startsWith(name,"LatitudeAnalysis.")) %>% 
+        mutate(variable = ifelse(grepl("pre", name), "x", "y"),
+               name = sub("(pre|post)", "", name)) %>%
+        pivot_wider(names_from = variable, values_from = value),
+      ica_eval_df %>% 
+        filter(startsWith(name,"ModelEvaluationMetrics") &
+                 grepl("out",name))  %>% 
+        mutate(variable = ifelse(grepl("baseline", name), "x", "y"),
+               name = sub("_baseline", "", name)) %>%
+        pivot_wider(names_from = variable, values_from = value))  
+    
+    xy_eval_plot <- ica_eval_wider_df %>% 
+      mutate(name=case_match(name,
+                             "LatitudeAnalysis.DiffInLat1" ~ "Latitude Difference Treated/Control",
+                             "LatitudeAnalysis.DiffInLat2" ~ "Longitude Difference Treated/Control",
+                             "ModelEvaluationMetrics.CELoss_out" ~ "Out of Sample error",
+                             "ModelEvaluationMetrics.ClassError_out" ~ "Predicted treatment status Error%",                             
+                             .default=name))  %>% 
+      ggplot(aes(x = x, y = y, label = name)) +
+      geom_point(color=treat_color) +
+      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color) + 
+      geom_vline(xintercept=0,color="black") +
+      geom_hline(yintercept=0, color="black") +
+      geom_abline(intercept=0, slope=1, linetype="dashed",color="black") +
+      labs(title = "Model Evaluation Metrics",
+           subtitle = paste(sub_l1,sub_l2,sep="\n"),
+           x = "Before IPW or Baseline errors",
+           y = "After Inverse Probability Weighting,  or Model errors") + 
+      coord_fixed(ratio=1,xlim=c(-1*max_abs_lat_long,max_abs_lat_long),
+                  ylim=c(-1*max_abs_lat_long,max_abs_lat_long)) +
+      theme_bw()
+    
+
+    ggsave(paste0(results_dir,fund_sect_param,"_95xy_model_eval_",run,".pdf"),
+           xy_eval_plot,
+           width=8, height = 6, dpi=300,
            bg="white", units="in")
     
     ############################################################################
