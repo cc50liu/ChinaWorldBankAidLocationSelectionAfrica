@@ -557,8 +557,8 @@ if (treat_count < 100) {
       sf::st_transform(crs=sf::st_crs(projection))
     least_likely_sf <- sf::st_as_sf(least_likely_df, coords=c("lon","lat"),crs="EPSG:4326")  %>%
       sf::st_transform(crs=sf::st_crs(projection))
-    
-    ###############################################################
+
+###############################################################
     #### Load administrative borders and ISO list excluding islands
     ###############################################################
     africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
@@ -611,32 +611,35 @@ if (treat_count < 100) {
     log_formula <- paste("input_df$treated ~", 
                          paste(names(conf_df), collapse = " + "))
     
-    treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
-    
-    #save coeff table to dataframe
-    treat_prob_log_df <- broom::tidy(treat_prob_log, exponentiate = TRUE, conf.int = TRUE) %>% 
-      filter(term != "(Intercept)") 
+    #call within a tryCatch block so script will continue even if this fails
+    tryCatch({
+      treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
+      
+      #save coeff table to dataframe
+      treat_prob_log_df <- broom::tidy(treat_prob_log, exponentiate = TRUE, conf.int = TRUE) %>% 
+        filter(term != "(Intercept)") 
+  
+      predicted_probs <- stats::predict(treat_prob_log, type="response")
+      propensity_df <- data.frame(Treatment = input_df$treated, Propensity = predicted_probs)
+      
+      tab_conf_density <- ggplot(propensity_df, aes(x = Propensity, fill = factor(Treatment))) +
+        geom_density(alpha = 0.5) +
+        labs(title = "Logistic Regression Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
+             subtitle = paste(sub_l1,sub_l2,sep="\n"),
+             x = "Predicted Propensity",
+             y = "Density",
+             fill="Status") +
+        scale_fill_manual(values = c("darkgray", treat_color),
+                          labels = c("Control", "Treated")) +
+        theme_bw()
+      
+      #use this name so it will sort well in consolidated pdf
+      ggsave(paste0(results_dir,fund_sect_param,"_",run,"_htreat_prop.pdf"),
+             tab_conf_density,
+             width=6, height = 4, dpi=300,
+             bg="white", units="in")
+    })
 
-    predicted_probs <- stats::predict(treat_prob_log, type="response")
-    propensity_df <- data.frame(Treatment = input_df$treated, Propensity = predicted_probs)
-    
-    tab_conf_density <- ggplot(propensity_df, aes(x = Propensity, fill = factor(Treatment))) +
-      geom_density(alpha = 0.5) +
-      labs(title = "Logistic Regression Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
-           subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Predicted Propensity",
-           y = "Density",
-           fill="Status") +
-      scale_fill_manual(values = c("darkgray", treat_color),
-                        labels = c("Control", "Treated")) +
-      theme_bw()
-    
-    #use this name so it will sort well in consolidated pdf
-    ggsave(paste0(results_dir,fund_sect_param,"_",run,"_htreat_prop.pdf"),
-           tab_conf_density,
-           width=6, height = 4, dpi=300,
-           bg="white", units="in")
-    
     ############################################################################
     ##### ridge regression for treatment probabilities with tabular confounders
     ############################################################################
@@ -713,7 +716,7 @@ if (treat_count < 100) {
                                    abs(max(tab_conf_compare_df$ridge_est)),
                                    abs(min(tab_conf_compare_df$Salience_AIC)),
                                    abs(max(tab_conf_compare_df$Salience_AIC))
-    )))    
+    )))
     
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,

@@ -557,7 +557,7 @@ if (treat_count < 100) {
     least_likely_sf <- sf::st_as_sf(least_likely_df, coords=c("lon","lat"),crs="EPSG:4326")  %>%
       sf::st_transform(crs=sf::st_crs(projection))
 
-	  ###############################################################
+###############################################################
     #### Load administrative borders and ISO list excluding islands
     ###############################################################
     africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
