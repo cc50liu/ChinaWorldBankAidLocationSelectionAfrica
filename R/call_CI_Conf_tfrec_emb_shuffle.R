@@ -1,4 +1,4 @@
-# call_CI_Conf_tfrec_emb.R
+# call_CI_Conf_tfrec_emb_shuffle.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations. 
@@ -498,7 +498,7 @@ if (treat_count < 100) {
       scale_fill_manual(values=c("goldenrod2","slategray2","salmon3"),
                          labels=c("Lowest","Second","Third"))  
 
-    ggsave(paste0(results_dir,fund_sect_param,"_",run,"_boxplots.pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_20boxplots_",run,".pdf"),
            combined_boxplot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -538,7 +538,7 @@ if (treat_count < 100) {
                          labels = c("Control", "Treated")) +
       theme_bw()
     
-    ggsave(paste0(results_dir,fund_sect_param,"_",run,"_conf_iwi.pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".pdf"),
            outcome_confounders_plot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -633,8 +633,8 @@ if (treat_count < 100) {
                           labels = c("Control", "Treated")) +
         theme_bw()
       
-      #use this name so it will sort well in consolidated pdf
-      ggsave(paste0(results_dir,fund_sect_param,"_",run,"_htreat_prop.pdf"),
+      #save to file
+      ggsave(paste0(results_dir,fund_sect_param,"_40log_treat_prop_",run,".pdf"),
              tab_conf_density,
              width=6, height = 4, dpi=300,
              bg="white", units="in")
@@ -692,7 +692,7 @@ if (treat_count < 100) {
     
     
     #save
-    ggsave(paste0(results_dir,fund_sect_param,"_",run,"_ridge_prop.pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_50ridge_prop_",run,".pdf"),
            ridge_conf_density,
            width=6, height = 4, dpi=300,
            bg="white", units="in")
@@ -713,7 +713,7 @@ if (treat_count < 100) {
 
     #write to file
     write.csv(tab_conf_compare_df,
-              paste0(results_dir,fund_sect_param, "_", run,"_tab_conf_compare.csv"),
+              paste0(results_dir,fund_sect_param,"_tab_conf_compare_", run,".csv"),
               row.names = FALSE)
 
     #plot these
@@ -755,7 +755,7 @@ if (treat_count < 100) {
       theme_bw()
     
     #save
-    ggsave(paste0(results_dir,fund_sect_param,"_",run,"_xy_tab_conf_images.pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_90xy_tab_conf_images_",run,".pdf"),
            tab_est_images,
            width=6, height = 6, dpi=300,
            bg="white", units="in")
