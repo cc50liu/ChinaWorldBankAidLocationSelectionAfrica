@@ -25,10 +25,10 @@ time_approach <- args[4]
 #uncomment to test
 #fund_sect_param <- "both_110"
 #fund_sect_param <- "wb_230"
-#fund_sect_param <- "ch_140"
-# run <- "tfrec_emb_shuffle"
-# iterations <- 1000
-# time_approach <- "collapsed"   #other option: "annual"
+# fund_sect_param <- "ch_140"
+#  run <- "tfrec_emb_shuffle"
+#  iterations <- 1000
+#  time_approach <- "collapsed"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -611,7 +611,7 @@ if (treat_count < 100) {
     log_formula <- paste("input_df$treated ~", 
                          paste(names(conf_df), collapse = " + "))
     
-    #call within a tryCatch block so script will continue even if this fails
+    #call within a try block so script will continue even if this fails
     try({
       treat_prob_log <- glm(log_formula, data=conf_df, family="binomial")
       
@@ -661,9 +661,15 @@ if (treat_count < 100) {
                                   coefs=ridge_coeffs)
 
     #add these to the treat_prob_log_df
-    treat_prob_log_r_df <- treat_prob_log_df %>% 
-      left_join(ridge_coeffs_df,join_by(term==variable)) %>% 
-      rename(ridge_est=s0)
+	if (exists("treat_prob_log_df")) {
+		treat_prob_log_r_df <- treat_prob_log_df %>% 
+		  left_join(ridge_coeffs_df,join_by(term==variable)) %>% 
+		  rename(ridge_est=s0)
+	} else {
+		treat_prob_log_r_df <- ridge_coeffs_df %>%
+		   rename(term=variable,
+		          ridge_est=s0)
+	}
 
     # Predict probabilities
     ridge_predicted_probs <- predict(ridge_model_best, newx = scale(conf_matrix),

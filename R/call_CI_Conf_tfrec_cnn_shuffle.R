@@ -660,9 +660,15 @@ if (treat_count < 100) {
                                   coefs=ridge_coeffs)
 
     #add these to the treat_prob_log_df
-    treat_prob_log_r_df <- treat_prob_log_df %>% 
-      left_join(ridge_coeffs_df,join_by(term==variable)) %>% 
-      rename(ridge_est=s0)
+	if (exists("treat_prob_log_df")) {
+		treat_prob_log_r_df <- treat_prob_log_df %>% 
+		  left_join(ridge_coeffs_df,join_by(term==variable)) %>% 
+		  rename(ridge_est=s0)
+	} else {
+		treat_prob_log_r_df <- ridge_coeffs_df %>%
+		   rename(term=variable,
+		          ridge_est=s0)
+	}
 
     # Predict probabilities
     ridge_predicted_probs <- predict(ridge_model_best, newx = scale(conf_matrix),
