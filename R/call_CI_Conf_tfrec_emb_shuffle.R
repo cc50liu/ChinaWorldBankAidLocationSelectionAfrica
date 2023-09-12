@@ -802,7 +802,7 @@ if (treat_count < 100) {
       geom_abline(intercept=0, slope=1, linetype="dashed",color="black") +
       labs(title = "Model Evaluation Metrics",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Before IPW or Baseline errors",
+           x = "Before Inverse Probability Weighting, or Baseline errors",
            y = "After Inverse Probability Weighting,  or Model errors") + 
       coord_fixed(ratio=1,xlim=c(-1*max_abs_lat_long,max_abs_lat_long),
                   ylim=c(-1*max_abs_lat_long,max_abs_lat_long)) +

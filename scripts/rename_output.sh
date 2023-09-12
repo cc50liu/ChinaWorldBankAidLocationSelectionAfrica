@@ -1,9 +1,8 @@
 #!/bin/bash
 # cd to the specific results directory and then submit this script as 
 # sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
-# Loop through each Causal Salience Map in the directory
 
-# Loop through each Salience Map in the directory
+# Loop through each Causal Salience Map in the directory
 for file in CSM_KW*; do
     #Extract funder, sector, and rest of tag
     if [[ $file =~ .*Tag(wb|ch|both)_([0-9]{3})_(.*)\.pdf ]]; then

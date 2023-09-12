@@ -211,7 +211,7 @@ population_density <- dhs_log_df %>%
   tidyr::pivot_longer(cols = starts_with("avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x = "Average population density", y = "Density across DHS clusters",
+  labs(x = "Average population density per square km", y = "Density across DHS clusters",
        title = "Population density across DHS clusters", color="Year") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
   theme_bw()
@@ -224,7 +224,7 @@ log_avg_pop_dens_density <-  dhs_log_df %>%
   tidyr::pivot_longer(cols = starts_with("log_avg_pop_dens_"), names_to = "pop_dens_year", values_to = "density") %>%
   ggplot(aes(density, color = pop_dens_year)) +
   geom_density() +
-  labs(x = "Average(log) population density", y = "Density (log) across DHS clusters",
+  labs(x = "Average(log) population density per square km", y = "Density (log) across DHS clusters",
        title = "Population density (log) across DHS clusters", color="Year") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
   theme_bw()

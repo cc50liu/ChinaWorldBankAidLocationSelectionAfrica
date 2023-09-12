@@ -1,5 +1,6 @@
 #consolidate_confounders_wide_dhs.R
 library(dplyr)
+library(stringr)
 
 rm(list=ls())
 
@@ -7,8 +8,16 @@ rm(list=ls())
 dhs_vector_df <- read.csv("./data/interim/dhs_treat_control_vector.csv") %>% 
   select(dhs_id, starts_with("log_"), starts_with("leader_"))
 
-dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
-  select(dhs_id, starts_with("log"))
+#calculate annual agglomeration index here
+dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>%
+  rowwise() %>%
+  mutate(
+    across(starts_with("avg_pop_dens_"),
+           ~ ifelse(avg_min_to_city <= 60 && . >= 150, 1, 0),
+           .names = "agglom_{str_extract(.col,'[0-9]{4}')}")
+  ) %>%
+  ungroup() %>% 
+  select(dhs_id, rural, starts_with("log"), starts_with("agglom"))
 
 dhs_natl_res_df <-  read.csv("./data/interim/dhs_natl_res.csv") %>% 
   select(dhs_id, starts_with("log"))
@@ -124,3 +133,23 @@ ggsave("./figures/nl_pc_log_trim99_density.png",log_pc_nl_trim_density, width=6,
        bg="white", units="in")
 
   
+############################################
+# Descriptive stats for agglomeration index
+############################################
+agglomeration_plot <- dhs_raster_df %>% 
+  select(dhs_id, rural,starts_with("agglom")) %>% 
+  pivot_longer(cols=starts_with("agglom"),names_to="Year",names_prefix = "agglom_",
+               values_to = "Agglomeration") %>% 
+ggplot(aes(factor(Agglomeration,labels=c("False","True")), fill = factor(rural))) +
+  geom_bar(position = "fill") +
+  labs(title = "Agglomeration versus DHS rural designation",
+       x = "Agglomeration Index",
+       y = "Proportion",
+       fill = "DHS Designation") +
+  scale_fill_manual(values=c("darkgrey","darkgreen"),
+                    labels=c("Urban","Rural")) +
+  facet_wrap(~Year, scales="free_x")
+
+
+ggsave("./figures/agglomeration.png",agglomeration_plot, width=6, height = 6, dpi=300,
+       bg="white", units="in")

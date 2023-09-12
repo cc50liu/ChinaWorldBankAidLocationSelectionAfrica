@@ -1,13 +1,14 @@
-# call_CI_Conf_tfrec_cnn_shuffle.R
+# call_CI_Conf_tfrec_emb_agglom.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations. 
-#        Collapses time and uses a shallow 3-layer only neural network 
+#        Collapses time and uses a embedded model class with nBoot=30L
 #        Uses per-capital nighlights instead of avg nightlights
 #        Excludes country-level variables other than country
 #        Generates an xy plot comparing salience of tab conf w & w/o images
 #         Generates a tfrecord file for the run
 #		  Shuffles the data before using it.
+#     Includes an agglomeration variable
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -24,11 +25,11 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "both_110"
-#fund_sect_param <- "wb_110"
-#fund_sect_param <- "ch_140"
-#run <- "test"
-#iterations <- 1000
-#time_approach <- "collapsed"   #other option: "annual"
+#fund_sect_param <- "wb_230"
+# fund_sect_param <- "ch_140"
+#  run <- "tfrec_emb_shuffle"
+#  iterations <- 1000
+#  time_approach <- "collapsed"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -70,19 +71,19 @@ dhs_c_df <- read.csv("./data/interim/dhs_treat_control_collaps_end_dates.csv") %
 
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
-               "log_avg_min_to_city",
-               "log_dist_km_to_gold","log_dist_km_to_gems",        
-               "log_dist_km_to_dia","log_dist_km_to_petro", 
-               "leader_birthplace","log_trans_proj_cum_n",
-               "log_3yr_pre_conflict_deaths",
-               "landsat57",
-               "landsat578")
+                   "log_avg_min_to_city","agglomeration",
+                   "log_dist_km_to_gold","log_dist_km_to_gems",        
+                   "log_dist_km_to_dia","log_dist_km_to_petro", 
+                   "leader_birthplace","log_trans_proj_cum_n",
+                   "log_3yr_pre_conflict_deaths",
+                   "landsat57",
+                   "landsat578")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
-                "Minutes to City (2000,log)","Dist to Gold (km,log)",
-                "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
-                "Conflict deaths (t-1,log)",
-                "Landsat 5 & 7", "Landsat 5,7,& 8")
+                    "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
+                    "Dist to Gems (km,log)","Dist to Diam (km,log)",
+                    "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
+                    "Conflict deaths (t-1,log)",
+                    "Landsat 5 & 7", "Landsat 5,7,& 8")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -267,6 +268,10 @@ if (treat_count < 100) {
     rowwise() %>% mutate(
       log_avg_pop_dens = get(paste0("log_avg_pop_dens_",min_start_year - 1))
     ) %>% ungroup() %>% 
+    #set agglomeration to year prior to earliest aid project
+    rowwise() %>% mutate(
+      agglomeration = get(paste0("agglom_",min_start_year - 1))
+    ) %>% ungroup() %>%
     #set leader_birthplace based on year prior to earliest aid project 
     rowwise() %>% mutate(
       leader_birthplace = get(paste0("leader_", min_start_year - 1))
@@ -288,13 +293,14 @@ if (treat_count < 100) {
   run_df <- obs_df %>% 
     select(dhs_id, country, iso3, lat, lon, treated, min_start_year, 
            max_end_year, image_file, iwi_est_post_oda, log_pc_nl_pre_oda,
-           log_avg_min_to_city, log_avg_pop_dens, log_3yr_pre_conflict_deaths,
+           log_avg_min_to_city, log_avg_pop_dens, agglomeration,
+		   log_3yr_pre_conflict_deaths,
            log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            landsat57, landsat578) %>% 
     rename(cty = country) %>% 
     mutate(cty = stringr::str_to_title(cty))
-	
+
   #shuffle data to reorder it before use; set.seed call above makes it reproducible
   input_df <- run_df[sample(x=1:nrow(run_df),size=nrow(run_df),replace=FALSE),]
   
@@ -309,6 +315,7 @@ if (treat_count < 100) {
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,          #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
+        "agglomeration"              =input_df$agglomeration,               #scene level
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
         "log_trans_proj_cum_n"       =input_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
@@ -354,7 +361,7 @@ if (treat_count < 100) {
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
                                   imageKeysOfUnits = paste0(input_df$image_file,
-                                                     input_df$min_start_year),
+input_df$min_start_year),
                                   acquireImageFxn = acquireImageRepFromDisk
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -376,10 +383,11 @@ if (treat_count < 100) {
       file = tf_rec_filename,
       samplingType = "balancedTrain",
       nSGD = iterations,
-      nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
+      nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 9L,
+      modelClass = "embeddings",
+      nBoot=30L,
       nFilters = 50L,
-      modelClass = "cnn",
-      dropoutRate = 0.1, 
+      nEmbedDim = 128L,		   
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
@@ -457,7 +465,7 @@ if (treat_count < 100) {
     long_input_df <- input_df %>%
       select(treated,all_of(var_order)) %>%
       tidyr::pivot_longer(c(-treated),names_to="variable_name", values_to="value")
-	  
+
     long_most_likely_df <- most_likely_df %>%
       select(treated,rank,all_of(var_order)) %>% 
       tidyr::pivot_longer(c(-treated,-rank),names_to="variable_name", values_to="value")       
@@ -617,7 +625,7 @@ if (treat_count < 100) {
       #save coeff table to dataframe
       treat_prob_log_df <- broom::tidy(treat_prob_log, exponentiate = TRUE, conf.int = TRUE) %>% 
         filter(term != "(Intercept)") 
-  
+
       predicted_probs <- stats::predict(treat_prob_log, type="response")
       propensity_df <- data.frame(Treatment = input_df$treated, Propensity = predicted_probs)
       
@@ -736,9 +744,9 @@ if (treat_count < 100) {
                              "log_dist_km_to_dia" ~ "dist_to_dia",
                              "log_dist_km_to_petro" ~ "dist_to_petro",
                              .default=term
-                             ),
-             term = sub("cty", "", term)
-             ) %>% 
+      ),
+      term = sub("cty", "", term)
+      ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
       ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color) + 
