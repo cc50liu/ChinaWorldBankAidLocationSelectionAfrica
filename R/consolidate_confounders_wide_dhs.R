@@ -142,14 +142,33 @@ agglomeration_plot <- dhs_raster_df %>%
                values_to = "Agglomeration") %>% 
 ggplot(aes(factor(Agglomeration,labels=c("False","True")), fill = factor(rural))) +
   geom_bar(position = "fill") +
-  labs(title = "Agglomeration versus DHS rural designation",
+  labs(title = "Agglomeration versus DHS urban/rural labels for study locations",
        x = "Agglomeration Index",
        y = "Proportion",
-       fill = "DHS Designation") +
+       fill = "DHS Label") +
   scale_fill_manual(values=c("darkgrey","darkgreen"),
                     labels=c("Urban","Rural")) +
-  facet_wrap(~Year, scales="free_x")
+  facet_wrap(~Year, scales="free_x") +
+  theme_bw()
 
 
 ggsave("./figures/agglomeration.png",agglomeration_plot, width=6, height = 6, dpi=300,
+       bg="white", units="in")
+
+agglomeration_time_plot <- dhs_raster_df %>% 
+  select(rural,starts_with("agglom")) %>% 
+  pivot_longer(cols=starts_with("agglom"),names_to="Year",names_prefix = "agglom_",
+               values_to = "Agglomeration") %>% 
+  group_by(Year) %>% 
+  summarize(proportion=mean(Agglomeration)) %>% 
+  ggplot(aes(x=Year,y=proportion)) +
+  geom_point() +
+  ylim(0,.25) +
+  labs(title = "Agglomeration of DHS locations over time",
+       x = "Year",
+       y = "% Agglomerations") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
+
+ggsave("./figures/agglomeration_annual.png",agglomeration_time_plot, width=6, height = 6, dpi=300,
        bg="white", units="in")
