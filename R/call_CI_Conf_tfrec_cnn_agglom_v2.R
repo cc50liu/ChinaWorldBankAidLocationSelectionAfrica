@@ -354,7 +354,7 @@ if (treat_count < 100) {
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_shuffle.tfrecord")
+                              time_approach,"_shuffle_sectseed.tfrecord")
 
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
