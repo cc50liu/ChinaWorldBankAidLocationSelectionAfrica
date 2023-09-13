@@ -11,12 +11,11 @@ library(ggplot2)
 rm(list=ls())
 
 #uncomment to test
-run_versions <- c("tfrec_cnn_agglom","tfrec_emb_agglom","tfrec_cnn_shuf_ord","tfrec_emb_ord")
+run_versions <- c("tfrec_cnn_agglom","tfrec_emb_agglom")
 run_directories <-c("./results/tfrec_cnn_agglom",
-                    "./results/tfrec_emb_agglom",
-                    "./results/tfrec_cnn_shuf_ord",
-                    "./results/tfrec_emb_ord") 
-group_label_for_filename <- "cnn_emb_aggl_ord"
+                    "./results/tfrec_emb_agglom")
+run_shortnames <- c("cnn","emb")
+group_label_for_filename <- "cnn_emb_aggl"
 
 #function to get matching files for a specific run
 get_matching_files <- function(run_version, run_directory) {
@@ -66,7 +65,8 @@ outcome_df <- consolidated_dt %>%
                       ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.645, "**", 
                              ifelse(abs(tauHat_prop) / tauHat_prop_se >= 1.282, "*", ""))),
          ate = paste0(round(tauHat_prop,2)," (",
-                      round(tauHat_prop_se,2),")",sig)
+                      round(tauHat_prop_se,2),")",sig),
+         run_short = run_shortnames[match(run,run_versions)]
   ) %>%
   arrange(sector)  
 
@@ -78,12 +78,13 @@ outcome_sector_df <- outcome_df %>%
   left_join(sector_names_df,join_by(sector==ad_sector_codes)) 
 
 outcome_sector_display_df <- outcome_sector_df %>% 
-  select(sec_pre_name, run, funder, ate) %>% 
+  select(sec_pre_name, run_short, funder, ate) %>% 
   pivot_wider(names_from=funder, values_from=ate) %>% 
-  rename(Both=both
-         # ,
-         # China=ch,
-         # World_Bank=wb
+  rename(Both=both,
+         China=ch,
+         World_Bank=wb,
+         Run=run_short,
+         Sector=sec_pre_name
          ) 
 
 
@@ -93,7 +94,7 @@ write.csv(outcome_sector_display_df,paste0("./results/outcome_display_xruns_",gr
 
 
 #generate figure showing ate by sector funder and run 
-ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_prop,y=sec_pre_name,color=funder,shape=run)) +
+ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_prop,y=sec_pre_name,color=funder,shape=run_short)) +
   geom_pointrange(aes(xmin=tauHat_prop-(tauHat_prop_se*1.96),
                       xmax=tauHat_prop+(tauHat_prop_se*1.96)),
                   position = position_jitter(height=0.2)) +
@@ -105,7 +106,8 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_prop,y=sec_pre_name,color=fund
        y = "",
        color="Funder",
        shape="Run") +
-  theme_bw()
+  theme_bw()  +
+  theme(panel.grid = element_blank())
 
 ggsave(paste0("./results/ate_funder_sector_xruns_",group_label_for_filename,".pdf"),
        ate_plot,
@@ -120,8 +122,10 @@ ggsave(paste0("./results/ate_funder_sector_xruns_",group_label_for_filename,".pd
 consolidated_df <- consolidated_dt %>% 
   mutate(sector = as.integer(sub(".*_(\\d+).*", "\\1", fund_sect_param)),
          funder = sub("(wb|ch|both).*", "\\1", fund_sect_param),
-         fund_sec_run = paste0(fund_sect_param,"_",run)
+         run_short = run_shortnames[match(run,run_versions)],
+         fund_sec_run = paste0(fund_sect_param,"_",run_short)
          ) %>% 
+  select(-starts_with("SGD_loss")) %>% 
   arrange(sector) 
 
 line_color <- ifelse(abs(consolidated_df$LatitudeAnalysis.preDiffInLat1) > 
@@ -150,7 +154,8 @@ difInLatPlot <- ggplot(consolidated_df, aes(x = fund_sec_run)) +
     color = "Funder",
     title = "Pre- and Post- Inverse Probability Weighting",
     subtitle = "Average Difference in Treated and Control Latitudes") +
-  theme_bw() +
+  theme_bw() +  
+  theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/difInLat_xruns_",group_label_for_filename,".pdf"),
@@ -175,7 +180,7 @@ difInLonPlot <- ggplot(consolidated_df, aes(x = fund_sec_run)) +
                show.legend=FALSE) +
   geom_point(aes(y = LatitudeAnalysis.preDiffInLat2, shape = "Pre", color=funder), size = 2) +
   geom_point(aes(y = LatitudeAnalysis.postDiffInLat2, shape = "Post",color=funder), size = 2) +
-  geom_hline(yintercept=0, color="black") +
+  geom_hline(yintercept=0, color="gray") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
   scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
@@ -187,7 +192,8 @@ difInLonPlot <- ggplot(consolidated_df, aes(x = fund_sec_run)) +
     color = "Funder",
     title = "Pre- and Post- Inverse Probability Weighting",
     subtitle = "Average Difference in Treated and Control Longitudes") +
-  theme_bw() +
+  theme_bw() +  
+  theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/difInLon_xruns_",group_label_for_filename,".pdf"),
@@ -225,6 +231,7 @@ difCELossPlot <- ggplot(consolidated_df, aes(x = fund_sec_run)) +
     color = "Funder",
     title = "Out of Sample Error") +
   theme_bw() +
+  theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/dif_CE_Loss_",group_label_for_filename,".pdf"),
@@ -261,6 +268,7 @@ dif_ClassError_plot <- ggplot(consolidated_df, aes(x = fund_sec_run)) +
     color = "Funder",
     title = "Treatment Class Prediction Error") +
   theme_bw() +
+  theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/dif_ClassError_",group_label_for_filename,".pdf"),
