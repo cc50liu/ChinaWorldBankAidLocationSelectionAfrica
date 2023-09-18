@@ -1,6 +1,6 @@
 rem To run from windows command line:
 rem change directory to the results directory, then change run name and funder (wb|ch|both) in command below
-rem ..\..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_agglom_v2 both . 
+rem ..\..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_agglom_v2 both . 
 
 rem adjust runName and resultsDirectory before run
 @echo off

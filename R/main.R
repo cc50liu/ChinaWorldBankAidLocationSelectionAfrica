@@ -83,9 +83,10 @@ source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
 
 #can also combine only treatment propensity charts using combine_results_treatprop.bat
 
-#create separate files to compare tabular and logistic regression for each funder/sector
+#create tables and handle tabular/numeric outputs
 source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
 
+#to compare across runs, use consolidate_CI_output_across_runs.R
 
 ##############################################################################
 # Run: others
