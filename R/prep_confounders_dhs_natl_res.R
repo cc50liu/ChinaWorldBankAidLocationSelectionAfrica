@@ -166,7 +166,7 @@ gadm0_map_sf <- gadm0_sf[gadm0_sf$ISO %in% africa_map_isos_df$iso3, ]
 natl_res_map <- tm_shape(gadm0_map_sf) +
   tm_borders() +
   tm_shape(petro_sf) + 
-  tm_fill(col="darkgray", labels="Oil") +
+  tm_fill(col="gray60", labels="Oil") +
   tm_shape(gold_sf) + 
   tm_symbols(col="gold",size=.2,alpha=.8,shape=22, labels="Gold") +
   tm_shape(gems_sf) + 
@@ -174,7 +174,7 @@ natl_res_map <- tm_shape(gadm0_map_sf) +
   tm_shape(dia_sf) + 
   tm_symbols(col="lightblue",size=.2,alpha=.8,shape=23, labels="Diamonds") +
   tm_add_legend(type = "fill"
-                , col = c("darkgray","gold","purple","lightblue")
+                , col = c("gray60","gold","purple","lightblue")
                 , labels = c("Oil","Gold","Gems","Diamonds"))  +
   tm_layout(main.title.size=1,
             main.title.position=c("center","top"),

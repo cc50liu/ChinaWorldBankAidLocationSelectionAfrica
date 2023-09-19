@@ -301,7 +301,7 @@ run_lasso_ridge <- function(fund_sect_param) {
            x = "Predicted Propensity",
            y = "Density",
            color="Status") +
-      scale_color_manual(values = c("gray","black"),labels = c("Control", "Treated")) +
+      scale_color_manual(values = c("gray80","black"),labels = c("Control", "Treated")) +
       theme_bw()
     
     #save
@@ -339,7 +339,7 @@ run_lasso_ridge <- function(fund_sect_param) {
            x = "Predicted Propensity",
            y = "Density",
            color="Status") +
-      scale_color_manual(values = c("gray","black"),labels = c("Control", "Treated")) +
+      scale_color_manual(values = c("gray80","black"),labels = c("Control", "Treated")) +
       theme_bw()
     
     #save

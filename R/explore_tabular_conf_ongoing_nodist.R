@@ -286,8 +286,8 @@ for (fund_sect_param in unique_sector_funders$fund_sect_param) {
     
     # Set the treated color based on funder
     treat_color <- case_when(
-      startsWith(fund_sect_param, "ch") ~ "red",
-      startsWith(fund_sect_param, "wb") ~ "blue",
+      startsWith(fund_sect_param, "ch") ~ "tomato3",
+      startsWith(fund_sect_param, "wb") ~ "steelblue1",
       startsWith(fund_sect_param, "both") ~ "purple"
     )
 
@@ -316,7 +316,7 @@ for (fund_sect_param in unique_sector_funders$fund_sect_param) {
            x = "Predicted Propensity",
            y = "Density",
            fill="Status") +
-      scale_fill_manual(values = c("darkgray", treat_color),
+      scale_fill_manual(values = c("gray60", treat_color),
                          labels = c("Control", "Treated")) +
       theme_bw() 
     

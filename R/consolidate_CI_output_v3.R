@@ -92,7 +92,7 @@ process_subdir <-  function(run_dir,sub_dir) {
                         xmax=tauHat_prop+(tauHat_prop_se*1.96)),
                     position = position_jitter(height=0.2)) +
     geom_vline(xintercept=0,color="black") +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("ch" = "China","wb"="World Bank","both"="Both")) +  
     labs(title = "Average Treatment Effect (est) on Wealth by Funder and Sector",
          subtitle = paste0("Sectors:  ",

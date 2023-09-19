@@ -93,7 +93,7 @@ process_subdir <-  function(run_dir,sub_dir) {
                         xmax=tauHat_prop+(tauHat_prop_se*1.96)),
                     position = position_jitter(height=0.2)) +
     geom_vline(xintercept=0,color="black") +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("ch" = "China","wb"="World Bank","both"="Both")) +  
     labs(title = "Average Treatment Effect (est) on Wealth by Funder and Sector",
          subtitle = paste0("Sectors:  ",
@@ -121,7 +121,7 @@ process_subdir <-  function(run_dir,sub_dir) {
 
   line_color <- ifelse(abs(consolidated_dt$LatitudeAnalysis.preDiffInLat1) > 
                          abs(consolidated_dt$LatitudeAnalysis.postDiffInLat1),
-                       "lightgray", "black")
+                       "gray92", "black")
 
   difInLatPlot <- ggplot(consolidated_dt, aes(x = fund_sect_param)) +
     geom_segment(aes(x=reorder(fund_sect_param,sector),
@@ -136,7 +136,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_hline(yintercept=0, color="black") +
     scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                        breaks = c("Pre","Post")) +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -161,7 +161,7 @@ process_subdir <-  function(run_dir,sub_dir) {
   ##############################################################################  
   line_color <- ifelse(abs(consolidated_dt$LatitudeAnalysis.preDiffInLat2) > 
                          abs(consolidated_dt$LatitudeAnalysis.postDiffInLat2),
-                       "lightgray", "black")
+                       "gray92", "black")
   
   difInLonPlot <- ggplot(consolidated_dt, aes(x = fund_sect_param)) +
     geom_segment(aes(x=reorder(fund_sect_param,sector),
@@ -176,7 +176,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_hline(yintercept=0, color="black") +
     scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                        breaks = c("Pre","Post")) +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -202,7 +202,7 @@ process_subdir <-  function(run_dir,sub_dir) {
   ##############################################################################  
   line_color <- ifelse(abs(consolidated_dt$ModelEvaluationMetrics.CELoss_out_baseline) > 
                          abs(consolidated_dt$ModelEvaluationMetrics.CELoss_out),
-                       "lightgray", "black")
+                       "gray92", "black")
   
   difCELossPlot <- ggplot(consolidated_dt, aes(x = fund_sect_param)) +
     geom_segment(aes(x=reorder(fund_sect_param,sector),
@@ -216,7 +216,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_point(aes(y = ModelEvaluationMetrics.CELoss_out, shape = "Model",color=funder), size = 2) +
     scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                        breaks = c("Baseline","Model")) +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -240,7 +240,7 @@ process_subdir <-  function(run_dir,sub_dir) {
   ##############################################################################  
   line_color <- ifelse(abs(consolidated_dt$ModelEvaluationMetrics.ClassError_out_baseline) > 
                          abs(consolidated_dt$ModelEvaluationMetrics.ClassError_out),
-                       "lightgray", "black")
+                       "gray92", "black")
   
   dif_ClassError_plot <- ggplot(consolidated_dt, aes(x = fund_sect_param)) +
     geom_segment(aes(x=reorder(fund_sect_param,sector),
@@ -254,7 +254,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_point(aes(y = ModelEvaluationMetrics.ClassError_out, shape = "Model",color=funder), size = 2) +
     scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                        breaks = c("Baseline","Model")) +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",

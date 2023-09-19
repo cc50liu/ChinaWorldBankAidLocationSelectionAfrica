@@ -56,15 +56,15 @@ dhs_oda_map <- tm_shape(adm0_sf) +
   tm_shape(adm0_sf) +
   tm_borders() +
   tm_shape(adm0_sf[adm0_sf$ch_oda, ]) +
-  tm_symbols(size = .5, col = "red", shape = 16, jitter=0.2) +
+  tm_symbols(size = .5, col = "tomato3", shape = 16, jitter=0.2) +
   tm_shape(adm0_sf[adm0_sf$wb_oda, ]) +
-  tm_symbols(size = .5, col = "blue", shape = 17) +
+  tm_symbols(size = .5, col = "steelblue1", shape = 17) +
   tm_layout(main.title.size=1,
             main.title = "Africa DHS Surveys and Aid (2001-2014)",
             main.title.position=c("center","top")) +
   tm_add_legend(type = "symbol"
                 , shape=c(16,17)
-                , col = c("red","blue")
+                , col = c("tomato3","steelblue1")
                 , labels = c("China Aid","WB Aid"))  +
   tm_legend(legend.position = c("left", "bottom"),
             legend.text.size = 1,

@@ -393,8 +393,8 @@ acquireImageRepFromDisk <- function(keys,training = F){
       
       # Set the treated color based on funder
       treat_color <- case_when(
-        startsWith(fund_sect_param, "ch") ~ "red",
-        startsWith(fund_sect_param, "wb") ~ "blue",
+        startsWith(fund_sect_param, "ch") ~ "tomato3",
+        startsWith(fund_sect_param, "wb") ~ "steelblue1",
         startsWith(fund_sect_param, "both") ~ "purple"
       )
       
@@ -413,11 +413,11 @@ acquireImageRepFromDisk <- function(keys,training = F){
       treat_control_map <- tm_shape(country_borders) +
         tm_borders(lwd=2) +
         tm_shape(input_sf[input_sf[[fund_sect_param]] == 0, ]) +  
-        tm_dots(size=.3, col="gray", alpha=.3) +
+        tm_dots(size=.3, col="gray80", alpha=.3) +
         tm_shape(input_sf[input_sf[[fund_sect_param]] == 1, ]) +  
         tm_dots(size=.5, col=treat_color, alpha=.3) +
         tm_add_legend(type = "fill"
-                      , col = c(treat_color,"gray")
+                      , col = c(treat_color,"gray80")
                       , labels = c(paste0("Treated (n ",treat_count,")"),
                                    paste0("Control (n ",control_count,")")))  +
         tm_layout(main.title.size=1,

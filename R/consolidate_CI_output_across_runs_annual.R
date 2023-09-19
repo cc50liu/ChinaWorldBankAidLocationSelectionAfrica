@@ -189,16 +189,16 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
   facet_grid(sec_pre_name ~ ., scales="free_y") +
   geom_pointrange(aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
                       xmax=tauHat_propensityHajek+(tauHat_propensityHajek_se*1.96))) +
-  geom_point(aes(x=tauHat_diffInMeans,fill="baseline"), color="gray") +
+  geom_point(aes(x=tauHat_diffInMeans,fill="baseline"), color="gray80") +
   # geom_segment(aes(x=min(tauHat_diffInMeans,tauHat_propensityHajek),
   #                  xend=max(tauHat_diffInMeans,tauHat_propensityHajek),
   #                  y=sec_pre_name,yend=sec_pre_name,color = "baseline"),
   #              linewidth = .5,
   #              position = position_jitterdodge(jitter.height=0.1)) +
-  geom_vline(xintercept=0,color="gray") +
-  scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+  geom_vline(xintercept=0,color="gray80") +
+  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                      labels = c("ch" = "China","wb"="World Bank","both"="Both")) +
-  scale_fill_manual(values=c("baseline"="gray"),
+  scale_fill_manual(values=c("baseline"="gray80"),
                     labels=c("baseline"="No confounders")) +
   scale_shape_manual(values = c("cnn" = 16, "emb" = 17),
                      breaks = c("cnn","emb"),
@@ -238,7 +238,7 @@ ggsave(paste0("./results/ate_funder_sector_xruns_",group_label_for_filename,".pd
 
 line_color <- ifelse(abs(outcome_sector_df$LatitudeAnalysis.preDiffInLat1) > 
                        abs(outcome_sector_df$LatitudeAnalysis.postDiffInLat1),
-                     "lightgray", "black")
+                     "gray92", "black")
 
 difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_segment(aes(x=reorder(fund_sec_run,sector),
@@ -253,7 +253,7 @@ difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_hline(yintercept=0, color="black") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -276,7 +276,7 @@ ggsave(paste0("./results/difInLat_xruns_",group_label_for_filename,".pdf"),
 ##############################################################################  
 line_color <- ifelse(abs(outcome_sector_df$LatitudeAnalysis.preDiffInLat2) > 
                        abs(outcome_sector_df$LatitudeAnalysis.postDiffInLat2),
-                     "lightgray", "black")
+                     "gray92", "black")
 
 difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_segment(aes(x=reorder(fund_sec_run,sector),
@@ -288,10 +288,10 @@ difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
                show.legend=FALSE) +
   geom_point(aes(y = LatitudeAnalysis.preDiffInLat2, shape = "Pre", color=funder), size = 2) +
   geom_point(aes(y = LatitudeAnalysis.postDiffInLat2, shape = "Post",color=funder), size = 2) +
-  geom_hline(yintercept=0, color="gray") +
+  geom_hline(yintercept=0, color="gray80") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -315,7 +315,7 @@ ggsave(paste0("./results/difInLon_xruns_",group_label_for_filename,".pdf"),
 ##############################################################################  
 line_color <- ifelse(abs(outcome_sector_df$ModelEvaluationMetrics.CELoss_out_baseline) > 
                        abs(outcome_sector_df$ModelEvaluationMetrics.CELoss_out),
-                     "lightgray", "black")
+                     "gray92", "black")
 
 difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_segment(aes(x=reorder(fund_sec_run,sector),
@@ -329,7 +329,7 @@ difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.CELoss_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -352,7 +352,7 @@ ggsave(paste0("./results/dif_CE_Loss_",group_label_for_filename,".pdf"),
 ##############################################################################  
 line_color <- ifelse(abs(outcome_sector_df$ModelEvaluationMetrics.ClassError_out_baseline) > 
                        abs(outcome_sector_df$ModelEvaluationMetrics.ClassError_out),
-                     "lightgray", "black")
+                     "gray92", "black")
 
 dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_segment(aes(x=reorder(fund_sec_run,sector),
@@ -366,7 +366,7 @@ dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.ClassError_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -426,13 +426,13 @@ plot_tab_confounder <- function(term_var) {
                     position=position_jitter(height=0.25)) +
     geom_point(data=compare_salience_no_se_df[compare_salience_no_se_df$term==term_var,],
                aes(x=SalienceX, y=sec_pre_name, shape=run_short, color=funder)) +
-    scale_color_manual(values = c("ch" = "red", "wb" = "blue", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
                        breaks = c("ch","wb","both"),
                        labels = c("China", "World Bank", "Both")) +
     scale_shape_manual(values = c("cnn" = 16, "emb" = 21),
                        breaks = c("cnn","emb"),
                        labels = c("CNN","Emb")) +
-    geom_vline(xintercept=0, color="gray") +
+    geom_vline(xintercept=0, color="gray80") +
     labs(
       x = "Variable Salience",
       y = "",

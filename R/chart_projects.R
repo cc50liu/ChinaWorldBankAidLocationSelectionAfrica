@@ -23,7 +23,7 @@ ggplot(aes(x = transactions_start_year, y = n, fill = funder)) +
                      labels = unique(oda_df$transactions_start_year)) + 
   guides(fill = guide_legend(title = "Funder")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China","World Bank")) 
 
 ggsave("./figures/proj_year_counts.png",proj_year_count, width=6, height = 4, dpi=300,
@@ -61,7 +61,7 @@ proj_year_prec_count <- oda_df %>%
   scale_alpha_manual(values = c(1, 0.75, 0.5, 0.25),
                      labels = c("1 Exact", "2 Near", "3 ADM2", "4 ADM1")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China","World Bank")) 
 
 
@@ -81,7 +81,7 @@ proj_prec_count <- oda_df %>%
          alpha = guide_legend(title = "Precision Code")) + 
   scale_x_discrete(labels = c("1 Exact", "2 Near", "3 ADM2", "4 ADM1")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China","World Bank")) 
 
 ggsave("./figures/proj_prec_counts.png", proj_prec_count, width = 6, height = 4, dpi = 300,
@@ -120,7 +120,7 @@ ggplot(aes(y = reorder(location_type_name,n), x = n, fill = funder, alpha=geogra
          alpha = guide_legend(title = "Geographic Exactness")) + 
   scale_alpha_manual(values = c(.5, 1),
                      labels = c("1 Exact", "2 Approximate")) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China", "World Bank")) 
 
 ggsave("./figures/top_loc_types.png",loc_type_plot, width=6, height = 4, dpi=300,
@@ -138,7 +138,7 @@ country_plot <- oda_df %>%
        y = "Recipient(s)", x = "Count") +
   theme_minimal() + 
   guides(fill = guide_legend(title = "Funder")) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China", "World Bank")) 
 
 ggsave("./figures/country_counts.png",country_plot, width=6, height = 8, dpi=300,
@@ -158,7 +158,7 @@ sector_plot <- oda_df %>%
        y = "Sector", x = "Count") +
   theme_minimal() + 
   guides(fill = guide_legend(title = "Funder")) +
-  scale_fill_manual(values = c("CH" = "red", "WB" = "blue"),
+  scale_fill_manual(values = c("CH" = "tomato3", "WB" = "steelblue1"),
                     labels = c("China", "World Bank")) 
 
 ggsave("./figures/sector_counts.png",sector_plot, width=8, height = 8, dpi=300,
