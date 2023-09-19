@@ -72,8 +72,8 @@ source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
 # which calls call_shallow_collapse.slurm
 
 #run will create a subdirectory named after the run, where all the output files will be
-#run sh slurm/rename_output.sh on server to rename output files for consolidation
-#(another option:  slurm/rename_output_sector_groups.sh to group them into Infrastructure, 
+#run sh scripts/rename_output.sh on server to rename output files for consolidation
+#(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
 #Interventions, BasicServices, and Other groups)
 
 #copy files to a results directory on laptop

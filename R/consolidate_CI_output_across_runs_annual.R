@@ -11,11 +11,11 @@ library(ggplot2)
 rm(list=ls())
 
 #uncomment to test
-run_versions <- c("tfrec_cnn_agglom_v2","tfrec_emb_agglom_v2")
+run_versions <- c("tfrec_cnn_agglom_v2","v3ongoing")
 run_directories <-c("./results/tfrec_cnn_agglom_v2",
-                    "./results/tfrec_emb_agglom_v2")
-run_shortnames <- c("cnn","emb")
-group_label_for_filename <- "cnn_emb_aggl"
+                    "./results/v3ongoing")
+run_shortnames <- c("collapsed","annual")
+group_label_for_filename <- "collapsed_annual"
 
 #########################
 #get matching files
