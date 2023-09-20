@@ -26,12 +26,12 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-#fund_sect_param <- "both_140"
+#fund_sect_param <- "both_110"
 #fund_sect_param <- "wb_140"
 # fund_sect_param <- "ch_140"
-# run <- "tfrec_emb_annual"
-# iterations <- 1000
-# time_approach <- "annual"   #other option: "collapsed"
+#run <- "tfrec_emb_annual"
+#iterations <- 1000
+#time_approach <- "annual"   #other option: "collapsed"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
