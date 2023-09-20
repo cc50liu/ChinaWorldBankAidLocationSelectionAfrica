@@ -6,7 +6,7 @@ submit_and_wait() {
   sleep 1m     # Sleep for 1 minute
 }
 
-#submit_and_wait call_CI_Conf_tfrec_emb_collapsed.slurm both_110 tfrec_emb_collapsed 1000 collapsed
+submit_and_wait call_CI_Conf_tfrec_emb_collapsed.slurm both_110 tfrec_emb_collapsed 1000 collapsed
 submit_and_wait call_CI_Conf_tfrec_emb_collapsed.slurm ch_110 tfrec_emb_collapsed 1000 collapsed
 submit_and_wait call_CI_Conf_tfrec_emb_collapsed.slurm wb_110 tfrec_emb_collapsed 1000 collapsed
 submit_and_wait call_CI_Conf_tfrec_emb_collapsed.slurm both_120 tfrec_emb_collapsed 1000 collapsed
