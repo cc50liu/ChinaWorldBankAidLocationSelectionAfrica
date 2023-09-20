@@ -517,7 +517,7 @@ if (treat_count < 100) {
     # Set the treated color based on funder
     treat_color <- case_when(
       startsWith(fund_sect_param, "ch") ~ "indianred1",
-      startsWith(fund_sect_param, "wb") ~ "lightblue1",
+      startsWith(fund_sect_param, "wb") ~ "mediumblue",
       startsWith(fund_sect_param, "both") ~ "blueviolet"
     )
     #Convert to longer format for density plots, leaving outcome as separate column
@@ -534,7 +534,7 @@ if (treat_count < 100) {
       tidyr::pivot_longer(c(-treated,-rank),names_to="variable_name", values_to="value")       
     
     outcome_confounders_plot <- ggplot(hybrid_input_df, aes(x = iwi_est_post_oda, y=value, color = factor(treated))) +
-      geom_line(alpha = 0.3) +
+      geom_point(alpha = 0.3) +
       facet_wrap(~ variable_name, scales = "free_y", ncol = 3) +
       facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
       labs(title = "Confounders vs. Estimated wealth for Treated and Control DHS locations",

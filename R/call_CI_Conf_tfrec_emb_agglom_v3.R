@@ -517,7 +517,7 @@ if (treat_count < 100) {
     # Set the treated color based on funder
     treat_color <- case_when(
       startsWith(fund_sect_param, "ch") ~ "indianred1",
-      startsWith(fund_sect_param, "wb") ~ "lightblue1",
+      startsWith(fund_sect_param, "wb") ~ "mediumblue",
       startsWith(fund_sect_param, "both") ~ "blueviolet"
     )
     #Convert to longer format for density plots, leaving outcome as separate column
@@ -534,7 +534,7 @@ if (treat_count < 100) {
       tidyr::pivot_longer(c(-treated,-rank),names_to="variable_name", values_to="value")       
     
     outcome_confounders_plot <- ggplot(hybrid_input_df, aes(x = iwi_est_post_oda, y=value, color = factor(treated))) +
-      geom_line(alpha = 0.3) +
+      geom_point(alpha = 0.3) +
       facet_wrap(~ variable_name, scales = "free_y", ncol = 3) +
       facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
       labs(title = "Confounders vs. Estimated wealth for Treated and Control DHS locations",
@@ -590,7 +590,7 @@ if (treat_count < 100) {
       tm_shape(most_likely_sf) +
       tm_symbols(size=.9,col=treat_color,border.col="white",shape=24) +
       tm_shape(least_likely_sf) +
-      tm_symbols(size=.9,col="gray39",shape=25) +
+      tm_symbols(size=.9,col="gray39",border.col="white",shape=25) +
       tm_add_legend(type = "fill"
                     , col = c(treat_color,"gray80")
                     , labels = c(paste0("Treated (n ",treat_count,")"),
@@ -640,14 +640,14 @@ if (treat_count < 100) {
     ridge_result_df <- data.frame(predicted_probs = ridge_predicted_probs, 
                                   treated = input_df$treated)
     
-    ridge_conf_density <- ggplot(ridge_result_df, aes(x = s0, color = factor(treated))) +
+    ridge_conf_density <- ggplot(ridge_result_df, aes(x = s0, fill = factor(treated))) +
       geom_density(alpha = 0.5) +
       labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Predicted Propensity",
            y = "Density",
-           color="Status") +
-      scale_color_manual(values = c("gray60", treat_color),
+           fill="Status") +
+      scale_fill_manual(values = c("gray80", treat_color),
                          labels = c("Control", "Treated")) +
       theme_bw()  +
       theme(panel.grid = element_blank())
@@ -705,8 +705,7 @@ if (treat_count < 100) {
                              "log_dist_km_to_petro" ~ "dist_to_petro",
                              .default=term
       ),
-      term = sub("cnty", "", term),
-      term = paste0(term,SalienceX_sig)
+      term = sub("cnty", "", term)
       ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_sig_color) +
