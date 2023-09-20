@@ -668,8 +668,8 @@ if (treat_count < 100) {
     
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, by="term") %>% 
-      rename(Salience_AIC = SalienceX)
+      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
+      rename(Salience_AIC = value)
 
     #write to file
     write.csv(tab_conf_compare_df,
