@@ -47,6 +47,39 @@
 #./code/python/0_download_percapita_nl_WorldPop.ipynb
 
 ##############################################################################
+# Runs:  tfrec_emb_annual, tfrec_emb_agglom_v3, tfrec_cnn_agglom_v3
+##############################################################################
+#Basic data prep
+source("./code/R/prep_projects_end_impute_median_or3.R", local=TRUE)
+#writes africa_oda_end_impute_median_or3.csv
+source("./code/R/prep_dhs_points.R", local=TRUE)
+
+#Determine treatments/controls
+#annual
+source("./code/R/select_treat_control_annual.R", local=TRUE)
+#writes dhs_treat_control_annual.csv
+
+#collapsed
+source("./code/R/select_treat_control_collapsed.R", local=TRUE)
+#writes dhs_treat_control_collapsed.csv
+
+#Prepare Confounder Data for each dhs point/scene
+source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
+#considate all confounder data in a wide format, one row per dhs point
+source("./code/R/consolidate_confounders_wide_dhs.R", local=TRUE)
+
+# Call Causal Image Confounding Analysis, consolidate output files
+source("./code/R/call_CI_Conf_tfrec_emb_annual.R", local=TRUE)
+source("./code/R/call_CI_Conf_tfrec_cnn_annual.R", local=TRUE) #create this
+source("./code/R/call_CI_Conf_tfrec_emb_collapsed.R", local=TRUE)
+source("./code/R/call_CI_Conf_tfrec_cnn_collapsed.R", local=TRUE) #create this
+
+
+##############################################################################
 # Run:  shallow_collapse
 ##############################################################################
 #Basic data prep
