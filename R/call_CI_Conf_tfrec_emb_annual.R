@@ -646,7 +646,7 @@ if (treat_count < 100) {
       theme_bw()  +
       theme(panel.grid = element_blank())
     
-    ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".png"),
            outcome_confounders_plot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -744,7 +744,7 @@ if (treat_count < 100) {
       geom_density(alpha = 0.5) +
       labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Predicted Propensity",
+           x = "Predicted Treatment Propensity",
            y = "Density",
            fill="Status") +
       scale_fill_manual(values = c("gray80", treat_color),
