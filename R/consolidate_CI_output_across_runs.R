@@ -70,7 +70,7 @@ outcome_df <- consolidated_dt %>%
 
 sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
   mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")")) %>% 
-  select(ad_sector_codes, sec_pre_name)
+  select(ad_sector_codes, ad_sector_names, sec_pre_name)
 
 #determine sort order of Salience and Salience se columns to use in sort below
 salience_cols <- grep("Salience",names(outcome_df),value=TRUE)
@@ -79,7 +79,7 @@ sorted_sal_cols <- salience_cols[order(salience_vars)]
 
 outcome_sector_df <- outcome_df %>%
   left_join(sector_names_df,join_by(sector==ad_sector_codes)) %>% 
-  select(run,fund_sec,sec_pre_name,treat_count,control_count,nTrainableParameters,
+  select(run,fund_sec,sec_pre_name,ad_sector_names,treat_count,control_count,nTrainableParameters,
          tauHat_propensityHajek,tauHat_propensityHajek_se,sig,tauHat_diffInMeans,
          all_of(sorted_sal_cols),
          starts_with("ModelEvaluation"), starts_with("Latitude"),
@@ -197,6 +197,7 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
   #              position = position_jitterdodge(jitter.height=0.1)) +
   geom_vline(xintercept=0,color="gray80") +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                     breaks = c("ch","wb","both"),
                      labels = c("ch" = "China","wb"="World Bank","both"="Both")) +
   scale_fill_manual(values=c("baseline"="gray80"),
                     labels=c("baseline"="No confounders")) +
@@ -254,6 +255,7 @@ difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                     breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -292,6 +294,7 @@ difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                     breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -330,6 +333,7 @@ difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                     breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -367,6 +371,7 @@ dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                     breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -389,32 +394,80 @@ ggsave(paste0("./results/dif_ClassError_",group_label_for_filename,".pdf"),
 ##############################################################################
 # Compare tabular covariates salience across runs
 ##############################################################################  
+var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
+                   "log_avg_min_to_city","agglomeration",
+                   "log_dist_km_to_gold","log_dist_km_to_gems",        
+                   "log_dist_km_to_dia","log_dist_km_to_petro", 
+                   "leader_birthplace","log_trans_proj_cum_n",
+                   "log_3yr_pre_conflict_deaths",
+                   "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
+                   "landsat578")
+var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
+                    "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
+                    "Dist to Gems (km,log)","Dist to Diam (km,log)",
+                    "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
+                    "Conflict deaths (t-1,log)",
+                    "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
+                    "Landsat 5 & 7", "Landsat 5,7,& 8")
+
+
 compare_salience_df <- outcome_sector_df %>%
-  select(funder, sec_pre_name, run_short, starts_with("SalienceX")) %>% 
-  pivot_longer(cols=-c(funder,sec_pre_name, run_short)) %>% 
+  select(funder, sec_pre_name, ad_sector_names, run_short, starts_with("SalienceX")) %>% 
+  mutate(sec_pre_name = case_match(sec_pre_name,
+                                   "Developmental Food Aid/Food Security Assistance (520)" ~
+                                     "Dev Food Aid/Food Security Assistance (520)",
+                                   .default=sec_pre_name),
+         ad_sector_names = case_match(ad_sector_names,
+                                   "Developmental Food Aid/Food Security Assistance" ~
+                                     "Dev Food Aid/Food Security Assistance",
+                                   .default=ad_sector_names)) %>% 
+  pivot_longer(cols=-c(funder,sec_pre_name, ad_sector_names, run_short)) %>% 
   separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
   pivot_wider(names_from = measure, values_from=value) %>% 
-  filter(!grepl("cnty",term)) %>% 
-  mutate(term = case_match(term,
-                            "log_pc_nl_pre_oda" ~ "percap_nightlights",
-                            "log_avg_min_to_city" ~  "min_to_city",
-                            "log_avg_pop_dens" ~ "pop_dens",
-                            "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-                            "log_trans_proj_cum_n" ~ "ch_transp_projs", 
-                            "log_dist_km_to_gold" ~ "dist_to_gold",
-                            "log_dist_km_to_gems" ~ "dist_to_gems",
-                            "log_dist_km_to_dia" ~ "dist_to_dia",
-                            "log_dist_km_to_petro" ~ "dist_to_petro",
-                           .default=term
-                           ))
+  filter(!grepl("cnty",term) & !grepl("landsat",term))
 
 compare_salience_se_df <- compare_salience_df %>% 
-  filter(!is.na(SalienceX_se))
+  filter(!is.na(SalienceX_se)) 
 
 compare_salience_no_se_df <- compare_salience_df %>% 
   filter(is.na(SalienceX_se)) 
          
-#define function to plot the salience of each variable
+
+all_dif_salience_plot <- ggplot(compare_salience_se_df, 
+                            aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder),
+                            position=position_jitter(height = .25)) +
+geom_pointrange(aes(xmin=SalienceX - (SalienceX_se*1.96),
+                    xmax=SalienceX + (SalienceX_se*1.96)),
+                position=position_jitter(height=0.25)) +
+geom_point(data=compare_salience_no_se_df,
+           aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder)) +
+scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+                   breaks = c("ch","wb","both"),
+                   labels = c("China", "World Bank", "Both")) +
+scale_shape_manual(values = c("cnn" = 16, "emb" = 21),
+                   breaks = c("cnn","emb"),
+                   labels = c("CNN","Emb")) +
+geom_vline(xintercept=0, color="gray80") +
+facet_wrap(~ factor(term, levels = var_order_all, labels = var_labels_all), scales = "fixed") +
+labs(
+  x = "Variable Salience",
+  y = "",
+  color = "Funder",
+  shape = "Model",
+  title = "Salience of tabular variables across funders, models and sectors") +
+theme_bw() +
+theme(panel.grid = element_blank()) 
+
+
+ggsave(paste0("./results/Salience_xruns_",group_label_for_filename,"_all.pdf"),
+       all_dif_salience_plot,
+       width=10.5, height = 9, dpi=600,
+       bg="white", units="in")
+
+  
+##########################################################################
+#define function to plot the salience of each variable in separate files
+##########################################################################
 plot_tab_confounder <- function(term_var) {
   #uncomment to test
   #term_var = "agglomeration"
@@ -438,10 +491,9 @@ plot_tab_confounder <- function(term_var) {
       y = "",
       color = "Funder",
       shape = "Model",
-      title = paste0("Salience of '",term_var,"`across models and sectors")) +
+      title = paste0(var_labels_all[match(term_var,var_order_all)]," Salience across models and sectors")) +
     theme_bw() +
     theme(panel.grid = element_blank()) 
-  
   
   ggsave(paste0("./results/Salience_xruns_",group_label_for_filename,"_",term_var,".pdf"),
          dif_salience_plot,
