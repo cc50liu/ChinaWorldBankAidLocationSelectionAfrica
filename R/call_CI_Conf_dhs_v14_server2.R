@@ -459,9 +459,9 @@
 #       
 #       # Set the treated color based on funder
 #       treat_color <- case_when(
-#         startsWith(fund_sect_param, "ch") ~ "tomato3",
-#         startsWith(fund_sect_param, "wb") ~ "steelblue1",
-#         startsWith(fund_sect_param, "both") ~ "purple"
+#         startsWith(fund_sect_param, "ch") ~ "indianred1",
+#         startsWith(fund_sect_param, "wb") ~ "lightblue1",
+#         startsWith(fund_sect_param, "both") ~ "blueviolet"
 #       )
 #       
 #       ####################################################

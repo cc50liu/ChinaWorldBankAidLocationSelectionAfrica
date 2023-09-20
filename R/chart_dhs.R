@@ -31,7 +31,7 @@ dhs_sector_treated_portion <- mean_df %>%
   geom_bar(stat = "identity", aes(fill = grepl("^ch_", FunderSectorPrecision))) +
   labs(x = "Portion treated", y = "Funder-Sector-Precision", fill="Funder",
        title="Portion of DHS points treated, by aid funder, sector, and precision") +
-  scale_fill_manual(values = c("steelblue1", "tomato3"),
+  scale_fill_manual(values = c("lightblue1", "indianred1"),
                     breaks = c(FALSE, TRUE),
                     labels = c("World Bank", "China")) +
   theme_bw()
@@ -126,7 +126,7 @@ pre_nl_ct_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name, -Me
        title = "Average Pre-Treatment Nightlight for Treated and Control DHS points", 
        subtitle = "By Sector and Project Precision, lines +/- one standard deviation",
        color = "Funder & Treated") +
-  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "steelblue1", "ch_0" = "pink", "ch_1" = "tomato3"),
+  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "lightblue1", "ch_0" = "pink", "ch_1" = "indianred1"),
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
@@ -156,7 +156,7 @@ pre_trvl_tc_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name, -
        title = "Average Travel Minutes to >50K City for Treated and Control DHS points", 
        subtitle = "By Sector and Project Precision, lines +/- one standard deviation",
        color = "Funder & Treated") +
-  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "steelblue1", "ch_0" = "pink", "ch_1" = "tomato3"),
+  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "lightblue1", "ch_0" = "pink", "ch_1" = "indianred1"),
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
@@ -185,7 +185,7 @@ pre_deaths_tc_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name,
        title = "Average Battle-Related Deaths for Treated and Control DHS points", 
        subtitle = "By Sector and Project Precision, lines +/- one standard deviation",
        color = "Funder & Treated") +
-  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "steelblue1", "ch_0" = "pink", "ch_1" = "tomato3"),
+  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "lightblue1", "ch_0" = "pink", "ch_1" = "indianred1"),
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),
@@ -216,7 +216,7 @@ pr_ldrbrthtc_sector <- ggplot(data_plot_complete, aes(y = reorder(sec_pre_name, 
        title = "Portion in Leader Birthplace ADM1 for Treated and Control DHS points", 
        subtitle = "By Sector and Project Precision, lines +/- one standard deviation",
        color = "Funder & Treated") +
-  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "steelblue1", "ch_0" = "pink", "ch_1" = "tomato3"),
+  scale_color_manual(values = c("wb_0" = "lightblue", "wb_1" = "lightblue1", "ch_0" = "pink", "ch_1" = "indianred1"),
                      breaks = c("wb_0", "wb_1", "ch_0", "ch_1"),
                      labels = c("WB Control", "WB Treated", "CH Control", "CH Treated")) +
   guides(color = guide_legend(override.aes = list(shape = c(21, 24)),

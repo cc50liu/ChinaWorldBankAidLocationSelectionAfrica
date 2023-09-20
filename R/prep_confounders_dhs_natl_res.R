@@ -170,11 +170,11 @@ natl_res_map <- tm_shape(gadm0_map_sf) +
   tm_shape(gold_sf) + 
   tm_symbols(col="gold",size=.2,alpha=.8,shape=22, labels="Gold") +
   tm_shape(gems_sf) + 
-  tm_symbols(col="purple",size=.2,alpha=.8,shape=21, labels="Gems") +
+  tm_symbols(col="blueviolet",size=.2,alpha=.8,shape=21, labels="Gems") +
   tm_shape(dia_sf) + 
   tm_symbols(col="lightblue",size=.2,alpha=.8,shape=23, labels="Diamonds") +
   tm_add_legend(type = "fill"
-                , col = c("gray60","gold","purple","lightblue")
+                , col = c("gray60","gold","blueviolet","lightblue")
                 , labels = c("Oil","Gold","Gems","Diamonds"))  +
   tm_layout(main.title.size=1,
             main.title.position=c("center","top"),

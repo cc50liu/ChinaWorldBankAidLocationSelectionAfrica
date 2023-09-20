@@ -196,7 +196,7 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
   #              linewidth = .5,
   #              position = position_jitterdodge(jitter.height=0.1)) +
   geom_vline(xintercept=0,color="gray80") +
-  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      labels = c("ch" = "China","wb"="World Bank","both"="Both")) +
   scale_fill_manual(values=c("baseline"="gray80"),
                     labels=c("baseline"="No confounders")) +
@@ -253,7 +253,7 @@ difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_hline(yintercept=0, color="black") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -291,7 +291,7 @@ difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_hline(yintercept=0, color="gray80") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
@@ -329,7 +329,7 @@ difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.CELoss_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -366,7 +366,7 @@ dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.ClassError_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
   labs(
@@ -426,7 +426,7 @@ plot_tab_confounder <- function(term_var) {
                     position=position_jitter(height=0.25)) +
     geom_point(data=compare_salience_no_se_df[compare_salience_no_se_df$term==term_var,],
                aes(x=SalienceX, y=sec_pre_name, shape=run_short, color=funder)) +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        breaks = c("ch","wb","both"),
                        labels = c("China", "World Bank", "Both")) +
     scale_shape_manual(values = c("cnn" = 16, "emb" = 21),

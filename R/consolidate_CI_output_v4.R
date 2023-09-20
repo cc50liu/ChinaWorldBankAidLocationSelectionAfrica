@@ -93,7 +93,7 @@ process_subdir <-  function(run_dir,sub_dir) {
                         xmax=tauHat_prop+(tauHat_prop_se*1.96)),
                     position = position_jitter(height=0.2)) +
     geom_vline(xintercept=0,color="black") +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        labels = c("ch" = "China","wb"="World Bank","both"="Both")) +  
     labs(title = "Average Treatment Effect (est) on Wealth by Funder and Sector",
          subtitle = paste0("Sectors:  ",
@@ -136,7 +136,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_hline(yintercept=0, color="black") +
     scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                        breaks = c("Pre","Post")) +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -176,7 +176,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_hline(yintercept=0, color="black") +
     scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                        breaks = c("Pre","Post")) +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -216,7 +216,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_point(aes(y = ModelEvaluationMetrics.CELoss_out, shape = "Model",color=funder), size = 2) +
     scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                        breaks = c("Baseline","Model")) +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
@@ -254,7 +254,7 @@ process_subdir <-  function(run_dir,sub_dir) {
     geom_point(aes(y = ModelEvaluationMetrics.ClassError_out, shape = "Model",color=funder), size = 2) +
     scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                        breaks = c("Baseline","Model")) +
-    scale_color_manual(values = c("ch" = "tomato3", "wb" = "steelblue1", "both" = "purple"),
+    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        labels = c("China", "World Bank", "Both")) +
     labs(
       x = "Funder & Sector",
