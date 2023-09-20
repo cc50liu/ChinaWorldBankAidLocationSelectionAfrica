@@ -459,7 +459,7 @@ if (treat_count < 100) {
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
                                   imageKeysOfUnits = paste0(input_df$image_file,
-                                                            input_df$min_start_year),
+                                                            input_df$start_year),
                                   acquireImageFxn = acquireImageRepFromDisk
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -535,10 +535,10 @@ if (treat_count < 100) {
     #print these to log
     print(paste("Most likely treated for", fund_sect_param, "run:", run))
     print(most_likely_df %>% 
-            select(prW_est,col_index,image_file,min_start_year))
+            select(prW_est,col_index,image_file,start_year))
     print(paste("Least likely treated for", fund_sect_param, "run:", run))
     print(least_likely_df %>% 
-            select(prW_est,col_index,image_file,min_start_year))
+            select(prW_est,col_index,image_file,start_year))
     
     
     ############################################################################
