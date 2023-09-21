@@ -6,7 +6,7 @@ submit_and_wait() {
   sleep 1m     # Sleep for 1 minute
 }
 
-#submit_and_wait call_CI_Conf_tfrec_emb_annual.slurm both_110 tfrec_emb_annual 1000 annual
+submit_and_wait call_CI_Conf_tfrec_emb_annual.slurm both_110 tfrec_emb_annual 1000 annual
 submit_and_wait call_CI_Conf_tfrec_emb_annual.slurm ch_110 tfrec_emb_annual 1000 annual
 submit_and_wait call_CI_Conf_tfrec_emb_annual.slurm wb_110 tfrec_emb_annual 1000 annual
 submit_and_wait call_CI_Conf_tfrec_emb_annual.slurm both_120 tfrec_emb_annual 1000 annual

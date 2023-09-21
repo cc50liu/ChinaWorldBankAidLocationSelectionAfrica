@@ -484,7 +484,6 @@ if (treat_count < 100) {
       modelClass = "cnn",
       dropoutRate = 0.1, 
       nFilters = 50L,
-	   
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
