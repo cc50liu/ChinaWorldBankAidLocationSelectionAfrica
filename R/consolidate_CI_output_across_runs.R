@@ -39,12 +39,30 @@ output <- mapply(get_matching_files, run_versions, run_directories)
   
 matching_files <- unlist(output)
 
-##################################
-#consolidate run-level outputs
-##################################
+#####################################################################
+#consolidate run-level outputs, and add ridge regression coefficients
+#####################################################################
 read_and_process_file <- function(file) {
+  #uncomment to test
+  #file <-  "./results/tfrec_emb_agglom_v2/ICA_wb_160_tfrec_emb_agglom_v2_i1000.csv"
+  
+  #use a regular expression to construct ridge output file name corresponding
+  #to the input file 
+  ridge_file <- sub("(.*)(ICA_)(wb|ch|both)(_\\d+)(.*)_i\\d+.csv",
+                    "\\1\\3\\4_tab_conf_compare\\5.csv", file)
+
+  #read the primary data file
   data <- fread(file, header = TRUE, drop = grep("^(prW_est|SGD_loss)", colnames(fread(file))))
-  return(data)
+  
+  #read the ridge data, convert to wide, and combine with primary data 
+  ridge_long_dt <- fread(ridge_file, header = TRUE,select=c("term","ridge_est"))
+  ridge_wide_dt <- dcast(ridge_long_dt, 1 ~ term, value.var="ridge_est")
+  setnames(ridge_wide_dt, new = paste0("ridge_est.", names(ridge_wide_dt)))
+  
+  combined <- cbind(data,ridge_wide_dt)
+  combined[, ridge_est.. := NULL]
+  
+  return(combined)
 }
 
 # Read and merge the files, filling columns that don't exist in some with NAs
@@ -81,10 +99,11 @@ outcome_sector_df <- outcome_df %>%
   left_join(sector_names_df,join_by(sector==ad_sector_codes)) %>% 
   select(run,fund_sec,sec_pre_name,ad_sector_names,treat_count,control_count,nTrainableParameters,
          tauHat_propensityHajek,tauHat_propensityHajek_se,sig,tauHat_diffInMeans,
-         all_of(sorted_sal_cols),
+         all_of(sorted_sal_cols),starts_with("ridge_est"),
          starts_with("ModelEvaluation"), starts_with("Latitude"),
          everything())
 
+names(outcome_sector_df)
 write.csv(outcome_sector_df,paste0("./results/ICA_xruns_all_",group_label_for_filename,".csv"),
           row.names=FALSE)
 #outcome_sector_df <- read.csv("./results/ICA_xruns_all_cnn_emb_aggl.csv")
@@ -410,9 +429,9 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                     "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                     "Landsat 5 & 7", "Landsat 5,7,& 8")
 
-
+#to do:  handle the "ridge_est." columns here and put them on the figure as "tabular confounders only"
 compare_salience_df <- outcome_sector_df %>%
-  select(funder, sec_pre_name, ad_sector_names, run_short, starts_with("SalienceX")) %>% 
+  select(funder, sec_pre_name, ad_sector_names, run_short, starts_with("SalienceX"), starts_with("ridge_est")) %>% 
   mutate(sec_pre_name = case_match(sec_pre_name,
                                    "Developmental Food Aid/Food Security Assistance (520)" ~
                                      "Dev Food Aid/Food Security Assistance (520)",
@@ -432,7 +451,7 @@ compare_salience_se_df <- compare_salience_df %>%
 compare_salience_no_se_df <- compare_salience_df %>% 
   filter(is.na(SalienceX_se)) 
          
-
+#to do: come back to this to thinka bout the baseline point
 all_dif_salience_plot <- ggplot(compare_salience_se_df, 
                             aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder),
                             position=position_jitter(height = .25)) +
@@ -441,6 +460,10 @@ geom_pointrange(aes(xmin=SalienceX - (SalienceX_se*1.96),
                 position=position_jitter(height=0.25)) +
 geom_point(data=compare_salience_no_se_df,
            aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder)) +
+geom_point(data=compare_salience_df,aes(x=ridge_est,y=ad_sector_names, 
+                                        shape=run_short,fill="baseline"), color="gray80") +
+scale_fill_manual(values=c("baseline"="gray80"),
+                    labels=c("baseline"="No images")) +  
 scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                    breaks = c("ch","wb","both"),
                    labels = c("China", "World Bank", "Both")) +
@@ -454,6 +477,7 @@ labs(
   y = "",
   color = "Funder",
   shape = "Model",
+  fill = "Baseline",
   title = "Salience of tabular variables across funders, models and sectors") +
 theme_bw() +
 theme(panel.grid = element_blank()) 
@@ -479,6 +503,11 @@ plot_tab_confounder <- function(term_var) {
                     position=position_jitter(height=0.25)) +
     geom_point(data=compare_salience_no_se_df[compare_salience_no_se_df$term==term_var,],
                aes(x=SalienceX, y=sec_pre_name, shape=run_short, color=funder)) +
+#to do: fix this ridge estimate    
+    geom_point(data=compare_salience_df,aes(x=ridge_est,y=sec_pre_name, 
+                                            shape=run_short,fill="baseline"), color="gray80") +
+    scale_fill_manual(values=c("baseline"="gray80"),
+                      labels=c("baseline"="No images")) +
     scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        breaks = c("ch","wb","both"),
                        labels = c("China", "World Bank", "Both")) +
@@ -491,6 +520,7 @@ plot_tab_confounder <- function(term_var) {
       y = "",
       color = "Funder",
       shape = "Model",
+      fill = "Baseline",
       title = paste0(var_labels_all[match(term_var,var_order_all)]," Salience across models and sectors")) +
     theme_bw() +
     theme(panel.grid = element_blank()) 
