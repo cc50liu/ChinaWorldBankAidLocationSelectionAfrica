@@ -451,7 +451,7 @@ compare_salience_se_df <- compare_salience_df %>%
 compare_salience_no_se_df <- compare_salience_df %>% 
   filter(is.na(SalienceX_se)) 
          
-#to do: come back to this to thinka bout the baseline point
+
 all_dif_salience_plot <- ggplot(compare_salience_se_df, 
                             aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder),
                             position=position_jitter(height = .25)) +
@@ -460,10 +460,11 @@ geom_pointrange(aes(xmin=SalienceX - (SalienceX_se*1.96),
                 position=position_jitter(height=0.25)) +
 geom_point(data=compare_salience_no_se_df,
            aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder)) +
-geom_point(data=compare_salience_df,aes(x=ridge_est,y=ad_sector_names, 
-                                        shape=run_short,fill="baseline"), color="gray80") +
-scale_fill_manual(values=c("baseline"="gray80"),
-                    labels=c("baseline"="No images")) +  
+#to do: think about display of these ridge_estimates  
+# geom_point(data=compare_salience_df,aes(x=ridge_est,y=ad_sector_names, 
+#                                         shape=run_short,fill="baseline"), color="gray80") +
+# scale_fill_manual(values=c("baseline"="gray80"),
+#                     labels=c("baseline"="No images")) +  
 scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                    breaks = c("ch","wb","both"),
                    labels = c("China", "World Bank", "Both")) +
@@ -504,10 +505,10 @@ plot_tab_confounder <- function(term_var) {
     geom_point(data=compare_salience_no_se_df[compare_salience_no_se_df$term==term_var,],
                aes(x=SalienceX, y=sec_pre_name, shape=run_short, color=funder)) +
 #to do: fix this ridge estimate    
-    geom_point(data=compare_salience_df,aes(x=ridge_est,y=sec_pre_name, 
-                                            shape=run_short,fill="baseline"), color="gray80") +
-    scale_fill_manual(values=c("baseline"="gray80"),
-                      labels=c("baseline"="No images")) +
+    # geom_point(data=compare_salience_df,aes(x=ridge_est,y=sec_pre_name, 
+    #                                         shape=run_short,fill="baseline"), color="gray80") +
+    # scale_fill_manual(values=c("baseline"="gray80"),
+    #                   labels=c("baseline"="No images")) +
     scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                        breaks = c("ch","wb","both"),
                        labels = c("China", "World Bank", "Both")) +
