@@ -1,4 +1,4 @@
-#consolidate_CI_output_across_runs_annual.R
+#consolidate_CI_output_across_runs_agglom.R
 # consolidate .csv files produced by AnalyzeCausalImages runs (after 9/9)
 #   into a single csv
 # v4 makes graphs for Latitude Analysis and ModelEvaluationMetrics
@@ -11,12 +11,11 @@ library(ggplot2)
 rm(list=ls())
 
 #uncomment to test
-run_versions <- c("tfrec_cnn_annual","tfrec_emb_annual")
-run_directories <-c("./results/tfrec_cnn_annual",
-                    "./results/tfrec_emb_annual")
+run_versions <- c("tfrec_cnn_agglom_v2","tfrec_emb_agglom_v2")
+run_directories <-c("./results/tfrec_cnn_agglom_v2",
+                    "./results/tfrec_emb_agglom_v2")
 run_shortnames <- c("cnn","emb")
-group_label_for_filename <- "cnn_emb_annual"
-group_label_for_titles <- "Annual Observations"
+group_label_for_filename <- "cnn_emb_aggl"
 
 #########################
 #get matching files
@@ -92,19 +91,19 @@ sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>%
   select(ad_sector_codes, ad_sector_names, sec_pre_name)
 
 #determine sort order of Salience and Salience se columns to use in sort below
-salience_cols <- grep("Salience|ridge_est.",names(outcome_df),value=TRUE)
-salience_vars <- sub("SalienceX.*\\.|ridge_est\\.","",salience_cols)
+salience_cols <- grep("Salience",names(outcome_df),value=TRUE)
+salience_vars <- sub("SalienceX.*\\.","",salience_cols)
 sorted_sal_cols <- salience_cols[order(salience_vars)]
 
 outcome_sector_df <- outcome_df %>%
   left_join(sector_names_df,join_by(sector==ad_sector_codes)) %>% 
   select(run,fund_sec,sec_pre_name,ad_sector_names,treat_count,control_count,nTrainableParameters,
          tauHat_propensityHajek,tauHat_propensityHajek_se,sig,tauHat_diffInMeans,
-         all_of(sorted_sal_cols),
+         all_of(sorted_sal_cols),starts_with("ridge_est"),
          starts_with("ModelEvaluation"), starts_with("Latitude"),
          everything())
 
-
+names(outcome_sector_df)
 write.csv(outcome_sector_df,paste0("./results/ICA_xruns_all_",group_label_for_filename,".csv"),
           row.names=FALSE)
 #outcome_sector_df <- read.csv("./results/ICA_xruns_all_cnn_emb_aggl.csv")
@@ -165,7 +164,7 @@ prob_xy_plot <- loc_probs_longer_df %>%
 ggplot(aes(x = cnn, y = emb)) +
   geom_point(alpha=.1) +
   facet_wrap(~ fund_sec, labeller = as_labeller(label_with_correlation)) +
-  labs(title = paste0(group_label_for_titles,": Treatment Probabilities for DHS locations by funder_sector across models"),
+  labs(title = "Treatment Probabilities for DHS locations by funder_sector across models",
        x = "Convolutional Neural Network",
        y = "Random Embeddings") +   
   theme_bw()  +
@@ -222,7 +221,7 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
   scale_shape_manual(values = c("cnn" = 16, "emb" = 17),
                      breaks = c("cnn","emb"),
                      labels = c("Convolutional Neural Net","Randomized Embeddings")) +
-  labs(title = paste0(group_label_for_titles,": Average Treatment Effect on Wealth, by Sector, Funder, and Model"),
+  labs(title = "Average Treatment Effect on Wealth, by Sector, Funder, and Model",
        x = "Estimated ATE with 95% confidence intervals",
        y = "",
        color="Funder",
@@ -277,18 +276,18 @@ difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
-    y = "Difference in Treated and Control Average Latitude",
+    y = "Average Difference in Treated and Control Latitudes",
     shape = "IPW Adjustment",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Pre- and Post- Inverse Probability Weighting"),
-    subtitle = "Difference in Treated and Control Average Latitude") +
+    title = "Pre- and Post- Inverse Probability Weighting",
+    subtitle = "Average Difference in Treated and Control Latitudes") +
   theme_bw() +  
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/difInLat_xruns_",group_label_for_filename,".pdf"),
        difInLatPlot,
-       width=10.5, height = 8, dpi=300,
+       width=8, height = 6, dpi=300,
        bg="white", units="in")
 
 ##############################################################################
@@ -316,18 +315,18 @@ difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
                      labels = c("China", "World Bank", "Both")) +
   labs(
     x = "Funder, Sector, and Run",
-    y = "Difference in Treated and Control Average Longitude",
+    y = "Average Difference in Treated and Control Longitudes",
     shape = "IPW Adjustment",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Pre- and Post- Inverse Probability Weighting"),
-    subtitle = "Difference in Treated and Control Average Longitude") +
+    title = "Pre- and Post- Inverse Probability Weighting",
+    subtitle = "Average Difference in Treated and Control Longitudes") +
   theme_bw() +  
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/difInLon_xruns_",group_label_for_filename,".pdf"),
        difInLonPlot,
-       width=10.5, height = 8, dpi=300,
+       width=8, height = 6, dpi=300,
        bg="white", units="in")
 
 
@@ -359,14 +358,14 @@ difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
     y = "Out of Sample Error",
     shape = "CE Loss",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Out of Sample Error")) +
+    title = "Out of Sample Error") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/dif_CE_Loss_",group_label_for_filename,".pdf"),
        difCELossPlot,
-       width=10.5, height = 8, dpi=300,
+       width=8, height = 6, dpi=300,
        bg="white", units="in")
 
 ##############################################################################
@@ -397,14 +396,14 @@ dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
     y = "Treatment Class Prediction Error (%)",
     shape = "CE Loss",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Treatment Class Prediction Error")) +
+    title = "Treatment Class Prediction Error") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
 ggsave(paste0("./results/dif_ClassError_",group_label_for_filename,".pdf"),
        dif_ClassError_plot,
-       width=10.5, height = 8, dpi=300,
+       width=8, height = 6, dpi=300,
        bg="white", units="in")
   
   
@@ -419,14 +418,14 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                    "leader_birthplace","log_trans_proj_cum_n",
                    "log_3yr_pre_conflict_deaths",
                    "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-                   "landsat578","start_year","start_year_squared")
+                   "landsat578")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                     "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                     "Dist to Gems (km,log)","Dist to Diam (km,log)",
                     "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
                     "Conflict deaths (t-1,log)",
                     "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                    "Landsat 5 & 7", "Landsat 5,7,& 8","Start Year","Start Year Squared")
+                    "Landsat 5 & 7", "Landsat 5,7,& 8")
 
 #to do:  handle the "ridge_est." columns here and put them on the figure as "tabular confounders only"
 compare_salience_df <- outcome_sector_df %>%
@@ -478,7 +477,7 @@ labs(
   color = "Funder",
   shape = "Model",
   fill = "Baseline",
-  title = paste0(group_label_for_titles,": Salience of tabular variables across funders, models and sectors")) +
+  title = "Salience of tabular variables across funders, models and sectors") +
 theme_bw() +
 theme(panel.grid = element_blank()) 
 
@@ -521,7 +520,7 @@ plot_tab_confounder <- function(term_var) {
       color = "Funder",
       shape = "Model",
       fill = "Baseline",
-      title = paste0(group_label_for_titles,": ",var_labels_all[match(term_var,var_order_all)]," Salience across models and sectors")) +
+      title = paste0(var_labels_all[match(term_var,var_order_all)]," Salience across models and sectors")) +
     theme_bw() +
     theme(panel.grid = element_blank()) 
   
