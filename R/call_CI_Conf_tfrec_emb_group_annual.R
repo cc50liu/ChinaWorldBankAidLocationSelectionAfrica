@@ -188,6 +188,8 @@ dhs_c_year_df <- dhs_c_df %>%
                              filter(is.na(image_group_count)) %>% 
                              pull(image_group)))
 
+control_props <- control_props %>% 
+  filter(!is.na(image_group_count))
 
 set.seed(1234)  
 for (i in 1:nrow(control_props)) {
