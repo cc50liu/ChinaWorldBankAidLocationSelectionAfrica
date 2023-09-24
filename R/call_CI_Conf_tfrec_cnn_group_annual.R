@@ -706,17 +706,14 @@ if (treat_count < 90) {
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
     tab_conf_salience_df <- ica_df %>%
-      select(starts_with("SalienceX"))  %>%
-      pivot_longer(cols=everything()) %>% 
-      separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
-      pivot_wider(names_from = measure, values_from=value) %>% 
-      mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
-             SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
+      select(starts_with("SalienceX."))  %>%
+      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
+      pivot_longer(cols=everything())
     
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, by="term") %>% 
-      rename(Salience_AIC = SalienceX)
+      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
+      rename(Salience_AIC = value)
     
     #write to file
     write.csv(tab_conf_compare_df,
@@ -730,8 +727,6 @@ if (treat_count < 90) {
                                  na.rm=T)
     )
     
-    treat_sig_color <- ifelse(tab_conf_compare_df$SalienceX_sig=="","gray80",
-                              treat_color)
     
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
@@ -750,8 +745,8 @@ if (treat_count < 90) {
       term = sub("cnty", "", term)
       ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
-      geom_point(color=treat_sig_color) +
-      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_sig_color,
+      geom_point(color=treat_color) +
+      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color,
                                segment.color="gray80") + 
       geom_vline(xintercept=0,color="gray80") +
       geom_hline(yintercept=0, color="gray80") +
