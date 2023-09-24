@@ -27,11 +27,11 @@ time_approach <- args[4]
 
 #uncomment to test
 # fund_sect_group_param <- "both_PRO"
- fund_sect_group_param <- "ch_DIR"
+# fund_sect_group_param <- "ch_DIR"
 # fund_sect_group_param <- "wb_OTH"
- run <- "tfrec_emb_group_annual"
- iterations <- 1000
- time_approach <- "annual"   #other option: "collapsed"
+# run <- "tfrec_emb_group_annual"
+# iterations <- 1000
+# time_approach <- "annual"   #other option: "collapsed"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -170,43 +170,9 @@ treat_year_props <- dhs_t_df %>%
   mutate(proportion = count / image_group_count) %>% 
   ungroup()
 
-# image_group start_year count image_group_count proportion
-# <chr>            <int> <int>             <int>      <dbl>
-# 1 2002:2004         2003    80                80          1
-# 2 2008:2010         2009    18                18          1
-
-# image_group start_year count image_group_count proportion
-# <chr>            <int> <int>             <int>      <dbl>
-#   1 1999:2001         2001    89                89     1     
-# 2 2002:2004         2002     2                46     0.0435
-# 3 2002:2004         2003    44                46     0.957 
-# 4 2005:2007         2005     7               193     0.0363
-# 5 2005:2007         2006   110               193     0.570 
-# 6 2005:2007         2007    76               193     0.394 
-# 7 2008:2010         2010    89                89     1     
-# 8 2011:2013         2011     9                 9     1     
-# 9 2014:2016         2014    95                95     1  
-
 control_before <- dhs_c_df %>% 
   group_by(image_group,start_year) %>% 
   count() 
-# image_group start_year     n
-# <chr>            <int> <int>
-#   1 1999:2001           NA   612
-# 2 2002:2004           NA   258
-# 3 2005:2007           NA   380
-# 4 2008:2010           NA   387
-# 5 2011:2013           NA   301
-# 6 2014:2016           NA   641
-
-# image_group start_year     n
-# <chr>            <int> <int>
-#   1 1999:2001           NA  2746
-# 2 2002:2004           NA  2789
-# 3 2005:2007           NA  2642
-# 4 2008:2010           NA  2746
-# 5 2011:2013           NA  2826
-# 6 2014:2016           NA  2740
 
 control_props <- control_before %>% 
   left_join(treat_year_props, by="image_group",multiple="all") %>% 
@@ -215,27 +181,6 @@ control_props <- control_before %>%
          treat_n=count,
          cntl_n=n) %>% 
   mutate(desired_controls = round(cntl_n * proportion,0))
-# image_group cntl_n treat_start_year treat_n image_group_count proportion desired_controls
-# <chr>        <int>            <int>   <int>             <int>      <dbl>            <dbl>
-#   1 1999:2001      612               NA      NA                NA         NA               NA
-# 2 2002:2004      258             2003      80                80          1              258
-# 3 2005:2007      380               NA      NA                NA         NA               NA
-# 4 2008:2010      387             2009      18                18          1              387
-# 5 2011:2013      301               NA      NA                NA         NA               NA
-# 6 2014:2016      641               NA      NA                NA         NA               NA
-
-# image_group cntl_n treat_start_year treat_n image_group_count proportion desired_controls
-# <chr>        <int>            <int>   <int>             <int>      <dbl>            <dbl>
-#   1 1999:2001     2746             2001      89                89     1                  2746
-# 2 2002:2004     2789             2002       2                46     0.0435              121
-# 3 2002:2004     2789             2003      44                46     0.957              2668
-# 4 2005:2007     2642             2005       7               193     0.0363               96
-# 5 2005:2007     2642             2006     110               193     0.570              1506
-# 6 2005:2007     2642             2007      76               193     0.394              1040
-# 7 2008:2010     2746             2010      89                89     1                  2746
-# 8 2011:2013     2826             2011       9                 9     1                  2826
-# 9 2014:2016     2740             2014      95                95     1                  2740
-
 
 #remove control rows for image_groups with no treatments
 dhs_c_year_df <- dhs_c_df %>% 
