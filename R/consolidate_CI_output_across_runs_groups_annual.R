@@ -210,6 +210,7 @@ outcome_sector_group_df <- outcome_sector_group_df %>%
                        "wb_OTH"   ~ 3.4,
                        "wb_PRO"   ~ 3.5,
                        "wb_SIS"   ~ 3.5,
+                       "wb_EIS"   ~ 3.3,
                        ))
 
 

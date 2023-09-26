@@ -1,7 +1,7 @@
-# call_CI_Conf_tfrec_cnn_group_annual.R
+# call_CI_Conf_tfrec_emb_annual_s3.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
-#        by funder/sector_group combinations.  
+#        by funder/sector combinations.  
 #        Uses annual observations and a shallow 3-layer only neural network
 #        Uses per-capital nighlights instead of avg nightlights
 #        Includes country-level variables other than country
@@ -9,8 +9,9 @@
 #         Generates a tfrecord file for the run
 #		  Shuffles the data before using it.
 #     Includes an agglomeration variable
-#     Retires logistic reg; remove gridlines from plots
-
+#     Retires logistic reg; remove gridlines from plots; seed is sector
+#     Handles SalienceX_se variables.
+#     IWI measured 3 years post-project start									 
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -19,19 +20,19 @@ rm(list=ls())
 setwd("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb")
 args <- commandArgs(trailingOnly = TRUE)
 
-# Handle command line arguments
-fund_sect_group_param <- args[1]
+# The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
+fund_sect_param <- args[1]
 run <- args[2]
 iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-# fund_sect_group_param <- "both_PRO"
-# fund_sect_group_param <- "ch_DIR"
-# fund_sect_group_param <- "wb_OTH"
-# run <- "tfrec_cnn_group_annual"
-# iterations <- 1000
-# time_approach <- "annual"   #other option: "collapsed"
+#fund_sect_param <- "both_110"
+#fund_sect_param <- "wb_110"
+# fund_sect_param <- "ch_140"
+#run <- "tfrec_emb_annual_s3"
+#iterations <- 1000
+#time_approach <- "annual"   #other option: "collapsed"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -41,15 +42,15 @@ results_dir <- paste0("./results/",run,"/")
 if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
-sector_group_param <- sub(".*_(.*)", "\\1", fund_sect_group_param)
-funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_group_param)
+sector_param <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
+funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_param)
 
 ##### read confounder and treat/control data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_confounders.csv") %>% 
   select(-year)  #remove survey year column that could be confused with oda year
 
-dhs_t_df <- read.csv("./data/interim/dhs_treat_control_group_annual3.csv") %>% 
-  filter(sector_group==sector_group_param & funder==funder_param & 
+dhs_t_df <- read.csv("./data/interim/dhs_treat_control_annual_s3.csv") %>% 
+  filter(sector==sector_param & funder==funder_param & 
            dhs_id %in% dhs_confounders_df$dhs_id) 
 #exclude DHS points where confounder data not available 
 
@@ -57,17 +58,17 @@ dhs_t_df <- read.csv("./data/interim/dhs_treat_control_group_annual3.csv") %>%
 dhs_iso3_df <- dhs_confounders_df %>% 
   distinct(dhs_id,iso3)
 
-#identify countries where funder is operating in this sector group
-funder_sector_group_iso3 <- dhs_confounders_df %>% 
+#identify countries where funder is operating in this sector
+funder_sector_iso3 <- dhs_confounders_df %>% 
   filter(dhs_id %in% (dhs_t_df %>% 
                         pull(dhs_id))) %>% 
   distinct(iso3)
 
-#get controls, limiting to countries where this funder operates in this sector group
-dhs_c_df <- read.csv("./data/interim/dhs_treat_control_group_annual3.csv") %>% 
-  filter(sector_group==sector_group_param & funder=="control") %>% 
+#get controls, limiting to countries where this funder operates in this sector
+dhs_c_df <- read.csv("./data/interim/dhs_treat_control_annual_s3.csv") %>% 
+  filter(sector==sector_param & funder=="control") %>% 
   inner_join(dhs_iso3_df,by="dhs_id") %>% 
-  filter(iso3 %in% funder_sector_group_iso3$iso3 & 
+  filter(iso3 %in% funder_sector_iso3$iso3 & 
            dhs_id %in% dhs_confounders_df$dhs_id) 
 #exclude DHS points where confounder data not available )
 
@@ -231,18 +232,18 @@ for (i in 1:nrow(control_props)) {
 treat_count <- nrow(dhs_t_df) 
 control_count <- nrow(dhs_c_year_df)
 
-if (treat_count < 90) {
+if (treat_count < 100) {
   print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-               " Skipping ",fund_sect_group_param," because fewer than 90 treated (",
+               " Skipping ",fund_sect_param," because fewer than 100 treated (",
                treat_count,")"))
   next 
 } else if (control_count == 0) {
   print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-               " Skipping ",fund_sect_group_param," because no controls"))
+               " Skipping ",fund_sect_param," because no controls"))
   next 
 } else {
   print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-               " Processing ",fund_sect_group_param,
+               " Processing ",fund_sect_param,
                ", treat n:",treat_count,
                ", control n: ",control_count,
                ", run: ",run,
@@ -336,11 +337,11 @@ if (treat_count < 90) {
   #shuffle data to reorder it before use; set.seed call above makes it reproducible
   input_df <- pre_shuffle_df[sample(x=1:nrow(pre_shuffle_df),size=nrow(pre_shuffle_df),replace=FALSE),]
   
-  write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_group_param,".csv"),row.names = FALSE)
+  write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
   
   if (nrow(input_df[!complete.cases(input_df),]) > 0) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
-                 run,"_",fund_sect_group_param,".csv"))
+                 run,"_",fund_sect_param,".csv"))
   } else {
     conf_matrix <- cbind(
       as.matrix(data.frame(
@@ -382,16 +383,16 @@ if (treat_count < 90) {
                           var_labels_all[match(setdiff(before_cols, colnames(conf_matrix)),var_order_all)])
     
     #cleanup unneeded objects in memory before calling function
-    rm(control_before, control_props,  
+    rm(control_before, control_props,
        country_confounders_df, dhs_c_df,dhs_c_year_df,dhs_confounders_df,
-       dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_group_iso3,obs_year_df,
+       dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_df,
        run_df, treat_year_props,pre_shuffle_df)
     
     ################################################################################
-    # Generate tf_records file for this sector group/funder/time_approach if not present 
+    # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
-    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_group_param,"_",
-                              time_approach,".tfrecord")
+    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                              time_approach,"_s3.tfrecord")
     
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -421,29 +422,27 @@ if (treat_count < 90) {
       file = tf_rec_filename,
       samplingType = "balancedTrain",
       nSGD = iterations,
-      nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
-      modelClass = "cnn",
-	  nBoot=30L,
-      dropoutRate = 0.1, 
-
+      nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 9L,
+      modelClass = "embeddings",
+      nBoot=30L,
       nFilters = 50L,
-      nEmbedDim = 128L,		   
+      nEmbedDim = 128L,	
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
-      figuresTag = paste0(fund_sect_group_param,"_",run,"_i",iterations),
+      figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
       tagInFigures = T,
       conda_env = NULL, # conda env to try to activate
       conda_env_required = F
     )
 
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-    output_df <- cbind(data.frame(run,fund_sect_group_param,treat_count,control_count,
+    output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                 " Writing to ",results_dir,"ICA_",fund_sect_group_param,"_",run,"_i"
+                 " Writing to ",results_dir,"ICA_",fund_sect_param,"_",run,"_i"
                  ,iterations,".csv"))
-    write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_group_param,"_",run,"_i",
+    write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_param,"_",run,"_i",
                                iterations,".csv"),row.names = FALSE)
     ############################################################################
     # use output to identify 3 least/most likely locations to receive aid
@@ -475,10 +474,10 @@ if (treat_count < 90) {
       mutate(rank=row_number())
     
     #print these to log
-    print(paste("Most likely treated for", fund_sect_group_param, "run:", run))
+    print(paste("Most likely treated for", fund_sect_param, "run:", run))
     print(most_likely_df %>% 
             select(prW_est,col_index,image_file,start_year))
-    print(paste("Least likely treated for", fund_sect_group_param, "run:", run))
+    print(paste("Least likely treated for", fund_sect_param, "run:", run))
     print(least_likely_df %>% 
             select(prW_est,col_index,image_file,start_year))
     
@@ -489,17 +488,17 @@ if (treat_count < 90) {
     library(ggplot2)
   
     long_funder <- case_when(
-      startsWith(fund_sect_group_param, "ch") ~ "China",
-      startsWith(fund_sect_group_param, "wb") ~ "World Bank",
-      startsWith(fund_sect_group_param, "both") ~ "Both China & World Bank"
+      startsWith(fund_sect_param, "ch") ~ "China",
+      startsWith(fund_sect_param, "wb") ~ "World Bank",
+      startsWith(fund_sect_param, "both") ~ "Both China & World Bank"
     )
 
-    sector_group_names_df <- read.csv("./data/interim/sector_group_names.csv")   %>% 
-      mutate(sec_group_pre_name = paste0(sector_group_name," (",sector_group,")"))
+    sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
+      mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")"))
 
-    sector_group_name <- sector_group_names_df %>%
-      filter(sector_group==sector_group_param) %>%
-      pull(sec_group_pre_name)
+    sector_name <- sector_names_df %>%
+      filter(ad_sector_codes==sector_param) %>%
+      pull(sec_pre_name)
 
     # Convert to long format for boxplots
     long_input_df <- input_df %>%
@@ -514,7 +513,7 @@ if (treat_count < 90) {
       select(treated,rank,all_of(var_order)) %>% 
       tidyr::pivot_longer(c(-treated,-rank),names_to="variable_name", values_to="value")
     
-    sub_l1 <- paste("Funder:",long_funder,"     Sector Group:", sector_group_name)
+    sub_l1 <- paste("Funder:",long_funder,"     Sector:", sector_name)
     sub_l2 <- ifelse(nzchar(dropped_labels),
                      paste0("Dropped due to no variation: ", dropped_labels),
                      "")
@@ -546,7 +545,7 @@ if (treat_count < 90) {
       scale_fill_manual(values=c("goldenrod2","slategray2","salmon3"),
                         labels=c("Lowest","Second","Third"))  
 
-    ggsave(paste0(results_dir,fund_sect_group_param,"_20boxplots_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_20boxplots_",run,".pdf"),
            combined_boxplot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -556,9 +555,9 @@ if (treat_count < 90) {
     #############################################################################
     # Set the treated color based on funder
     treat_color <- case_when(
-      startsWith(fund_sect_group_param, "ch") ~ "indianred1",
-      startsWith(fund_sect_group_param, "wb") ~ "mediumblue",
-      startsWith(fund_sect_group_param, "both") ~ "blueviolet"
+      startsWith(fund_sect_param, "ch") ~ "indianred1",
+      startsWith(fund_sect_param, "wb") ~ "mediumblue",
+      startsWith(fund_sect_param, "both") ~ "blueviolet"
     )
 
     #Convert to longer format for density plots, leaving outcome as separate column
@@ -588,7 +587,7 @@ if (treat_count < 90) {
       theme_bw()  +
       theme(panel.grid = element_blank())
     
-    ggsave(paste0(results_dir,fund_sect_group_param,"_30conf_iwi_",run,".png"),
+    ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".png"),
            outcome_confounders_plot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -641,7 +640,7 @@ if (treat_count < 90) {
                     shape=c(24,25),
                     labels=c("3 Highest Pr(T=1)","3 Lowest Pr(T=1)")) +
       tm_layout(main.title.size=1,
-                main.title = paste0(long_funder,": ",sector_group_name,"\nTreatment and Control Locations (2001-2014)"),
+                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2001-2014)"),
                 main.title.position=c("center","top"),
                 legend.position = c("left", "bottom"),
                 legend.text.size = 1,
@@ -652,7 +651,7 @@ if (treat_count < 90) {
                 legend.outside.size = .25
       )
     
-    tmap_save(treat_control_map,paste0(results_dir,fund_sect_group_param,"_10map_",run,".png"))
+    tmap_save(treat_control_map,paste0(results_dir,fund_sect_param,"_10map_",run,".png"))
   
 
     ############################################################################
@@ -696,7 +695,7 @@ if (treat_count < 90) {
     
     
     #save
-    ggsave(paste0(results_dir,fund_sect_group_param,"_50ridge_prop_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_50ridge_prop_",run,".pdf"),
            ridge_conf_density,
            width=6, height = 4, dpi=300,
            bg="white", units="in")
@@ -706,18 +705,21 @@ if (treat_count < 90) {
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
     tab_conf_salience_df <- ica_df %>%
-      select(starts_with("SalienceX."))  %>%
-      rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
-      pivot_longer(cols=everything())
+      select(starts_with("SalienceX"))  %>%
+      pivot_longer(cols=everything()) %>% 
+      separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
+      pivot_wider(names_from = measure, values_from=value) %>% 
+      mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
+             SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
     
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
-      rename(Salience_AIC = value)
+      right_join(tab_conf_salience_df, by="term") %>% 
+      rename(Salience_AIC = SalienceX)
     
     #write to file
     write.csv(tab_conf_compare_df,
-              paste0(results_dir,fund_sect_group_param,"_tab_conf_compare_", run,".csv"),
+              paste0(results_dir,fund_sect_param,"_tab_conf_compare_", run,".csv"),
               row.names = FALSE)
     
     #plot these
@@ -727,7 +729,8 @@ if (treat_count < 90) {
                                  na.rm=T)
     )
     
-    
+    treat_sig_color <- ifelse(tab_conf_compare_df$SalienceX_sig=="","gray80",
+                              treat_color)
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
                              "cntyDemocratic_republic_of_congo" ~ "cntyDR_Congo",
@@ -745,8 +748,8 @@ if (treat_count < 90) {
       term = sub("cnty", "", term)
       ) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
-      geom_point(color=treat_color) +
-      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color,
+      geom_point(color=treat_sig_color) +
+      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_sig_color,
                                segment.color="gray80") + 
       geom_vline(xintercept=0,color="gray80") +
       geom_hline(yintercept=0, color="gray80") +
@@ -761,7 +764,7 @@ if (treat_count < 90) {
       theme(panel.grid = element_blank())
     
     #save
-    ggsave(paste0(results_dir,fund_sect_group_param,"_90xy_tab_conf_images_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_90xy_tab_conf_images_",run,".pdf"),
            tab_est_images,
            width=6, height = 6, dpi=300,
            bg="white", units="in")
