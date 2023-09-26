@@ -80,6 +80,10 @@ source("./code/R/call_CI_Conf_tfrec_cnn_group_annual.R", local=TRUE)
 #  scripts/call_CI_Conf_tfrec_cnn_group_annual.slurm
 
 #run will create a subdirectory named after the run, where all the output files will be
+#for sector-based runs, run (from results directory):
+#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
+#for sector-group based runs, run (from results directory):
+#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
 #run sh scripts/rename_output.sh on server to rename output files for consolidation
 #(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
 #Interventions, BasicServices, and Other groups)

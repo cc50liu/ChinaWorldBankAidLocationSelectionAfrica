@@ -1,6 +1,6 @@
 #!/bin/bash
 # cd to the specific results directory and then submit this script as 
-# sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
+# sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
 
 # Loop through each Causal Salience Map in the directory
 for file in CSM_KW*; do

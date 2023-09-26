@@ -16,7 +16,7 @@ run_directories <-c("./results/tfrec_emb_group_annual",
                     "./results/tfrec_cnn_group_annual")
 run_shortnames <- c("cnn","emb")
 group_label_for_filename <- "cnn_emb_group_annual"
-group_label_for_titles <- "Annual Observations"
+group_label_for_titles <- "Annual Observations by Sector Group"
 
 #########################
 #get matching files
@@ -167,7 +167,8 @@ prob_xy_plot <- loc_probs_longer_df %>%
 ggplot(aes(x = cnn, y = emb)) +
   geom_point(alpha=.1) +
   facet_wrap(~ fund_sec_group, labeller = as_labeller(label_with_correlation)) +
-  labs(title = paste0(group_label_for_titles,": Treatment Probabilities for DHS locations by funder_sector_group across models"),
+  labs(title = "Treatment Probabilities for DHS locations across models",
+       subtitle=group_label_for_titles,
        x = "Convolutional Neural Network",
        y = "Random Embeddings") +   
   theme_bw()  +
@@ -198,6 +199,20 @@ outcome_sector_display_df <- outcome_sector_group_df %>%
 write.csv(outcome_sector_display_df,paste0("./results/outcome_display_xruns_",group_label_for_filename,".csv"),
           row.names=FALSE)
 
+#add Xu et al results to dataframe
+outcome_sector_group_df <- outcome_sector_group_df %>% 
+  mutate(xu=case_match(fund_sec_group,
+                       "ch_DIR"   ~ 6.3,
+                       "ch_EIS"   ~ 19.0,
+                       "ch_OTH"   ~ 21.5,
+                       "ch_PRO"   ~ 12.1,
+                       "ch_SIS"   ~ -021.3,
+                       "wb_OTH"   ~ 3.4,
+                       "wb_PRO"   ~ 3.5,
+                       "wb_SIS"   ~ 3.5,
+                       ))
+
+
 ###########################################
 #generate figures
 ###########################################
@@ -209,27 +224,26 @@ ate_plot <- ggplot(outcome_sector_group_df,aes(x=tauHat_propensityHajek,
   facet_grid(sec_group_pre_name ~ ., scales="free_y") +
   geom_pointrange(aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
                       xmax=tauHat_propensityHajek+(tauHat_propensityHajek_se*1.96))) +
-  geom_point(aes(x=tauHat_diffInMeans,fill="baseline"), color="gray80") +
-  # geom_segment(aes(x=min(tauHat_diffInMeans,tauHat_propensityHajek),
-  #                  xend=max(tauHat_diffInMeans,tauHat_propensityHajek),
-  #                  y=sec_group_pre_name,yend=sec_group_pre_name,color = "baseline"),
-  #              linewidth = .5,
-  #              position = position_jitterdodge(jitter.height=0.1)) +
-  geom_vline(xintercept=0,color="gray80") +
   scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
                      breaks = c("ch","wb","both"),
                      labels = c("ch" = "China","wb"="World Bank","both"="Both")) +
-  scale_fill_manual(values=c("baseline"="gray80"),
-                    labels=c("baseline"="No confounders")) +
-  scale_shape_manual(values = c("cnn" = 16, "emb" = 17),
+  scale_shape_manual(values = c("cnn" = 15, "emb" = 16),
                      breaks = c("cnn","emb"),
                      labels = c("Convolutional Neural Net","Randomized Embeddings")) +
-  labs(title = paste0(group_label_for_titles,": Average Treatment Effect on Wealth, by Sector Group, Funder, and Model"),
+  labs(title = "Average Treatment Effect on Wealth, by Sector Group, Funder, and Model",
+       subtitle=group_label_for_titles,
        x = "Estimated ATE with 95% confidence intervals",
        y = "",
        color="Funder",
-       fill="Baseline estimate",
-       shape="Model") +
+       shape="Model") +  
+  ggnewscale::new_scale_color() +
+  geom_point(aes(x=tauHat_diffInMeans,color="baseline"), shape=17) +
+  geom_point(aes(x=xu,color="xu"),shape=17) +
+  geom_vline(xintercept=0,color="gray80") +  
+  scale_color_manual(values=c("baseline"="black", "xu"="gray80"),
+                    breaks = c("baseline","xu"),
+                    labels=c("baseline"="No confounders", "xu"= "Xu et al (2020)")) +
+  labs(color="Baseline estimates") +
   theme_bw()  +
   theme(panel.grid = element_blank(),
         axis.text.y = element_blank(),  
@@ -282,8 +296,8 @@ difInLatPlot <- ggplot(outcome_sector_group_df, aes(x = fund_sec_group_run)) +
     y = "Difference in Treated and Control Average Latitude",
     shape = "IPW Adjustment",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Pre- and Post- Inverse Probability Weighting"),
-    subtitle = "Difference in Treated and Control Average Latitude") +
+    title = "Difference in Treated and Control Average Latitude, Pre- and Post- Inverse Probability Weighting",
+    subtitle = group_label_for_titles) +
   theme_bw() +  
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
@@ -321,8 +335,8 @@ difInLonPlot <- ggplot(outcome_sector_group_df, aes(x = fund_sec_group_run)) +
     y = "Difference in Treated and Control Average Longitude",
     shape = "IPW Adjustment",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Pre- and Post- Inverse Probability Weighting"),
-    subtitle = "Difference in Treated and Control Average Longitude") +
+    title = "Difference in Treated and Control Average Longitude, Pre- and Post- Inverse Probability Weighting",
+    subtitle = group_label_for_titles) +
   theme_bw() +  
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
@@ -361,7 +375,8 @@ difCELossPlot <- ggplot(outcome_sector_group_df, aes(x = fund_sec_group_run)) +
     y = "Out of Sample Error",
     shape = "CE Loss",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Out of Sample Error")) +
+    title = "Out of Sample Error",
+    subtitle = group_label_for_titles) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
@@ -399,7 +414,8 @@ dif_ClassError_plot <- ggplot(outcome_sector_group_df, aes(x = fund_sec_group_ru
     y = "Treatment Class Prediction Error (%)",
     shape = "CE Loss",
     color = "Funder",
-    title = paste0(group_label_for_titles,": Treatment Class Prediction Error")) +
+    title = "Treatment Class Prediction Error",
+    subtitle = group_label_for_titles) +
   theme_bw() +
   theme(panel.grid = element_blank()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
@@ -472,7 +488,8 @@ labs(
   color = "Funder",
   shape = "Model",
   fill = "Baseline",
-  title = paste0(group_label_for_titles,": Salience of tabular variables across funders, models and sector groups")) +
+  title = "Salience of tabular variables across funders, models and sector groups",
+  subtitle = group_label_for_titles) +
 theme_bw() +
 theme(panel.grid = element_blank()) 
 
@@ -515,7 +532,8 @@ plot_tab_confounder <- function(term_var) {
       color = "Funder",
       shape = "Model",
       fill = "Baseline",
-      title = paste0(group_label_for_titles,": ",var_labels_all[match(term_var,var_order_all)]," Salience across models and sector groups")) +
+      title = paste0(var_labels_all[match(term_var,var_order_all)],": Salience across models and sector groups"),
+      subtitle = group_label_for_titles) +
     theme_bw() +
     theme(panel.grid = element_blank()) 
   
