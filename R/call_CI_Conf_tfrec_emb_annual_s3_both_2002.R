@@ -11,7 +11,9 @@
 #     Includes an agglomeration variable
 #     Retires logistic reg; remove gridlines from plots; seed is sector
 #     Handles SalienceX_se variables.
-#     IWI measured 3 years post-project start									 
+#     IWI measured 3 years post-project start	
+#     Exclude treatments <=2001 (missing satellite imagery)
+#     Confounder variable if other funder had a treatment in same year								 
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -27,12 +29,11 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-#fund_sect_param <- "both_110"
 #fund_sect_param <- "wb_110"
 # fund_sect_param <- "ch_140"
-#run <- "tfrec_emb_annual_s3no2001"
-#iterations <- 1000
-#time_approach <- "annual"   #other option: "collapsed"
+# run <- "tfrec_emb_annual_s3_both_2002"
+# iterations <- 1000
+# time_approach <- "annual"   #other option: "collapsed"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -43,16 +44,15 @@ if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
 sector_param <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
-funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_param)
+funder_param <- sub("(wb|ch).*", "\\1", fund_sect_param)
 
 ##### read confounder and treat/control data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_confounders.csv") %>% 
   select(-year)  #remove survey year column that could be confused with oda year
 
-dhs_t_df <- read.csv("./data/interim/dhs_treat_control_annual_s3.csv") %>% 
+dhs_t_df <- read.csv("./data/interim/dhs_treat_control_annual_s3_both_2002.csv") %>% 
   filter(sector==sector_param & funder==funder_param & 
-           dhs_id %in% dhs_confounders_df$dhs_id &
-		   image_group != "1999:2001") 
+           dhs_id %in% dhs_confounders_df$dhs_id) 
 #exclude DHS points where confounder data not available 
 
 #limit to dhs_id and iso3 for use in join below
@@ -66,9 +66,8 @@ funder_sector_iso3 <- dhs_confounders_df %>%
   distinct(iso3)
 
 #get controls, limiting to countries where this funder operates in this sector
-dhs_c_df <- read.csv("./data/interim/dhs_treat_control_annual_s3.csv") %>% 
-  filter(sector==sector_param & funder=="control" &
-		   image_group != "1999:2001") %>% 
+dhs_c_df <- read.csv("./data/interim/dhs_treat_control_annual_s3_both_2002.csv") %>% 
+  filter(sector==sector_param & funder=="control") %>% 
   inner_join(dhs_iso3_df,by="dhs_id") %>% 
   filter(iso3 %in% funder_sector_iso3$iso3 & 
            dhs_id %in% dhs_confounders_df$dhs_id) 
@@ -82,14 +81,14 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "leader_birthplace","log_trans_proj_cum_n",
                "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-               "landsat578")
+               "landsat578","other_funder_treated")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
                 "Conflict deaths (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                "Landsat 5 & 7", "Landsat 5,7,& 8")
+                "Landsat 5 & 7", "Landsat 5,7,& 8","Treated Other Funder")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -194,7 +193,7 @@ dhs_c_year_df <- dhs_c_df %>%
 control_props <- control_props %>% 
   filter(!is.na(image_group_count))
 
-set.seed(1234)  
+set.seed(sector_param)  
 for (i in 1:nrow(control_props)) {
   #i=1  #uncomment to test
 
@@ -223,10 +222,10 @@ for (i in 1:nrow(control_props)) {
                                  start_year))
   }
 }  
-# dhs_c_year_df %>%
-#   group_by(image_group,start_year) %>%
-#   count() %>%
-#   print(n=90)
+dhs_c_year_df %>%
+  group_by(image_group,start_year) %>%
+  count() %>%
+  print(n=90)
 
 ################################################################################
 # Set tabular confounding variables based on start year
@@ -259,10 +258,10 @@ if (treat_count < 100) {
   obs_year_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,start_year,treated,proj_count),
+       select(dhs_id,start_year,treated,proj_count,treated_both_funders),
     dhs_c_year_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,start_year,treated,proj_count)
+       select(dhs_id,start_year,treated,proj_count,treated_both_funders)
     ) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
@@ -327,7 +326,7 @@ if (treat_count < 100) {
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, lat, lon, treated, 
+    select(dhs_id, country, iso3, lat, lon, treated, treated_both_funders,
            start_year, image_file, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
@@ -349,6 +348,7 @@ if (treat_count < 100) {
       as.matrix(data.frame(
         "start_year"                 =input_df$start_year,
         "start_year_squared"         =input_df$start_year^2,
+        "other_funder_treated"       =input_df$treated_both_funders,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
@@ -394,7 +394,7 @@ if (treat_count < 100) {
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_s3no2001.tfrecord")
+                              time_approach,"_s3_both_2002.tfrecord")
     
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
