@@ -222,10 +222,10 @@ for (i in 1:nrow(control_props)) {
                                  start_year))
   }
 }  
-dhs_c_year_df %>%
-  group_by(image_group,start_year) %>%
-  count() %>%
-  print(n=90)
+#dhs_c_year_df %>%
+#  group_by(image_group,start_year) %>%
+#  count() %>%
+#  print(n=90)
 
 ################################################################################
 # Set tabular confounding variables based on start year
