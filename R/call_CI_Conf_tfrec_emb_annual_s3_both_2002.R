@@ -1,4 +1,4 @@
-# call_CI_Conf_tfrec_emb_annual_s3no2001.R
+# call_CI_Conf_tfrec_emb_annual_s3_both_2002.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        the same distribution of pre-treatment years for control and treated points,
 #        by funder/sector combinations.  
@@ -81,7 +81,7 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "leader_birthplace","log_trans_proj_cum_n",
                "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-               "landsat578","other_funder_treated")
+               "landsat578","treated_both_funders")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
@@ -348,7 +348,7 @@ if (treat_count < 100) {
       as.matrix(data.frame(
         "start_year"                 =input_df$start_year,
         "start_year_squared"         =input_df$start_year^2,
-        "other_funder_treated"       =input_df$treated_both_funders,
+        "treated_both_funders"       =input_df$treated_both_funders,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
