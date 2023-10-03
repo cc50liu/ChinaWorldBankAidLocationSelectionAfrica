@@ -91,13 +91,11 @@ source("./code/R/call_CI_Conf_tfrec_cnn_group_annual.R", local=TRUE)
 #copy files to a results directory on laptop
 #run script to convert png files to pdfs and then consolidate into single pdf file for each funder
 #change run name and funder below
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual3 both . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual3 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual3 ch . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 ch . 
 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual3 both . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual3 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual3 ch . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
 
 #can also combine only treatment propensity charts using combine_results_treatprop.bat
 
