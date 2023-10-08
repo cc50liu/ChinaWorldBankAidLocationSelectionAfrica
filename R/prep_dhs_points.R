@@ -112,3 +112,14 @@ dhs_tc_est_df <- dhs_tc_est_df %>%
 
 write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
 #dhs_tc_est_df <- read.csv("./data/interim/dhs_est_iwi.csv")
+
+dhs_iwi_annual <- dhs_tc_est_df %>% 
+  group_by(country, year) %>% 
+  mutate(image_file_annual = paste0("./data/dhs_tifs_annual/",country,"_",year,"/",
+                                    str_pad(row_number() - 1,width = 5, pad="0"),
+                                    ".tif")) %>% 
+  ungroup()
+
+write.csv(dhs_iwi_annual,"./data/interim/dhs_est_iwi_annual.csv", row.names=FALSE)
+
+

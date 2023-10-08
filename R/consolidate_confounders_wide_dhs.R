@@ -26,7 +26,7 @@ dhs_loan_transp_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>%
   select(dhs_id, starts_with("log"))
 
 #get iwi estimate and all other attributes here
-dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi.csv")
+dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi_annual.csv")
 
 ################################
 # Process per-capita nightlights 
