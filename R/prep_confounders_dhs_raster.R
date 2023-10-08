@@ -23,7 +23,7 @@ rm(list=ls())
   # Iterate over dhs points
   for (i in 1:nrow(dhs_df)) {
     #i=1 #uncomment to test
-    # Read the file path from the image_file column
+    # Read the file path from the image_file_annual column
     file_path <- dhs_df$image_file_annual[i]
     #just read the first band to get the extent for later use
     layer_name <- paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1",
@@ -79,7 +79,7 @@ rm(list=ls())
     }
     
     if (i %% 100 == 0) {
-      print(paste("iteration",i,"Avg nl",round(average_nl,1),"Avg trav min",
+      print(paste("iteration",i,"Avg trav min",
                   round(average_travel_min_50k,1), "Last avg pd",
                   round(avg_pop_dens,1)))
     }
@@ -93,9 +93,22 @@ rm(list=ls())
 
   #look at points where couldn't determine pop density
   dhs_df %>%
-    select(dhs_id,country,starts_with("avg_pop_dens_"),image_file) %>% 
+    select(dhs_id,country,starts_with("avg_pop_dens_"),image_file_annual) %>% 
     filter(!complete.cases(.))
     
+  # dhs_id country avg_pop_dens_2000 avg_pop_dens_2001 avg_pop_dens_2002 avg_pop_dens_2003 avg_pop_dens_2004
+  # 1  30453  malawi               NaN               NaN               NaN               NaN               NaN
+  # 2  54332  zambia               NaN               NaN               NaN               NaN               NaN
+  # 3  35360 morocco                NA                NA                NA                NA                NA
+  # avg_pop_dens_2005 avg_pop_dens_2006 avg_pop_dens_2007 avg_pop_dens_2008 avg_pop_dens_2009 avg_pop_dens_2010
+  # 1               NaN               NaN               NaN               NaN               NaN               NaN
+  # 2               NaN               NaN               NaN               NaN               NaN               NaN
+  # 3                NA                NA                NA                NA                NA                NA
+  # avg_pop_dens_2011 avg_pop_dens_2012 avg_pop_dens_2013                             image_file_annual
+  # 1               NaN               NaN               NaN  ./data/dhs_tifs_annual/malawi_2000/00251.tif
+  # 2               NaN               NaN               NaN  ./data/dhs_tifs_annual/zambia_2007/00316.tif
+  # 3                NA                NA                NA ./data/dhs_tifs_annual/morocco_2003/00000.tif
+  
   #exclude points where pop density could not be determined, n now 9909
   dhs_df <- dhs_df %>%
     filter(complete.cases(.))
