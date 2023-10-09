@@ -615,6 +615,10 @@ if (treat_count < 100) {
               row.names = FALSE)
     
     #plot these
+    #before doing so, remove country variables
+    tab_conf_compare_df <- tab_conf_compare_df %>% 
+      filter(!grepl("cnty",term))
+    
     #determine the limits of the plot
     max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
                                    abs(tab_conf_compare_df$Salience_AIC)),
@@ -635,8 +639,6 @@ if (treat_count < 100) {
                              "log_dist_km_to_dia" ~ "dist_to_dia",
                              "log_dist_km_to_petro" ~ "dist_to_petro",
                              .default=term)) %>% 
-      #remove country variables from plot
-      filter(!grepl("cnty",term)) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_sig_color) +
       ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_sig_color,
