@@ -160,7 +160,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
 # Set tabular confounding variables based on start year
 ################################################################################
 treat_count <- nrow(dhs_t_df) 
-control_count <- nrow(dhs_c_year_df)
+control_count <- nrow(dhs_c_df)
 
 if (treat_count < 100) {
   print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
