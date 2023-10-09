@@ -7,7 +7,7 @@ rm(list=ls())
 ### Load general data
 #get Africa ISO codes
 africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-projection <- "ESRI:102023"
+projection <- "ESRI:102023"  #WGS 1984 Equidistant Conic for Africa.
 
 #country boundaries, for map and FIPS id
 gadm0_sf <- sf::st_read("./data/country_regions/gadm28_adm0.shp")  %>%

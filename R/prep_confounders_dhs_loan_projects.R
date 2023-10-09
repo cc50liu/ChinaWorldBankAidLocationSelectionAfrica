@@ -8,7 +8,7 @@ africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 
 ####################################################
 #### Load administrative borders
-projection <- "ESRI:102023"
+projection <- "ESRI:102023"  #WGS 1984 Equidistant Conic for Africa.
 
 adm1_sf <- sf::st_read("./data/country_regions/gadm1_clean.shp")  %>%
   filter(ISO %in% africa_isos_df$iso3)

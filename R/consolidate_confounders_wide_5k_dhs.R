@@ -8,8 +8,18 @@ rm(list=ls())
 dhs_vector_df <- read.csv("./data/interim/dhs_treat_control_vector.csv") %>% 
   select(dhs_id, starts_with("log_"), starts_with("leader_"))
 
+# dhs_raster_larger_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>%
+#   rowwise() %>%
+#   mutate(
+#     across(starts_with("avg_pop_dens_"),
+#            ~ ifelse(avg_min_to_city <= 60 && . >= 150, 1, 0),
+#            .names = "agglom_{str_extract(.col,'[0-9]{4}')}")
+#   ) %>%
+#   ungroup() %>% 
+#   select(dhs_id, rural, starts_with("log"), starts_with("agglom"))
+
 #calculate annual agglomeration index here
-dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>%
+dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>%
   rowwise() %>%
   mutate(
     across(starts_with("avg_pop_dens_"),
@@ -26,13 +36,13 @@ dhs_loan_transp_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>%
   select(dhs_id, starts_with("log"))
 
 #get iwi estimate and all other attributes here
-dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi.csv")
+dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi_annual.csv")
 
 ################################
 # Process per-capita nightlights 
 ################################
-dhs_nl_df <- read.csv("./data/GEE/per_cap_nl_dhs_WorldPop.csv") %>%  
-  #exclude three points with 0 pop_counts, so they don't show high per capita nightlights 
+dhs_nl_df <- read.csv("./data/GEE/per_cap_nl_dhs_5k_WorldPop.csv") %>%  
+  #exclude locations with 0 pop_counts, so they don't show high per capita nightlights 
   filter(!if_any(starts_with("pop_count"), ~ . == 0))
 
 #initialize pc_dhs_nl_df and then loop over it, calculating per capita nightlights each year
@@ -81,25 +91,26 @@ dhs_confounders_df <- dhs_iwi_df %>%
   inner_join(pc_nl_log_trim_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
               
 
-write.csv(dhs_confounders_df,"./data/interim/dhs_confounders.csv",row.names=FALSE)
+write.csv(dhs_confounders_df,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
 
 ############################################
 # Descriptive stats for per capita nightlights
 ############################################
+library(ggplot2)
 #plot the distribution of nightlights       
 pc_nl_density <- pc_nl_log_df %>% 
   tidyr::pivot_longer(cols = starts_with("pc_nl_"), names_to = "pc_nl_year", values_to = "density") %>%
   ggplot(aes(density, color=pc_nl_year)) +
   geom_density() +
   labs(x="Nightlights per capita", y="Density across DHS clusters",
-       title="Nightlights per capita across DHS Clusters",
+       title="Nightlights per capita across DHS Clusters (5km square)",
        color="Years") +
   scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
   theme_bw()
 
 pc_nl_density
 
-ggsave("./figures/nl_pc_density.png",pc_nl_density, width=6, height = 4, dpi=300,
+ggsave("./figures/nl_pc_density_5k.png",pc_nl_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
 #density plot of log nightlights
@@ -108,13 +119,13 @@ log_pc_nl_density <-  pc_nl_log_df %>%
   ggplot(aes(density, color=log_pc_nl_year)) +
   geom_density() +
   labs(x="Nightlights per capita (log)", y="Density across DHS clusters",
-       title="Nightlights per capita (log) across DHS clusters",
+       title="Nightlights per capita (log) across DHS clusters (5km square)",
        color="Years") +
   scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
   theme_bw()
 
 log_pc_nl_density
-ggsave("./figures/nl_pc_log_density.png",log_pc_nl_density, width=6, height = 4, dpi=300,
+ggsave("./figures/nl_pc_log_density_5k.png",log_pc_nl_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
 #density plot of trimmed log nightlights
@@ -123,13 +134,13 @@ log_pc_nl_trim_density <-  pc_nl_log_trim_df %>%
   ggplot(aes(density, color=log_pc_nl_year)) +
   geom_density() +
   labs(x="Nightlights per capita (log, trimmed at 99th percentile)", y="Density across DHS clusters",
-       title="Nightlights per capita (log, trimmed at 99th percentile) across DHS clusters",
+       title="Nightlights per capita (log, trimmed at 99th percentile) across DHS clusters (5km square)",
        color="Years") +
   scale_color_discrete(labels = function(x) gsub(".*?_(\\d{4})$", "\\1", x)) +
   theme_bw()
 
 log_pc_nl_trim_density
-ggsave("./figures/nl_pc_log_trim99_density.png",log_pc_nl_trim_density, width=6, height = 4, dpi=300,
+ggsave("./figures/nl_pc_log_trim99_density_5k.png",log_pc_nl_trim_density, width=6, height = 4, dpi=300,
        bg="white", units="in")
 
   
@@ -142,7 +153,7 @@ agglomeration_plot <- dhs_raster_df %>%
                values_to = "Agglomeration") %>% 
 ggplot(aes(factor(Agglomeration,labels=c("False","True")), fill = factor(rural))) +
   geom_bar(position = "fill") +
-  labs(title = "Agglomeration versus DHS urban/rural labels for study locations",
+  labs(title = "Agglomeration versus DHS urban/rural labels for DHS locations (5km square)",
        x = "Agglomeration Index",
        y = "Proportion",
        fill = "DHS Label") +
@@ -152,7 +163,7 @@ ggplot(aes(factor(Agglomeration,labels=c("False","True")), fill = factor(rural))
   theme_bw()
 
 
-ggsave("./figures/agglomeration.png",agglomeration_plot, width=6, height = 6, dpi=300,
+ggsave("./figures/agglomeration_5k.png",agglomeration_plot, width=6, height = 6, dpi=300,
        bg="white", units="in")
 
 agglomeration_time_plot <- dhs_raster_df %>% 
@@ -170,5 +181,5 @@ agglomeration_time_plot <- dhs_raster_df %>%
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels by 45 degrees
 
-ggsave("./figures/agglomeration_annual.png",agglomeration_time_plot, width=6, height = 6, dpi=300,
+ggsave("./figures/agglomeration_5k_annual.png",agglomeration_time_plot, width=6, height = 6, dpi=300,
        bg="white", units="in")

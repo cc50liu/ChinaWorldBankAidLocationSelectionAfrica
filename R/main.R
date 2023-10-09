@@ -47,6 +47,62 @@
 #./code/python/0_download_percapita_nl_WorldPop.ipynb
 
 ##############################################################################
+# Runs: 5K
+##############################################################################
+#Basic data prep
+source("./code/R/prep_projects_v2.R", local=TRUE)
+#writes africa_oda_sector_group_v2.csv
+source("./code/R/prep_dhs_points.R", local=TRUE) 
+
+#Determine treatments/controls
+#annual
+source("./code/R/select_dhs_treat_control_5k_annual.R", local=TRUE) 
+#writes dhs_treat_control_5k_annual.csv
+
+#Prepare confounder Data for each dhs point/scene
+#python/0_download_percapita_nl_5k_WorldPop.ipynb  
+source("./code/R/prep_confounders_dhs_5k_raster.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
+source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
+#considate all confounder data in a wide format, one row per dhs point
+source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
+
+# Call Causal Image Confounding Analysis
+source("./code/R/call_CI_Conf_emb_5k_annual.R", local=TRUE)
+source("./code/R/call_CI_Conf_cnn_5k_annual.R", local=TRUE)
+#I use slurm scripts to run these for all sectors and funders
+#./code/scripts/call_CI_Conf_emb_5k_annual.slurm
+#./code/scripts/call_CI_Conf_cnn_5k_annual.slurm
+#./code/scripts/run_emb_5k_annual.sh
+#./code/scripts/run_cnn_5k_annual.sh
+
+#run will create a subdirectory named after the run, where all the output files will be
+#for sector-based runs, run (from results directory):
+#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
+#for sector-group based runs, run (from results directory):
+#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
+#run sh scripts/rename_output.sh on server to rename output files for consolidation
+#(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
+#Interventions, BasicServices, and Other groups)
+
+#copy files to a results directory on laptop
+#run script to convert png files to pdfs and then consolidate into single pdf file for each funder
+#change run name and funder below
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 ch . 
+
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
+
+#can also combine only treatment propensity charts using combine_results_treatprop.bat
+
+#consolidate results and prepare cross run figures
+source("./code/R/consolidate_CI_output_across_runs_5k_annual.R") 
+
+
+##############################################################################
 # Runs:  tfrec_emb_group_annual, tfrec_cnn_group_annual
 ##############################################################################
 #Basic data prep
@@ -60,6 +116,7 @@ source("./code/R/select_dhs_treat_control_group_annual3.R", local=TRUE)
 #writes dhs_treat_control_group_annual3.csv
 
 #Prepare Confounder Data for each dhs point/scene
+#python/0_download_percapita_nl_WorldPop.ipynb  
 source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
@@ -101,6 +158,9 @@ source("./code/R/call_CI_Conf_tfrec_cnn_group_annual.R", local=TRUE)
 
 #consolidate results and prepare cross run figures
 source("./code/R/consolidate_CI_output_across_runs_groups_annual.R")
+
+
+
 
 ##############################################################################
 # Runs:  tfrec_emb_annual, tfrec_emb_agglom_v3, tfrec_cnn_agglom_v3
