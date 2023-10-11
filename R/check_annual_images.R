@@ -31,6 +31,21 @@ comoros_annual_r <- raster::brick("./data/dhs_tifs_annual/comoros_2012/00222.tif
 # source     : 00222.tif 
 # names      : X00222_1, X00222_2, X00222_3, X00222_4, X00222_5, X00222_6, X00222_7, X00222_8, X00222_9, X00222_10, X00222_11, X00222_12, X00222_13, X00222_14, X00222_15, ... 
 
+
+comoros_annual_terra_r <- terra::rast("./data/dhs_tifs_annual/comoros_2012/00222.tif",
+                                      lyrs=c("00222_1","00222_2","00222_3"))
+terra::cellSize(comoros_annual_terra_r)
+# class       : SpatRaster 
+# dimensions  : 167, 167, 1  (nrow, ncol, nlyr)
+# resolution  : 0.0002736804, 0.0002699141  (x, y)
+# extent      : 43.36329, 43.40899, -11.51453, -11.46945  (xmin, xmax, ymin, ymax)
+# coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+# source(s)   : memory
+# name        :     area 
+# min value   : 891.4497 
+# max value   : 891.5878 
+
+
 #year 2000
 comoros_annual_rgb <-  comoros_annual_r[[c(1,2,3)]]
 comoros_annual_scaled <- comoros_annual_rgb/.0000275

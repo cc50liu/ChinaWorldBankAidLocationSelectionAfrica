@@ -21,9 +21,9 @@ def export_images(survey_df: pd.DataFrame,
                   include_nl: bool = False,
                   scale: int = 30,
                   export_tile_diameter: int = 167,  # image dimensions = 167px * 167px ~ 5km2
-                  start_year: int = 2000,
-                  end_year: int = 2013,
-                  span_length: int = 1
+                  start_year: int = 1999,
+                  end_year: int = 2016,
+                  span_length: int = 3
                   ):
     """
     Downloads a .tif-file for each geographical location in a survey depicting a 

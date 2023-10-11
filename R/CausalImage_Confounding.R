@@ -449,22 +449,103 @@ zzz
    
    
     #terra library
-    # comoros <- terra::rast("./data/dhs_tifs/comoros_2012/00149.tif",
-    #                   lyrs=c("00149_41","00149_42","00149_43"))
-    # 
-    # #black
-    # terra::plotRGB(comoros,r=3, g=2, b=1)
-    # terra::plotRGB(comoros,r="00149_43", g="00149_42", b="00149_41")
-    # 
-    # #looks like I saw in the output
-    # comoros_scaled <-  terra::stretch(comoros,minv=0,maxv=255)
-    # 
-    # #try manually clamping and adjusting for the gamma value
-    # comoros_clamped <- terra::clamp(comoros,lower=0,upper=3000,values=TRUE)
-    # comoros_gamma_corrected <- comoros_clamped ^ (1/1.4)  #1.4 is the gamma value in GEE documentation
-    # 
-    # max(comoros_gamma_corrected)
-    # terra::plotRGB(comoros_gamma_corrected,r=3, g=2, b=1)
+    comoros <- terra::rast("./data/dhs_tifs/comoros_2012/00149.tif",
+                      lyrs=c("00149_41","00149_42","00149_43"))
+    
+    # class       : SpatRaster 
+    # dimensions  : 224, 224, 3  (nrow, ncol, nlyr)
+    # resolution  : 0.0005473618, 0.0005398282  (x, y)
+    # extent      : 43.32489, 43.4475, -11.55244, -11.43152  (xmin, xmax, ymin, ymax)
+    # coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+    # source      : 00149.tif 
+    # names       : 00149_41, 00149_42, 00149_43 
+
+    cellSize(comoros, unit="m",transform="TRUE")
+    x <- terra::aggregate(comoros, 100)
+    a <- cellSize(x, unit="km") / 10000
+    b <- resample(a, r)
+    minmax(a)
+    
+    terra::expanse(comoros, unit="km")
+    # layer     area
+    # 1     1 178.9317
+    # 2     2 178.9317
+    # 3     3 178.9317    
+    terra::expanse(comoros, unit="ha")
+    # layer     area
+    # 1     1 17893.17
+    # 2     2 17893.17
+    # 3     3 17893.17
+    
+    #area of each pixel
+    cellSize(comoros, unit="m",transform=TRUE)
+    # class       : SpatRaster 
+    # dimensions  : 224, 224, 1  (nrow, ncol, nlyr)
+    # resolution  : 0.0005473618, 0.0005398282  (x, y)
+    # extent      : 43.32489, 43.4475, -11.55244, -11.43152  (xmin, xmax, ymin, ymax)
+    # coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+    # source(s)   : memory
+    # name        :     area 
+    # min value   : 3565.338 
+    # max value   : 3566.822 
+    sqrt(3565.338)
+    #59.71045 m resolution per pixel
+    
+    comoros_annual_terra_r <- terra::rast("./data/dhs_tifs_annual/comoros_2012/00222.tif",
+                                          lyrs=c("00222_1"))
+    terra::cellSize(comoros_annual_terra_r, unit="m",transform=TRUE)
+    # class       : SpatRaster 
+    # dimensions  : 167, 167, 1  (nrow, ncol, nlyr)
+    # resolution  : 0.0002736804, 0.0002699141  (x, y)
+    # extent      : 43.36329, 43.40899, -11.51453, -11.46945  (xmin, xmax, ymin, ymax)
+    # coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+    # source(s)   : memory
+    # name        :     area 
+    # min value   : 891.4497 
+    # max value   : 891.5878 
+    sqrt(891.4497)
+    #29.85715 m resolution per pixel
+
+    ##################################################################
+    #extract the center 5k
+    ##################################################################    
+    # Calculate the center of the raster
+    center_x <- (extent_info[2] + extent_info[1]) / 2
+    center_y <- (extent_info[4] + extent_info[3]) / 2
+    
+    # Calculate the extent for the 5-kilometer square around the center
+    buffer_size <- 5000  # in meters
+    new_extent <- ext(
+      center_x - buffer_size / 2, center_x + buffer_size / 2,
+      center_y - buffer_size / 2, center_y + buffer_size / 2
+    )
+    
+    # Crop the raster to the new extent
+    comoros_cropped <- terra::crop(comoros, new_extent)
+    # class       : SpatRaster 
+    # dimensions  : 224, 224, 3  (nrow, ncol, nlyr)
+    # resolution  : 0.0005473618, 0.0005398282  (x, y)
+    # extent      : 43.32489, 43.4475, -11.55244, -11.43152  (xmin, xmax, ymin, ymax)
+    # coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+    # source      : 00149.tif 
+    # names       : 00149_41, 00149_42, 00149_43 
+    
+    print(comoros_cropped)
+    
+    
+    #black
+    terra::plotRGB(comoros,r=3, g=2, b=1)
+    terra::plotRGB(comoros,r="00149_43", g="00149_42", b="00149_41")
+
+    #looks like I saw in the output
+    comoros_scaled <-  terra::stretch(comoros,minv=0,maxv=255)
+
+    #try manually clamping and adjusting for the gamma value
+    comoros_clamped <- terra::clamp(comoros,lower=0,upper=3000,values=TRUE)
+    comoros_gamma_corrected <- comoros_clamped ^ (1/1.4)  #1.4 is the gamma value in GEE documentation
+
+    max(comoros_gamma_corrected)
+    terra::plotRGB(comoros_gamma_corrected,r=3, g=2, b=1)
     
     dev.off()
     
