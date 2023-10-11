@@ -505,6 +505,24 @@ zzz
     # max value   : 891.5878 
     sqrt(891.4497)
     #29.85715 m resolution per pixel
+    
+    ##################################################################
+    #check newly downloaded 3year, 5k images
+    ##################################################################     
+    angola_r <- terra::rast("./data/dhs_tifs_5k_3yr/angola_2006/00026.tif")
+    # class       : SpatRaster 
+    # dimensions  : 167, 167, 36  (nrow, ncol, nlyr)
+    # resolution  : 0.0002723238, 0.0002699141  (x, y)
+    # extent      : 14.87559, 14.92107, -10.01384, -9.968769  (xmin, xmax, ymin, ymax)
+    # coord. ref. : lon/lat WGS 84 (EPSG:4326) 
+    # source      : 00026.tif 
+    # names       : 00026_1, 00026_2, 00026_3, 00026_4, 00026_5, 00026_6, ... 
+    
+    angola_1band_r <- terra::rast("./data/dhs_tifs_5k_3yr/angola_2006/00026.tif",
+                            lyrs=c("00026_1"))
+    terra::cellSize(angola_1band_r, unit="m",transform=TRUE)
+    sqrt(891.3443)
+    #29.85539 m resolution per pixel
 
     ##################################################################
     #extract the center 5k
