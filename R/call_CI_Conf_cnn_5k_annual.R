@@ -544,10 +544,6 @@ if (treat_count < 100) {
                     , col = c(treat_color,"gray80")
                     , labels = c(paste0("Treated (n ",treat_count,")"),
                                  paste0("Control (n ",control_count,")")))  +
-      tm_add_legend(type="symbol",
-                    col=c(treat_color,"gray39"),
-                    shape=c(24,25),
-                    labels=c("3 Highest Pr(T=1)","3 Lowest Pr(T=1)")) +
       tm_layout(main.title.size=1,
                 main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2002-2014)"),
                 main.title.position=c("center","top"),
