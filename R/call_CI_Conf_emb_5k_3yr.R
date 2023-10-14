@@ -21,11 +21,11 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_430"
-# run <- "emb_5k_3yr"
-# iterations <- 1000
-# time_approach <- "3yr"   #other option: "annual"
+#fund_sect_param <- "wb_110"
+#fund_sect_param <- "ch_430"
+#run <- "emb_5k_3yr"
+#iterations <- 1000
+#time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -342,9 +342,8 @@ if (treat_count < 100) {
                           var_labels_all[match(setdiff(before_cols, colnames(conf_matrix)),var_order_all)])
     
     #cleanup unneeded objects in memory before calling function
-    rm(control_before, 
-       country_confounders_df, dhs_c_df,dhs_c_year_df,dhs_confounders_df,
-       dhs_ids_to_update,dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_group_df,
+    rm(country_confounders_df, dhs_c_df,dhs_confounders_df,
+       dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_group_df,
        run_df, pre_shuffle_df)
     
     ################################################################################
