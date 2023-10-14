@@ -4,7 +4,7 @@ library(dplyr)
 library(ggplot2)
 rm(list=ls())
 
-  dhs_df <- read.csv("./data/interim/dhs_est_iwi_annual.csv") 
+  dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") 
 
   # Create empty columns to store results 
   dhs_df$avg_min_to_city   <- NA

@@ -50,33 +50,40 @@
 # Runs: 5K
 ##############################################################################
 #Basic data prep
-source("./code/R/prep_projects_v2.R", local=TRUE)
+source("./code/R/prep_projects.R", local=TRUE)
 #writes africa_oda_sector_group_v2.csv
 source("./code/R/prep_dhs_points.R", local=TRUE) 
 
 #Determine treatments/controls
 #annual
-source("./code/R/select_dhs_treat_control_5k_annual.R", local=TRUE) 
-#writes dhs_treat_control_5k_annual.csv
+source("./code/R/select_dhs_treat_control_5k.R", local=TRUE) 
+#writes dhs_treated_sector_group_3yr.csv
+#writes dhs_treated_sector_group_annual.csv
+#writes dhs_treated_sector_annual.csv
+#writes dhs_treated_sector_3yr.csv
 
 #Prepare confounder Data for each dhs point/scene
-#python/0_download_percapita_nl_5k_WorldPop.ipynb  
+#python  0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
 source("./code/R/prep_confounders_dhs_5k_raster.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
-#considate all confounder data in a wide format, one row per dhs point
+#consolidate all confounder data in a wide format, one row per dhs point
 source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
 
 # Call Causal Image Confounding Analysis
 source("./code/R/call_CI_Conf_emb_5k_annual.R", local=TRUE)
+source("./code/R/call_CI_Conf_emb_5k_3yr.R", local=TRUE)
+source("./code/R/call_CI_Conf_emb_5k_sgroup_3yr.R", local=TRUE)
+source("./code/R/call_CI_Conf_emb_5k_sgroup_annual.R", local=TRUE)
+
 source("./code/R/call_CI_Conf_cnn_5k_annual.R", local=TRUE)
-#I use slurm scripts to run these for all sectors and funders
-#./code/scripts/call_CI_Conf_emb_5k_annual.slurm
-#./code/scripts/call_CI_Conf_cnn_5k_annual.slurm
-#./code/scripts/run_emb_5k_annual.sh
-#./code/scripts/run_cnn_5k_annual.sh
+source("./code/R/call_CI_Conf_cnn_5k_3yr.R", local=TRUE)
+source("./code/R/call_CI_Conf_cnn_5k_sgroup_3yr.R", local=TRUE)
+source("./code/R/call_CI_Conf_cnn_5k_sgroup_annual.R", local=TRUE)
+#I use slurm scripts with the same name to run these for all all sectors and funders
+#They are located in the /scripts directory
 
 #run will create a subdirectory named after the run, where all the output files will be
 #for sector-based runs, run (from results directory):

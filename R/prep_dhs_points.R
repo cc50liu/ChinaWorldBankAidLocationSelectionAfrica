@@ -10,7 +10,8 @@ dhs_df <- read.csv("./data/AIGlobalLab/dhs_clusters.csv")
 #start with 0 to match numbers assigned in Markus' code 
 dhs_df$dhs_id <- 0:(nrow(dhs_df)-1) 
 
-#add the location of each downloaded image file
+#add the location of each downloaded image file 
+# (later realized these had 60m resolution when downloaded from GEE, so don't use)
 dhs_df <-   dhs_df %>% 
   group_by(country, year) %>% 
   mutate(image_file = paste0("./data/dhs_tifs/",country,"_",year,"/",
@@ -48,7 +49,7 @@ post_iso3_year <- dhs_df %>%
 dhs_t_c_year <- rbind(iso3_year,post_iso3_year)
 
 #change cameroon from 1991 to 2004, to avoid duplicate lat/lons
-#CAF has duplicates, but also no better option
+#CAF 2004 also has duplicates, but also no better option
 dhs_t_c_year <- dhs_t_c_year %>% 
   mutate(year=case_match(iso3,
                          "CMR" ~ 2004,
@@ -104,30 +105,24 @@ dhs_tc_est_df %>%
   count() %>%
   filter(n > 1)
 
-#Pre n: 9929, post n: 9910
+#Pre n: 9977, post n: 9910
 #retain only one DHS point for each duplicated lat/lon
 dhs_tc_est_df <- dhs_tc_est_df %>%
   group_by(lat,lon) %>%
   slice_head()
 
-write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
+#write.csv(dhs_tc_est_df,"./data/interim/dhs_est_iwi.csv",row.names=FALSE)
 #dhs_tc_est_df <- read.csv("./data/interim/dhs_est_iwi.csv")
 
-dhs_iwi_annual <- dhs_tc_est_df %>% 
+dhs_iwi_5k <- dhs_tc_est_df %>% 
   group_by(country, year) %>% 
   mutate(image_file_annual = paste0("./data/dhs_tifs_annual/",country,"_",year,"/",
                                     str_pad(row_number() - 1,width = 5, pad="0"),
-                                    ".tif")) %>% 
-  ungroup()
-
-write.csv(dhs_iwi_annual,"./data/interim/dhs_est_iwi_annual.csv", row.names=FALSE)
-
-dhs_iwi_5k <- dhs_iwi_annual %>% 
-  group_by(country, year) %>% 
-  mutate(image_file_5k_3yr = paste0("./data/dhs_tifs_5k_3yr/",country,"_",year,"/",
+                                    ".tif"),
+    image_file_5k_3yr = paste0("./data/dhs_tifs_5k_3yr/",country,"_",year,"/",
                                     str_pad(row_number() - 1,width = 5, pad="0"),
                                     ".tif")
   ) %>% 
   ungroup()
 
-write.csv(dhs_iwi_5k,"./data/interim/dhs_est_iwi_5k.csv", row.names=FALSE)
+write.csv(dhs_iwi_5k,"./data/interim/dhs_est_iwi.csv", row.names=FALSE)

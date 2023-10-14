@@ -26,7 +26,7 @@ dhs_loan_transp_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>%
   select(dhs_id, starts_with("log"))
 
 #get iwi estimate and all other attributes here
-dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi_5k.csv") %>% 
+dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi.csv") %>% 
   select(-image_file)  #remove deprecated column to ensure not used downstream
 
 ################################
@@ -66,8 +66,35 @@ dhs_confounders_df <- dhs_iwi_df %>%
   inner_join(dhs_loan_transp_df, by="dhs_id") %>% 
   inner_join(pc_nl_log_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
               
+#group them into 3-year sets matching 3-year-image years
+dhs_5k_3yr_confounders <- dhs_confounders_df %>% 
+  mutate(leader_1999_2001 = rowMeans(select(.,leader_1999,leader_2000,leader_2001), na.rm=TRUE),
+         leader_2002_2004 = rowMeans(select(.,leader_2002,leader_2003,leader_2004), na.rm=TRUE),
+         leader_2005_2007 = rowMeans(select(.,leader_2005,leader_2006,leader_2007), na.rm=TRUE),
+         leader_2008_2010 = rowMeans(select(.,leader_2008,leader_2009,leader_2010), na.rm=TRUE),
+         leader_2011_2013 = rowMeans(select(.,leader_2011,leader_2012,leader_2013), na.rm=TRUE),
+         log_avg_pop_dens_2000_2001 = rowMeans(select(.,log_avg_pop_dens_2000,log_avg_pop_dens_2001), na.rm=TRUE),
+         log_avg_pop_dens_2002_2004 = rowMeans(select(.,log_avg_pop_dens_2002,log_avg_pop_dens_2003,log_avg_pop_dens_2004), na.rm=TRUE),
+         log_avg_pop_dens_2005_2007 = rowMeans(select(.,log_avg_pop_dens_2005,log_avg_pop_dens_2006,log_avg_pop_dens_2007), na.rm=TRUE),
+         log_avg_pop_dens_2008_2010 = rowMeans(select(.,log_avg_pop_dens_2008,log_avg_pop_dens_2009,log_avg_pop_dens_2010), na.rm=TRUE),
+         log_avg_pop_dens_2011_2013 = rowMeans(select(.,log_avg_pop_dens_2011,log_avg_pop_dens_2012,log_avg_pop_dens_2013), na.rm=TRUE),
+         agglom_2000_2001 = rowMeans(select(.,agglom_2000,agglom_2001), na.rm=TRUE),
+         agglom_2002_2004 = rowMeans(select(.,agglom_2002,agglom_2003,agglom_2004), na.rm=TRUE),
+         agglom_2005_2007 = rowMeans(select(.,agglom_2005,agglom_2006,agglom_2007), na.rm=TRUE),
+         agglom_2008_2010 = rowMeans(select(.,agglom_2008,agglom_2009,agglom_2010), na.rm=TRUE),
+         agglom_2011_2013 = rowMeans(select(.,agglom_2011,agglom_2012,agglom_2013), na.rm=TRUE),         
+         log_dist_km_to_petro_2002_2004 = rowMeans(select(.,log_dist_km_to_petro_2000_2002,
+                                                          log_dist_km_to_petro_2003,
+                                                          log_dist_km_to_petro_2003), na.rm=TRUE),  
+         log_pc_nl_2000_2001 = rowMeans(select(.,log_pc_nl_2000,log_pc_nl_2001), na.rm=TRUE),
+         log_pc_nl_2002_2004 = rowMeans(select(.,log_pc_nl_2002,log_pc_nl_2003,log_pc_nl_2004), na.rm=TRUE),
+         log_pc_nl_2005_2007 = rowMeans(select(.,log_pc_nl_2005,log_pc_nl_2006,log_pc_nl_2007), na.rm=TRUE),
+         log_pc_nl_2008_2010 = rowMeans(select(.,log_pc_nl_2008,log_pc_nl_2009,log_pc_nl_2010), na.rm=TRUE),
+         log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE))
 
-write.csv(dhs_confounders_df,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
+write.csv(dhs_5k_3yr_confounders,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
+
+names(dhs_5k_3yr_confounders)
 
 ############################################
 # Descriptive stats for per capita nightlights

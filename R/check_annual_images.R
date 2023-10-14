@@ -129,22 +129,8 @@ comoros_annual_scaled <- comoros_annual_rgb/.0000275
 dev.off()
 raster::plotRGB(comoros_annual_scaled,r=3,g=2,b=1,stretch="hist")
 
-
-dhs_iwi <- read.csv("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data/interim/dhs_est_iwi.csv")
-
-dhs_iwi_annual <- dhs_iwi %>% 
-  group_by(country, year) %>% 
-  mutate(image_file_annual = paste0("./data/dhs_tifs_annual/",country,"_",year,"/",
-                                    str_pad(row_number() - 1,width = 5, pad="0"),
-                                    ".tif")) %>% 
-  ungroup()
-
-dhs_iwi_annual %>% 
-  filter(image_file == "./data/dhs_tifs/comoros_2012/00149.tif") %>% 
-  select(dhs_id, image_file_annual)
-#8158 ./data/dhs_tifs_annual/comoros_2012/00222.tif
-
-write.csv(dhs_iwi_annual,"/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/data/interim/dhs_est_iwi_annual.csv", row.names=FALSE)
+#get list of all dhs points and their tif file locations
+dhs_iwi <- read.csv("./data/interim/dhs_est_iwi.csv")
 
 #lat/lon -34.463232 19.54247
 safrica_r <- raster::brick("./data/dhs_tifs/south_africa_2016/00743.tif")
