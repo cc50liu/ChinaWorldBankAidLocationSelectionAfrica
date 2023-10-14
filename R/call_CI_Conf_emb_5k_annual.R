@@ -10,8 +10,9 @@
 #     Retires logistic reg; remove gridlines from plots; seed is sector
 #     Handles SalienceX_se variables.
 #     IWI measured 3 years post-project start	
-#     Exclude treatments < 2001 (missing population density)
-#     Confounder variable if other funder had a treatment in same year								 
+#     Exclude treatments < 2002
+#     Confounder variable if other funder had a treatment in same year
+#     Full panel of control points (not only treated by neither)
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -27,11 +28,11 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-#fund_sect_param <- "wb_110"
+# fund_sect_param <- "wb_110"
 # fund_sect_param <- "ch_430"
 # run <- "emb_5k_annual"
 # iterations <- 1000
-# time_approach <- "annual"   #other option: "collapsed"
+# time_approach <- "annual"   #other option: "3yr"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -43,34 +44,51 @@ if (!dir.exists(results_dir)) {
 }
 sector_param <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
 funder_param <- sub("(wb|ch).*", "\\1", fund_sect_param)
+other_funder <- ifelse(funder_param=="wb","ch","wb")
 
-##### read confounder and treat/control data from files
+##### read confounder and treatment data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_5k_confounders.csv") %>% 
   select(-year)  #remove survey year column that could be confused with oda year
 
-dhs_t_df <- read.csv("./data/interim/dhs_treat_control_5k_annual.csv") %>% 
-  filter(sector==sector_param & funder==funder_param & 
-           dhs_id %in% dhs_confounders_df$dhs_id) 
-#exclude DHS points where confounder data not available 
-
-#limit to dhs_id and iso3 for use in join below
+#get list of all dhs_id's and their iso3 for use below
 dhs_iso3_df <- dhs_confounders_df %>% 
   distinct(dhs_id,iso3)
 
+#get treated by this funder, which already has treated_other_funder column populated
+dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
+  filter(sector==sector_param & funder==funder_param & start_year >= 2002 &
+           #exclude DHS points where confounder data not available 
+           dhs_id %in% dhs_confounders_df$dhs_id) 
+
 #identify countries where funder is operating in this sector
 funder_sector_iso3 <- dhs_confounders_df %>% 
-  filter(dhs_id %in% (dhs_t_df %>% 
-                        pull(dhs_id))) %>% 
-  distinct(iso3)
+  filter(dhs_id %in% (dhs_t_df %>%  pull(dhs_id))) %>% 
+  distinct(iso3) %>% pull(iso3)
 
-#get controls, limiting to countries and year where funder operated in sector
-dhs_c_df <- read.csv("./data/interim/dhs_treat_control_5k_annual.csv") %>% 
-  filter(sector==sector_param & funder=="control") %>% 
-  inner_join(dhs_iso3_df,by="dhs_id") %>% 
-  filter(iso3 %in% funder_sector_iso3$iso3 & 
-           dhs_id %in% dhs_confounders_df$dhs_id &
-           #exclude DHS points where confounder data not available 
-           start_year %in% dhs_t_df$start_year) 
+#identify all dhs_points in countries where funder is operating in this sector
+dhs_in_operating_countries <- dhs_iso3_df %>% 
+  filter(iso3 %in% funder_sector_iso3) %>% 
+  pull(dhs_id)
+
+#construct annual controls, limiting to countries where funder operated in sector
+#generate dataframe of all dhs points for all years in operating countries 
+all_t_c_df <- data.frame(expand.grid(start_year = as.integer(2002:2014),
+                        dhs_id = dhs_in_operating_countries)) 
+
+#get treated by other funder to set treated_other_funder on control points
+dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
+  filter(sector==sector_param & funder==other_funder & 
+           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  mutate(treated_other_funder = 1)
+
+#construct controls 
+dhs_c_df <- all_t_c_df %>% 
+  #exclude dhs_points treated in each year
+  anti_join(dhs_t_df,by=c("dhs_id","start_year")) %>% 
+  #populate treated_other_funder, which will be 1 if this join successful
+  left_join(dhs_t_other_df,by=c("dhs_id","start_year")) %>% 
+  #set treated_other_funder to 0 where it is NA
+  mutate(treated_other_funder = if_else(is.na(treated_other_funder),0,1))
 
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
@@ -79,15 +97,15 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_dist_km_to_dia","log_dist_km_to_petro", 
                "leader_birthplace","log_trans_proj_cum_n",
                "log_3yr_pre_conflict_deaths",
-               "polity2","log_gdp_per_cap_USD2015","country_gini","landsat57",
-               "landsat578","treated_both_funders")
+               "polity2","log_gdp_per_cap_USD2015","country_gini",
+               "landsat578","treated_other_funder")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
                 "Conflict deaths (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                "Landsat 5 & 7", "Landsat 5,7,& 8","Treated Other Funder")
+                "Landsat 5,7,& 8","Treated Other Funder")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -187,10 +205,10 @@ if (treat_count < 100) {
   obs_year_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,start_year,treated,proj_count,treated_both_funders),
+       select(dhs_id,start_year,treated,treated_other_funder),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,start_year,treated,proj_count,treated_both_funders)
+       select(dhs_id,start_year,treated,treated_other_funder)
     ) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
@@ -207,10 +225,10 @@ if (treat_count < 100) {
       log_dist_km_to_petro = if_else(
         start_year < 2003, 
         log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003),
-      #set dummy variables for the combination of satellite images in pre-project images
-      #Landsat 5 only in images from 1990:1998 - won't include this column to avoid collinearity
-      #Landsat 5&7 in images from    1999:2010 
-      landsat57 = if_else(start_year %in% 2002:2013,1,0),
+      #set indicator variables for the combination of satellite images in pre-project images
+      #Landsat 5 only in images from 1990:1998 - now excluded from study years
+      #Landsat 5&7 in images from    1999:2010 - won't include this column to avoid collinearity
+      #landsat57 = if_else(start_year %in% 2002:2013,1,0),
       #Landsat 5,7, & 8 in images from 2011:2013
       landsat578 = if_else(start_year %in% 2014:2016,1,0)
       #Landsat 7&8 in images from 2014:2019 - we aren't using any of these
@@ -255,12 +273,12 @@ if (treat_count < 100) {
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, lat, lon, treated, treated_both_funders,
+    select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
            start_year, image_file_annual, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
-           log_gdp_per_cap_USD2015, country_gini, polity2, landsat57, landsat578) %>% 
+           log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
     rename(cnty = country) %>% 
     mutate(cnty = stringr::str_to_title(cnty))
   
@@ -278,7 +296,7 @@ if (treat_count < 100) {
       as.matrix(data.frame(
         "start_year"                 =input_df$start_year,
         "start_year_squared"         =input_df$start_year^2,
-        "treated_both_funders"       =input_df$treated_both_funders,
+        "treated_other_funder"       =input_df$treated_other_funder,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
@@ -293,7 +311,6 @@ if (treat_count < 100) {
         "log_gdp_per_cap_USD2015"    =input_df$log_gdp_per_cap_USD2015,     #country level
         "country_gini"               =input_df$country_gini,                #country level
         "polity2"                    =input_df$polity2,                     #country level
-        "landsat57"                  =input_df$landsat57,                   #pre-treat image
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
       #multiple columns for country variables
@@ -315,14 +332,16 @@ if (treat_count < 100) {
                           var_labels_all[match(setdiff(before_cols, colnames(conf_matrix)),var_order_all)])
     
     #cleanup unneeded objects in memory before calling function
-    rm(dhs_c_df,dhs_confounders_df,dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_df,
+    rm(all_t_c_df, country_confounders_df,dhs_c_df,dhs_confounders_df,
+       dhs_in_operating_countries, dhs_iso3_df,
+       dhs_t_df,dhs_t_other_df,funder_sector_iso3,obs_year_df,
        run_df, pre_shuffle_df)
     
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k_s3.tfrecord")
+                              time_approach,"_5k_s3_fullcont.tfrecord")
     
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -471,7 +490,7 @@ if (treat_count < 100) {
     #Convert to longer format for density plots, leaving outcome as separate column
     hybrid_input_df <- input_df %>%
       select(treated,all_of(var_order)) %>% 
-      pivot_longer(c(-treated,-iwi_est_post_oda),names_to="variable_name", values_to="value")  
+      tidyr::pivot_longer(c(-treated,-iwi_est_post_oda),names_to="variable_name", values_to="value")  
     
     outcome_confounders_plot <- ggplot(hybrid_input_df, aes(x = iwi_est_post_oda, y=value, color = factor(treated))) +
       geom_point(alpha = 0.3) +
@@ -527,12 +546,8 @@ if (treat_count < 100) {
                     , col = c(treat_color,"gray80")
                     , labels = c(paste0("Treated (n ",treat_count,")"),
                                  paste0("Control (n ",control_count,")")))  +
-      tm_add_legend(type="symbol",
-                    col=c(treat_color,"gray39"),
-                    shape=c(24,25),
-                    labels=c("3 Highest Pr(T=1)","3 Lowest Pr(T=1)")) +
       tm_layout(main.title.size=1,
-                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2001-2014)"),
+                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2002-2014)"),
                 main.title.position=c("center","top"),
                 legend.position = c("left", "bottom"),
                 legend.text.size = 1,
