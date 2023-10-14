@@ -29,10 +29,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_430"
-# run <- "cnn_5k_annual"
-# iterations <- 1000
-# time_approach <- "annual"   #other option: "3yr"
+ # fund_sect_param <- "ch_520"
+ # run <- "cnn_5k_annual"
+ # iterations <- 1000
+ # time_approach <- "annual"   #other option: "3yr"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -104,7 +104,7 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
                 "Conflict deaths (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                "Landsat 5 & 7", "Landsat 5,7,& 8","Treated Other Funder")
+                "Landsat 5,7,& 8","Treated Other Funder")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
