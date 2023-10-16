@@ -28,9 +28,8 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-# fund_sect_group_param <- "both_PRO"
 # fund_sect_group_param <- "ch_DIR"
-# fund_sect_group_param <- "wb_OTH"
+# fund_sect_group_param <- "wb_SIS"
 # run <- "emb_5k_sgroup_annual"
 # iterations <- 1000
 # time_approach <- "annual"   #other option: "3yr"
@@ -44,7 +43,7 @@ if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
 sector_group_param <- sub(".*_(.*)", "\\1", fund_sect_group_param)
-funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_group_param)
+funder_param <- sub("(wb|ch).*", "\\1", fund_sect_group_param)
 other_funder <- ifelse(funder_param=="wb","ch","wb")
 
 ##### read confounder and treatment data from files
@@ -448,6 +447,7 @@ if (treat_count < 100) {
 
     sector_group_name <- sector_group_names_df %>%
       filter(sector_group==sector_group_param) %>%
+      distinct(sec_group_pre_name) %>% 
       pull(sec_group_pre_name)
 
     # Convert to long format for boxplots
