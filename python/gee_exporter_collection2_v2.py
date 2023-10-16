@@ -102,7 +102,7 @@ class GeeExporter:
         Bit 7: Water           
         Also has confidence bits, which I am not using here
         """        
-        # Get the QA_PIXEL band
+        # Get the QA_PIXEL band (renamed to SR_CLOUD_QA earlier for consistency with L5/7)
         qa = img.select('SR_CLOUD_QA')
 
         # Create masks for clouds, cloud shadows, and snow
