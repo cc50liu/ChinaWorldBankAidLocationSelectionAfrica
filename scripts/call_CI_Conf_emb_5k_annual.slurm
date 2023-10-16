@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -A NAISS2023-5-321 -p alvis      	#project
 #SBATCH -N 1 --gpus-per-node=A40:1      # 1 node on A40
-#SBATCH -t 4-00:00:00                  	#max walltime job should run - 4 days (build tfrec files)
+#SBATCH -t 0-55:00:00                  	#max walltime job should run - 55 hours (build tfrec files)
 #SBATCH -o "/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/logs/%j.out"
 
 start_time=$(date +%s)
