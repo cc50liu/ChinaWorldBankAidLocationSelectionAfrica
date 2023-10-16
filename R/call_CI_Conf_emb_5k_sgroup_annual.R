@@ -1,4 +1,4 @@
-# call_CI_Conf_emb_5k_annual.R
+# call_CI_Conf_emb_5k_sgroup_annual.R
 # Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands,
 #        Uses annual observations, annual 5k images, and randomized embeddings
 #        Uses per-capital nighlights instead of avg nightlights
@@ -7,7 +7,7 @@
 #         Generates a tfrecord file for the run
 #		  Shuffles the data before using it.
 #     Includes an agglomeration variable
-#     Retires logistic reg; remove gridlines from plots; seed is sector
+#     Retires logistic reg; remove gridlines from plots
 #     Handles SalienceX_se variables.
 #     IWI measured 3 years post-project start	
 #     Exclude treatments < 2002
@@ -21,16 +21,17 @@ rm(list=ls())
 setwd("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb")
 args <- commandArgs(trailingOnly = TRUE)
 
-# The first command line argument should be funder_sector (like both_110, wb_110, ch_110)
-fund_sect_param <- args[1]
+# Handle command line arguments
+fund_sect_group_param <- args[1]
 run <- args[2]
 iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-# fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_430"
-# run <- "emb_5k_annual"
+# fund_sect_group_param <- "both_PRO"
+# fund_sect_group_param <- "ch_DIR"
+# fund_sect_group_param <- "wb_OTH"
+# run <- "emb_5k_sgroup_annual"
 # iterations <- 1000
 # time_approach <- "annual"   #other option: "3yr"
 
@@ -42,8 +43,8 @@ results_dir <- paste0("./results/",run,"/")
 if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
-sector_param <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
-funder_param <- sub("(wb|ch).*", "\\1", fund_sect_param)
+sector_group_param <- sub(".*_(.*)", "\\1", fund_sect_group_param)
+funder_param <- sub("(wb|ch|both).*", "\\1", fund_sect_group_param)
 other_funder <- ifelse(funder_param=="wb","ch","wb")
 
 ##### read confounder and treatment data from files
@@ -55,29 +56,29 @@ dhs_iso3_df <- dhs_confounders_df %>%
   distinct(dhs_id,iso3)
 
 #get treated by this funder, which already has treated_other_funder column populated
-dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
-  filter(sector==sector_param & funder==funder_param & start_year >= 2002 &
+dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_group_annual.csv") %>% 
+  filter(sector_group==sector_group_param & funder==funder_param & start_year >= 2002 &
            #exclude DHS points where confounder data not available 
            dhs_id %in% dhs_confounders_df$dhs_id) 
 
-#identify countries where funder is operating in this sector
-funder_sector_iso3 <- dhs_confounders_df %>% 
+#identify countries where funder is operating in this sector group
+funder_sector_group_iso3 <- dhs_confounders_df %>% 
   filter(dhs_id %in% (dhs_t_df %>%  pull(dhs_id))) %>% 
   distinct(iso3) %>% pull(iso3)
 
-#identify all dhs_points in countries where funder is operating in this sector
+#identify all dhs_points in countries where funder is operating in this sector group
 dhs_in_operating_countries <- dhs_iso3_df %>% 
-  filter(iso3 %in% funder_sector_iso3) %>% 
+  filter(iso3 %in% funder_sector_group_iso3) %>% 
   pull(dhs_id)
 
-#construct annual controls, limiting to countries where funder operated in sector
+#construct annual controls, limiting to countries where funder operated in sector group
 #generate dataframe of all dhs points for all years in operating countries 
 all_t_c_df <- data.frame(expand.grid(start_year = as.integer(2002:2014),
                         dhs_id = dhs_in_operating_countries)) 
 
 #get treated by other funder to set treated_other_funder on control points
-dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
-  filter(sector==sector_param & funder==other_funder & 
+dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_group_annual.csv") %>% 
+  filter(sector_group==sector_group_param & funder==other_funder & 
            dhs_id %in% dhs_confounders_df$dhs_id) %>% 
   mutate(treated_other_funder = 1)
 
@@ -160,7 +161,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
                         lyrs=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
       #rescale to original setting for RGB printing
-	  im <- (im/.0000275) + .2
+      im <- (im/.0000275) + .2
       # place the image in the correct place in the array
       array_shell[,,,i] <- matrix(im, byrow = T, nrow = imageHeight, ncol = imageWidth)
     }
@@ -283,7 +284,7 @@ if (treat_count < 100) {
     mutate(cnty = stringr::str_to_title(cnty))
   
   #shuffle data to reorder it before use; set.seed call makes it reproducible
-  set.seed(sector_param)
+  set.seed(1234)
   input_df <- pre_shuffle_df[sample(x=1:nrow(pre_shuffle_df),size=nrow(pre_shuffle_df),replace=FALSE),]
   
   write.csv(input_df, paste0("./data/interim/input_",run,"_",fund_sect_param,".csv"),row.names = FALSE)
@@ -334,14 +335,14 @@ if (treat_count < 100) {
     #cleanup unneeded objects in memory before calling function
     rm(all_t_c_df, country_confounders_df,dhs_c_df,dhs_confounders_df,
        dhs_in_operating_countries, dhs_iso3_df,
-       dhs_t_df,dhs_t_other_df,funder_sector_iso3,obs_year_df,
+       dhs_t_df,dhs_t_other_df,funder_sector_group_iso3,obs_year_df,
        run_df, pre_shuffle_df)
     
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k_s3_fullcont.tfrecord")
+                              time_approach,"_5k_s3.tfrecord")
     
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
@@ -378,20 +379,20 @@ if (treat_count < 100) {
       nEmbedDim = 128L,	
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
-      figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
+      figuresTag = paste0(fund_sect_group_param,"_",run,"_i",iterations),
       tagInFigures = T,
       conda_env = NULL, # conda env to try to activate
       conda_env_required = F
     )
 
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
-    output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
+    output_df <- cbind(data.frame(run,fund_sect_group_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
     print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                 " Writing to ",results_dir,"ICA_",fund_sect_param,"_",run,"_i"
+                 " Writing to ",results_dir,"ICA_",fund_sect_group_param,"_",run,"_i"
                  ,iterations,".csv"))
-    write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_param,"_",run,"_i",
+    write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_group_param,"_",run,"_i",
                                iterations,".csv"),row.names = FALSE)
     ############################################################################
     # use output to identify 3 least/most likely locations to receive aid
@@ -423,10 +424,10 @@ if (treat_count < 100) {
       mutate(rank=row_number())
     
     #print these to log
-    print(paste("Most likely treated for", fund_sect_param, "run:", run))
+    print(paste("Most likely treated for", fund_sect_group_param, "run:", run))
     print(most_likely_df %>% 
             select(prW_est,col_index,image_file_annual,start_year))
-    print(paste("Least likely treated for", fund_sect_param, "run:", run))
+    print(paste("Least likely treated for", fund_sect_group_param, "run:", run))
     print(least_likely_df %>% 
             select(prW_est,col_index,image_file_annual,start_year))
     
@@ -437,24 +438,24 @@ if (treat_count < 100) {
     library(ggplot2)
   
     long_funder <- case_when(
-      startsWith(fund_sect_param, "ch") ~ "China",
-      startsWith(fund_sect_param, "wb") ~ "World Bank",
-      startsWith(fund_sect_param, "both") ~ "Both China & World Bank"
+      startsWith(fund_sect_group_param, "ch") ~ "China",
+      startsWith(fund_sect_group_param, "wb") ~ "World Bank",
+      startsWith(fund_sect_group_param, "both") ~ "Both China & World Bank"
     )
 
-    sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
-      mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")"))
+    sector_group_names_df <- read.csv("./data/interim/sector_group_names.csv")   %>% 
+      mutate(sec_group_pre_name = paste0(sector_group_name," (",sector_group,")"))
 
-    sector_name <- sector_names_df %>%
-      filter(ad_sector_codes==sector_param) %>%
-      pull(sec_pre_name)
+    sector_group_name <- sector_group_names_df %>%
+      filter(sector_group==sector_group_param) %>%
+      pull(sec_group_pre_name)
 
     # Convert to long format for boxplots
     long_input_df <- input_df %>%
       select(treated,all_of(var_order)) %>%
       tidyr::pivot_longer(c(-treated),names_to="variable_name", values_to="value")
 
-    sub_l1 <- paste("Funder:",long_funder,"     Sector:", sector_name)
+    sub_l1 <- paste("Funder:",long_funder,"     Sector Group:", sector_group_name)
     sub_l2 <- ifelse(nzchar(dropped_labels),
                      paste0("Dropped due to no variation: ", dropped_labels),
                      "")
@@ -472,7 +473,7 @@ if (treat_count < 100) {
       theme_bw()  +
       theme(panel.grid = element_blank()) 
 
-    ggsave(paste0(results_dir,fund_sect_param,"_20boxplots_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_group_param,"_20boxplots_",run,".pdf"),
            combined_boxplot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -482,10 +483,9 @@ if (treat_count < 100) {
     #############################################################################
     # Set the treated color based on funder
     treat_color <- case_when(
-      startsWith(fund_sect_param, "ch") ~ "indianred1",
-      startsWith(fund_sect_param, "wb") ~ "mediumblue",
-      startsWith(fund_sect_param, "both") ~ "blueviolet"
-    )
+      startsWith(fund_sect_group_param, "ch") ~ "indianred1",
+      startsWith(fund_sect_group_param, "wb") ~ "mediumblue",
+      startsWith(fund_sect_group_param, "both") ~ "blueviolet"    )
 
     #Convert to longer format for density plots, leaving outcome as separate column
     hybrid_input_df <- input_df %>%
@@ -506,7 +506,7 @@ if (treat_count < 100) {
       theme_bw()  +
       theme(panel.grid = element_blank())
     
-    ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".png"),
+    ggsave(paste0(results_dir,fund_sect_group_param,"_30conf_iwi_",run,".png"),
            outcome_confounders_plot,
            width=10, height = 8, dpi=300,
            bg="white", units="in")
@@ -547,7 +547,7 @@ if (treat_count < 100) {
                     , labels = c(paste0("Treated (n ",treat_count,")"),
                                  paste0("Control (n ",control_count,")")))  +
       tm_layout(main.title.size=1,
-                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2002-2014)"),
+                main.title = paste0(long_funder,": ",sector_group_name,"\nTreatment and Control Locations (2002-2014)"),
                 main.title.position=c("center","top"),
                 legend.position = c("left", "bottom"),
                 legend.text.size = 1,
@@ -558,7 +558,7 @@ if (treat_count < 100) {
                 legend.outside.size = .25
       )
     
-    tmap_save(treat_control_map,paste0(results_dir,fund_sect_param,"_10map_",run,".png"))
+    tmap_save(treat_control_map,paste0(results_dir,fund_sect_group_param,"_10map_",run,".png"))
   
 
     ############################################################################
@@ -602,7 +602,7 @@ if (treat_count < 100) {
     
     
     #save
-    ggsave(paste0(results_dir,fund_sect_param,"_50ridge_prop_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_group_param,"_50ridge_prop_",run,".pdf"),
            ridge_conf_density,
            width=6, height = 4, dpi=300,
            bg="white", units="in")
@@ -626,7 +626,7 @@ if (treat_count < 100) {
     
     #write to file
     write.csv(tab_conf_compare_df,
-              paste0(results_dir,fund_sect_param,"_tab_conf_compare_", run,".csv"),
+              paste0(results_dir,fund_sect_group_param,"_tab_conf_compare_", run,".csv"),
               row.names = FALSE)
     
     #plot these
@@ -671,7 +671,7 @@ if (treat_count < 100) {
       theme(panel.grid = element_blank())
     
     #save
-    ggsave(paste0(results_dir,fund_sect_param,"_90xy_tab_conf_images_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_group_param,"_90xy_tab_conf_images_",run,".pdf"),
            tab_est_images,
            width=6, height = 6, dpi=300,
            bg="white", units="in")
