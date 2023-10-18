@@ -289,10 +289,11 @@ class GeeExporter:
 
         # Create one image per time span
         span_image_collection = ee.ImageCollection.fromImages(spans.map(get_span_image))
-        
                                                                           
-        out_image = span_images.toBands()toFloat()
+        # Converts collection of span_images to a single multi-band image 
+        # containing all of the bands of every span_image in the collection
+        out_image = span_image_collection.toBands()
 
         return out_image
-                                                               
+
 

@@ -9,7 +9,7 @@ import pandas as pd
 from retry import retry
 from functools import partial
 
-from gee_exporter_collection2_v3 import GeeExporter
+from gee_exporter_c1_5k import GeeExporter
 
 DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']
 
@@ -18,9 +18,8 @@ logging.basicConfig()
 def export_images(survey_df: pd.DataFrame,
                   save_dir: str,
                   ms_bands: list = None,
-                  include_nl: bool = False,
                   scale: int = 30,
-                  export_tile_diameter: int = 167,  # image dimensions = 167px * 167px ~ 5km2
+                  export_tile_diameter: int = 167,  # image dimensions = 167px * 167px
                   start_year: int = 1999,
                   end_year: int = 2016,
                   span_length: int = 3
@@ -32,7 +31,6 @@ def export_images(survey_df: pd.DataFrame,
     :param save_dir: str, path to directory for storing .tif-files
     :param ms_bands: list, the multispectral bands exported. Defaults to
         DEFAULT_MS_BANDS = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']
-    :param include_nl: bool, include nightlight images in the export
     :param scale: int, pixel scale in meters
     :param export_tile_diameter: int, side length of image in pixels
     :param start_year: int, start of the time series
@@ -47,7 +45,7 @@ def export_images(survey_df: pd.DataFrame,
     country_roi = ee.Geometry.MultiPoint(list(survey_df['geometry']))
 
     # Pad bounding box to ensure that the country image covers the full clusters on the edge of the box
-    buffer_dist = scale * export_tile_diameter / 2 # scale in m/px * diameter in px = buffer in m
+    buffer_dist = scale * export_tile_diameter  / 2 # scale in m/px * radius in px = buffer in m
     country_bbox = country_roi.buffer(buffer_dist).bounds()
 
     # Create an image covering the entire country which we can sample patches from

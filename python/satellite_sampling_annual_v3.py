@@ -52,7 +52,7 @@ def export_images(survey_df: pd.DataFrame,
 
     # Create an image covering the entire country which we can sample patches from
     gee_exporter = GeeExporter(filterpoly=country_bbox, start_year=start_year, end_year=end_year, 
-                             ms_bands=ms_bands, include_nl=include_nl)
+                             ms_bands=ms_bands)
 
     # Create image covering entire country
     country_img = gee_exporter.get_timeseries_image(span_length)
