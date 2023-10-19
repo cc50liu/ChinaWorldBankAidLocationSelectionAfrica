@@ -1,4 +1,4 @@
-# check_annual_images.R
+# check_3yr_images.R
 rm(list=ls())
 library(dplyr)
 library(stringr)
@@ -9,29 +9,62 @@ c2 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00070.tif")
 c3 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00067.tif")
 c4 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00062.tif")
 
+
+n1 <- raster::brick("./data/dhs_tifs_5k_3yr/niger_1998/00074.tif") #2008:2010
+n1_c2_v3 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/niger_1998/00074.tif")
+
 c1_c1 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00409.tif")
 c2_c1 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00070.tif")
 c3_c1 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00067.tif")
 c4_c1 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00062.tif")
+n1_v3 <- raster::brick("./data/dhs_tifs_5k_3yr_v3/niger_1998/00074.tif")
 
+n1_rgb <-  n1[[c(1,2,3)]]
+n1_scaled <- ((n1_rgb + .2)/.0000275)
+raster::plotRGB(n1_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()					 
+
+
+n1_v3_rgb <-  n1_v3[[c(1,2,3)]]
+n1_v3_scaled <- ((n1_v3_rgb + .2)/.0000275)
+raster::plotRGB(n1_v3_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()	
+
+n1_c1_rgb <-  n1_c1[[c(1,2,3)]]
+n1_c1_scaled <- (n1_c1_rgb/.0001)
+raster::plotRGB(n1_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()		
+
+
+n1_200810_rgb <-  n1[[c(13,14,15)]]
+n1_200810_scaled <- ((n1_200810_rgb + .2)/.0000275)
+raster::plotRGB(n1_200810_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()	
+
+n1_c1_200810_rgb <-  n1_c1[[c(13,14,15)]]
+n1_c1_200810_scaled <- (n1_c1_200810_rgb/.0001)
+raster::plotRGB(n1_c1_200810_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()		
+
+######
 c1_rgb <-  c1[[c(1,2,3)]]
 c1_scaled <- ((c1_rgb + .2)/.0000275)
 raster::plotRGB(c1_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()					 
 
 c1_c1_rgb <-  c1_c1[[c(1,2,3)]]
-c1_c1_scaled <- ((c1_c1_rgb + .2)/.0000275)
+c1_c1_scaled <- (c1_c1_rgb/.0001)
 raster::plotRGB(c1_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()					
 
 ######
-  c2_rgb <-  c2[[c(1,2,3)]]
+c2_rgb <-  c2[[c(1,2,3)]]
 c2_scaled <- ((c2_rgb + .2)/.0000275)
 raster::plotRGB(c2_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()					 
 
 c2_c1_rgb <-  c2_c1[[c(1,2,3)]]
-c2_c1_scaled <- ((c2_c1_rgb + .2)/.0000275)
+c2_c1_scaled <- (c2_c1_rgb/.0001)
 raster::plotRGB(c2_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()
 ######==
@@ -41,7 +74,7 @@ raster::plotRGB(c3_scaled,r=3,g=2,b=1,stretch="hist")
 dev.off()					 
 
 c3_c1_rgb <-  c3_c1[[c(1,2,3)]]
-c3_c1_scaled <- ((c3_c1_rgb + .2)/.0000275)
+c3_c1_scaled <- c3_c1_rgb /.0001
 raster::plotRGB(c3_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()
 ######==
@@ -51,7 +84,7 @@ raster::plotRGB(c4_scaled,r=3,g=2,b=1,stretch="hist")
 dev.off()					 
 
 c4_c1_rgb <-  c4_c1[[c(1,2,3)]]
-c4_c1_scaled <- ((c4_c1_rgb + .2)/.0000275)
+c4_c1_scaled <- c4_c1_rgb/.0001
 raster::plotRGB(c4_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
 dev.off()
 ######==
