@@ -116,10 +116,10 @@ dhs_tc_est_df <- dhs_tc_est_df %>%
 
 dhs_iwi_5k <- dhs_tc_est_df %>% 
   group_by(country, year) %>% 
-  mutate(image_file_annual = paste0("./data/dhs_tifs_annual/",country,"_",year,"/",
+  mutate(image_file_annual = paste0("./data/dhs_tifs_c1_5k_annual/",country,"_",year,"/",
                                     str_pad(row_number() - 1,width = 5, pad="0"),
                                     ".tif"),
-    image_file_5k_3yr = paste0("./data/dhs_tifs_5k_3yr/",country,"_",year,"/",
+    image_file_5k_3yr = paste0("./data/dhs_tifs_c1_5k_3yr/",country,"_",year,"/",
                                     str_pad(row_number() - 1,width = 5, pad="0"),
                                     ".tif")
   ) %>% 
