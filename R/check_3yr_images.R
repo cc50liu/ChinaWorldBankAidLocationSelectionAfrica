@@ -4,10 +4,51 @@ library(dplyr)
 library(stringr)
 
 
+dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") %>% 
+  select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr)
+
+dhs_df %>% 
+  filter(image_file_5k_3yr %in% c(
+    "./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00137.tif",
+    "./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00133.tif",
+    "./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00151.tif"
+  ))
+
+dhs_df %>% 
+  filter(country=="cameroon")
+
 c1 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00409.tif")
 c2 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00070.tif")
 c3 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00067.tif")
 c4 <- raster::brick("./data/dhs_tifs_5k_3yr/cameroon_2004/00062.tif")
+
+c5 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00137.tif")  #2005:2007 bands 7-9
+c6 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00133.tif") #2005:2007  bands 7-9
+c7 <- raster::brick("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00151.tif") #2005:2007  bands 7-9
+
+c5_initial <- raster::brick("./data/dhs_tifs/cameroon_2004/00431.tif")  #2005:2007   bands 41-43
+c6_initial <- raster::brick("./data/dhs_tifs/cameroon_2004/00404.tif") #2005:2007    bands 41-43
+c7_initial <- raster::brick("./data/dhs_tifs/cameroon_2004/00414.tif") #2005:2007    bands 41-43
+
+
+c5_rgb <-  c5[[c(7,8,9)]]
+c5_scaled <- ((c5_rgb + .2)/.0000275)
+raster::plotRGB(c5_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()	
+
+
+c5_initial_rgb <-  c5_initial[[c(41,42,43)]]
+c5_initial_scaled <- ((c5_initial_rgb)/.0001)
+raster::plotRGB(c5_initial_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()	
+
+
+
+n1_c1_rgb <-  n1_c1[[c(1,2,3)]]
+n1_c1_scaled <- (n1_c1_rgb/.0001)
+raster::plotRGB(n1_c1_scaled,r=3,g=2,b=1,stretch="hist")						 
+dev.off()	
+
 
 
 n1 <- raster::brick("./data/dhs_tifs_5k_3yr/niger_1998/00074.tif") #2008:2010
