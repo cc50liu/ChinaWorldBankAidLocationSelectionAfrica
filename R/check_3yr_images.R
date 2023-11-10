@@ -39,7 +39,13 @@ dev.off()
 
 c5_initial_rgb <-  c5_initial[[c(41,42,43)]]
 c5_initial_scaled <- ((c5_initial_rgb)/.0001)
-raster::plotRGB(c5_initial_scaled,r=3,g=2,b=1,stretch="hist")						 
+raster::plotRGB(c5_initial_scaled,r=3,g=2,b=1,stretch="hist")		
+#put vertical/horizontal lines to create approximatly 5k box for comparisons
+w = ncol(c5_initial_scaled)
+abline(v=w/3,col="White")
+abline(v=1 * w/4,col="White")
+abline(h=w/3,col="White")
+abline(h=2 * w/3,col="White")
 dev.off()	
 
 
