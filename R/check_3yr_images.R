@@ -4,9 +4,13 @@ library(dplyr)
 library(stringr)
 library(raster)
 
-dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") %>% 
-  select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr)
+dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") 
 
+dhs_df <- dhs_df %>% 
+  select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr)
+# Error in (function (classes, fdef, mtable)  : 
+#             unable to find an inherited method for function ‘select’ for signature ‘"data.frame"’
+          
 # Set up the layout for three side-by-side plots
 par(mfrow = c(1, 3))
 
@@ -24,11 +28,13 @@ annual_g <- c(14,32,50,68)
 annual_b <- c(13,31,49,67)
 
 # Loop through dhs points, plotting images for review
-for (i in 1:nrow(dhs_df)) {
+for (i in 7500:nrow(dhs_df)) {
+  #uncomment to test
+  #i=1
   # Read the images
-  i_original <- raster::brick(dhs_df$image_file)
-  i_annual   <- raster::brick(dhs_df$image_file_annual)
-  i_5k_3yr   <- raster::brick(dhs_df$image_file_5k_3yr)   
+  i_original <- raster::brick(dhs_df$image_file[i])
+  i_annual   <- raster::brick(dhs_df$image_file_annual[i])
+  i_5k_3yr   <- raster::brick(dhs_df$image_file_5k_3yr[i])   
   
   #scale the images, using collection 1 scaling
   i_original_scaled <- (i_original/.0001)
@@ -37,24 +43,29 @@ for (i in 1:nrow(dhs_df)) {
   
   #Loop through years
   for (j in 1:length(year_groups)) {
-    # Plot the three images side by side
+    #uncomment to test
+    #j=2
+        # Plot the three images side by side
     plotRGB(i_original_scaled, r = original_r[j], original_g[j], original_b[j], 
-            main = paste("Original",year_groups[j], dhs_id))
+            main = paste("Original",year_groups[j], dhs_df$dhs_id[i]))
     plotRGB(i_annual_scaled, r = annual_r[j], annual_g[j], annual_b[j], 
-            main = paste("Annual",year_groups[j],dhs_id))
+            main = paste("Annual",year_groups[j],dhs_df$dhs_id[i]))
     plotRGB(i_5k_3yr_scaled, five_k_3yr_r[j], five_k_3yr_g[j], five_k_3yr_b[j],
-            main = paste("5k 3yr",year_groups[j],dhs_id))
+            main = paste("5k 3yr",year_groups[j],dhs_df$dhs_id[i]))
     
     # Pause and wait for user input
-    cat("Press any key to proceed to the next year group...")
+    cat(paste(dhs_df$iso3[i],
+              dhs_df$lat[i],
+              dhs_df$lon[i],
+              year_groups[j], "Press enter for next year group..."))
     readline(prompt = "")
         
   }
   # Pause and wait for user input
-  cat("Press any key to proceed to the next DHS point...")
+  cat("Press enter to proceed to the next DHS point...")
   readline(prompt = "")
 }
-# Reset the layout
+ # Reset the layout
 par(mfrow = c(1, 1))
 
 
