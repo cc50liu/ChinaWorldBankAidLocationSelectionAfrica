@@ -2,10 +2,62 @@
 rm(list=ls())
 library(dplyr)
 library(stringr)
-
+library(raster)
 
 dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") %>% 
   select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr)
+
+# Set up the layout for three side-by-side plots
+par(mfrow = c(1, 3))
+
+#variables representing tif data structure and which layers have which years
+year_groups <- c("2002-2004","2005-2007","2008-2010","2011-2013")
+original_r <- c(35,43,51,59)
+original_g <- c(34,42,50,58)
+original_b <- c(33,41,49,57)
+five_k_3yr_r  <- c(9,15,21,27)
+five_k_3yr_g  <- c(8,14,20,26)
+five_k_3yr_b  <- c(7,13,19,25)
+#for annual rows, just look at the first year of the group
+annual_r <- c(15,33,51,69)
+annual_g <- c(14,32,50,68)
+annual_b <- c(13,31,49,67)
+
+# Loop through dhs points, plotting images for review
+for (i in 1:nrow(dhs_df)) {
+  # Read the images
+  i_original <- raster::brick(dhs_df$image_file)
+  i_annual   <- raster::brick(dhs_df$image_file_annual)
+  i_5k_3yr   <- raster::brick(dhs_df$image_file_5k_3yr)   
+  
+  #scale the images, using collection 1 scaling
+  i_original_scaled <- (i_original/.0001)
+  i_annual_scaled <- (i_annual/.0001)
+  i_5k_3yr_scaled <- (i_5k_3yr/.0001)
+  
+  #Loop through years
+  for (j in 1:length(year_groups)) {
+    # Plot the three images side by side
+    plotRGB(i_original_scaled, r = original_r[j], original_g[j], original_b[j], 
+            main = paste("Original",year_groups[j], dhs_id))
+    plotRGB(i_annual_scaled, r = annual_r[j], annual_g[j], annual_b[j], 
+            main = paste("Annual",year_groups[j],dhs_id))
+    plotRGB(i_5k_3yr_scaled, five_k_3yr_r[j], five_k_3yr_g[j], five_k_3yr_b[j],
+            main = paste("5k 3yr",year_groups[j],dhs_id))
+    
+    # Pause and wait for user input
+    cat("Press any key to proceed to the next year group...")
+    readline(prompt = "")
+        
+  }
+  # Pause and wait for user input
+  cat("Press any key to proceed to the next DHS point...")
+  readline(prompt = "")
+}
+# Reset the layout
+par(mfrow = c(1, 1))
+
+
 
 dhs_df %>% 
   filter(image_file_5k_3yr %in% c(
