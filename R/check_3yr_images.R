@@ -7,7 +7,10 @@ library(raster)
 dhs_df <- read.csv("./data/interim/dhs_est_iwi.csv") 
 
 dhs_df <- dhs_df %>% 
-  select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr)
+  select(dhs_id, lat, lon, country, image_file, image_file_annual, image_file_5k_3yr) %>% 
+  #filter to row with known negative value for test
+  filter(round(lat,2)==-34.29 & round(lon,2)==19.56)
+
 # Error in (function (classes, fdef, mtable)  : 
 #             unable to find an inherited method for function ‘select’ for signature ‘"data.frame"’
           
@@ -92,7 +95,81 @@ for (i in 1:nrow(dhs_df)) {
  # Reset the layout
 par(mfrow = c(1, 1))
 
+################################################################################
+# Loop through dhs images, saving information about images with negative values
+################################################################################
 
+neg_values_df <- data.frame(
+  dhs_id = as.integer(),
+  image = character(),
+  layer = character(),
+  nvalue = numeric())
+
+
+for (i in 1:nrow(dhs_df)) {
+  #uncomment to test
+  #i=1
+  # Read the images
+  i_annual   <- raster::brick(dhs_df$image_file_annual[i])
+  i_5k_3yr   <- raster::brick(dhs_df$image_file_5k_3yr[i])   
+  
+  #Loop through years
+  for (j in 1:length(year_groups)) {
+    #uncomment to test
+    #j=2
+
+    #check the 3 yr images
+    min_values <- cellStats(i_5k_3yr, stat="min")
+    neg_values <- which(min_values < 0, arr.ind=TRUE)
+    for (k in 1:length(neg_values)) {
+      neg_values_df <- neg_values_df %>% 
+        add_row(dhs_id = dhs_df$dhs_id,
+                image = dhs_df$image_file_5k_3yr[i],
+                layer = neg_values(k),
+                nvalue = min_values(k)   
+                )
+    }
+    
+    
+    #check the annual images
+    min_values <- cellStats(i_annual, stat="min")
+    neg_values <- which(min_values < 0, arr.ind=TRUE)
+    for (k in 1:length(neg_values)) {
+      neg_values_df <- neg_values_df %>% 
+        add_row(dhs_id = dhs_df$dhs_id,
+                image = dhs_df$image_file_5k_3yr[i],
+                layer = neg_values(k),
+                nvalue = min_values(k)   
+        )
+    }
+
+    # [1]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000
+    # [10]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000
+    # [19]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000 -0.02785  0.00000  0.00000
+    # [28]  0.00000  0.00000  0.00000  0.03210  0.07310  0.05490  0.21180  0.14600  0.07570
+    # 
+    
+    #cellStats(i_5k_3yr_scaled, stat="min")
+    # [1]    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+    # [12]    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+    # [23]    0.0    0.0 -278.5    0.0    0.0    0.0    0.0    0.0  321.0  731.0  549.0
+    # [34] 2118.0 1460.0  757.0    
+    
+    # 
+    # Pause and wait for user input
+    cat(paste(dhs_df$iso3[i],
+              dhs_df$lat[i],
+              dhs_df$lon[i],
+              year_groups[j], "Press enter for next year group..."))
+    readline(prompt = "")
+    
+  }
+  # Pause and wait for user input
+  cat("Press enter to proceed to the next DHS point...")
+  readline(prompt = "")
+}
+
+########################
 
 dhs_df <- dhs_df %>% 
   filter(image_file_5k_3yr %in% c(
