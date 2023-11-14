@@ -28,7 +28,7 @@ annual_g <- c(14,32,50,68)
 annual_b <- c(13,31,49,67)
 
 # Loop through dhs points, plotting images for review
-for (i in 7500:nrow(dhs_df)) {
+for (i in 1:nrow(dhs_df)) {
   #uncomment to test
   #i=1
   # Read the images
@@ -52,7 +52,31 @@ for (i in 7500:nrow(dhs_df)) {
             main = paste("Annual",year_groups[j],dhs_df$dhs_id[i]))
     plotRGB(i_5k_3yr_scaled, five_k_3yr_r[j], five_k_3yr_g[j], five_k_3yr_b[j],
             main = paste("5k 3yr",year_groups[j],dhs_df$dhs_id[i]))
+    #row that fails:  DHS id 6103
+    # class      : RasterBrick 
+    # dimensions : 167, 167, 27889, 36  (nrow, ncol, ncell, nlayers)
+    # resolution : 0.0002688717, 0.0002699141  (x, y)
+    # extent     : 9.75937, 9.804272, 4.048103, 4.093178  (xmin, xmax, ymin, ymax)
+    # crs        : +proj=longlat +datum=WGS84 +no_defs 
+    # source     : memory
+    # names      : X00151_1, X00151_2, X00151_3, X00151_4, X00151_5, X00151_6, X00151_7, X00151_8, X00151_9, X00151_10, X00151_11, X00151_12, X00151_13, X00151_14, X00151_15, ... 
+    # min values :      0.0,      0.0,      0.0,      0.0,      0.0,      0.0,      0.0,      0.0,      0.0,       0.0,       0.0,       0.0,       0.0,       0.0,       0.0, ... 
+    # max values :   2162.0,   2679.0,   3125.0,   4721.5,  11871.0,  11680.5,   3011.0,   3293.0,   3485.0,    5298.0,   20000.0,   20000.0,    2473.0,    2807.0,    2986.0, ...
     
+    cellStats(i_5k_3yr, stat="min")  
+    # [1]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000
+    # [10]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000
+    # [19]  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000 -0.02785  0.00000  0.00000
+    # [28]  0.00000  0.00000  0.00000  0.03210  0.07310  0.05490  0.21180  0.14600  0.07570
+    # 
+    
+    #cellStats(i_5k_3yr_scaled, stat="min")
+    # [1]    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+    # [12]    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+    # [23]    0.0    0.0 -278.5    0.0    0.0    0.0    0.0    0.0  321.0  731.0  549.0
+    # [34] 2118.0 1460.0  757.0    
+    
+    # 
     # Pause and wait for user input
     cat(paste(dhs_df$iso3[i],
               dhs_df$lat[i],
@@ -70,7 +94,7 @@ par(mfrow = c(1, 1))
 
 
 
-dhs_df %>% 
+dhs_df <- dhs_df %>% 
   filter(image_file_5k_3yr %in% c(
     "./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00137.tif",
     "./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00133.tif",
