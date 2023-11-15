@@ -96,15 +96,13 @@ par(mfrow = c(1, 1))
 ################################################################################
 # Loop through dhs images to identify negative values.  Write to csv after
 ################################################################################
-
-neg_values_df <- data.frame(
-  dhs_id = as.integer(),
-  image = character(),
-  image_type = character(),
-  layer = as.integer(),
-  nvalue = numeric())
+neg_values_list <- list()
+list_index <-  0
 
 for (i in 1:nrow(dhs_df)) {
+  if (i %% 100 == 0) {
+    print(paste("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"] iteration ",i))
+  }
   #uncomment to test
   #i=1
   # Read the images
@@ -118,12 +116,13 @@ for (i in 1:nrow(dhs_df)) {
   for (k in seq_along(neg_values)) {
     #uncomment to test
     #k=1
-    neg_values_df <- neg_values_df %>% 
-      add_row(dhs_id = dhs_df$dhs_id[i],
-              image = dhs_df$image_file[i],
-              image_type = "original",
-              layer = neg_values[k],
-              nvalue = min_values[neg_values[k]]   
+    list_index <- list_index + 1
+    neg_values_list[[list_index]] <- list(
+      dhs_id = dhs_df$dhs_id[i],
+      image = dhs_df$image_file[i],
+      image_type = "original",
+      layer = neg_values[k],
+      nvalue = min_values[neg_values[k]]   
       )
   }
   
@@ -131,12 +130,13 @@ for (i in 1:nrow(dhs_df)) {
   min_values <- cellStats(i_5k_3yr, stat="min")
   neg_values <- which(min_values < 0, arr.ind=TRUE)
   for (k in seq_along(neg_values)) {
-    neg_values_df <- neg_values_df %>% 
-      add_row(dhs_id = dhs_df$dhs_id[i],
-              image = dhs_df$image_file_5k_3yr[i],
-              image_type = "3yr",
-              layer = neg_values[k],
-              nvalue = min_values[neg_values[k]]   
+    list_index <- list_index + 1
+    neg_values_list[[list_index]] <- list(
+      dhs_id = dhs_df$dhs_id[i],
+      image = dhs_df$image_file_5k_3yr[i],
+      image_type = "3yr",
+      layer = neg_values[k],
+      nvalue = min_values[neg_values[k]]   
       )
   }
   
@@ -144,16 +144,19 @@ for (i in 1:nrow(dhs_df)) {
   min_values <- cellStats(i_annual, stat="min")
   neg_values <- which(min_values < 0, arr.ind=TRUE)
   for (k in seq_along(neg_values)) {
-    neg_values_df <- neg_values_df %>% 
-      add_row(dhs_id = dhs_df$dhs_id[i],
-              image = dhs_df$image_file_annual[i],
-              image_type = "annual",
-              layer = neg_values[k],
-              nvalue = min_values[neg_values[k]] 
+    list_index <- list_index + 1
+    neg_values_list[[list_index]] <- list(
+      dhs_id = dhs_df$dhs_id[i],
+      image = dhs_df$image_file_annual[i],
+      image_type = "annual",
+      layer = neg_values[k],
+      nvalue = min_values[neg_values[k]] 
       )
-    
   }
 }
+#convert list to dataframe
+neg_values_df <- do.call(rbind,neg_values_list)
+
 #write the file
 write.csv(neg_values_df,"./data/interim/images_w_neg_values.csv",row.names=FALSE)
 
