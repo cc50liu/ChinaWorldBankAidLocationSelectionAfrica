@@ -337,6 +337,52 @@ dhs_neg_df <- neg_values_df %>%
 
 #write larger analysis file
 write.csv(dhs_neg_df,"./data/interim/images_w_neg_values_extended.csv",row.names=FALSE)
+#dhs_neg_df <- read.csv("./data/interim/images_w_neg_values_extended.csv")
+
+names(dhs_neg_df)
+
+dhs_neg_df %>% 
+  group_by(image_type, band) %>% 
+  summarize(count=n(), min(nvalue))
+
+dhs_neg_df %>% 
+  group_by(dhs_id) %>% 
+  summarize(count=n(), minval=min(nvalue)) %>% 
+  arrange(minval)
+
+
+
+library(ggplot2)
+neg_count <- dhs_neg_df %>% 
+  group_by(image_type, band) %>% 
+  summarize(count=n(), min(nvalue)) %>% 
+ggplot(aes(x = image_type, y = count, fill = band)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("blue","green","pink","gray","red","salmon","orchid"),
+                    breaks = c("BLUE","GREEN","NIR","NL","RED","SWIR1","SWIR2")) +
+  labs(title = "Count of Negative Values in Images",
+       x = "Image Type",
+       y = "Count") +
+  theme_bw()
+
+ggsave("./figures/image_neg_band_count.png",neg_count)
+
+neg_min <- dhs_neg_df %>% 
+  group_by(image_type, band) %>% 
+  summarize(count=n(), min_value = min(nvalue)) %>% 
+  ggplot(aes(x = image_type, y = min_value, fill = band)) +
+  scale_fill_manual(values = c("blue","green","pink","gray","red","salmon","orchid"),
+                    breaks = c("BLUE","GREEN","NIR","NL","RED","SWIR1","SWIR2")) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Minimim values of Negative Values in Images",
+       x = "Image Type",
+       y = "Min Values") +
+  theme_bw()
+ggsave("./figures/image_neg_band_min.png",neg_min)
+
+dhs_neg_df %>% 
+  group_by(image_type, band) %>% 
+  summarize(count=n(), min(nvalue))
 
 ########################
 
