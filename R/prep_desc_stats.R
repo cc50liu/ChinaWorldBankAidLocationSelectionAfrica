@@ -6,7 +6,9 @@ rm(list=ls())
 
 #############################################################
 #### Projects by funder
-oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
+#oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
+oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group_v2.csv")
+
 
 excluded_precision_count <- oda_sect_group_df %>%
   filter(precision_code >= 4) %>% 
@@ -67,6 +69,9 @@ no_end_date_df <- oda_sect_group_df %>%
   pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
+# description            CH    WB
+# <chr>               <dbl> <dbl>
+#   1 portion_no_end_date  0.69  0.17
 
 desired_order <- c(3, 4, 1, 2, 8, 9, 5, 6, 7, 10,11)
 donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_unspecified_df,

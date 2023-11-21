@@ -422,6 +422,9 @@ oda_sect_group_df <- bind_rows(ch_sect_group_df %>%
 oda_sect_group_df %>% 
   write.csv("./data/interim/africa_oda_sector_group_v2.csv",row.names = FALSE)
 
+#oda_sect_group_df <- 
+#  read.csv("./data/interim/africa_oda_sector_group_v2.csv")
+
 #write the sector codes and names to a csv file for later use
 oda_sect_group_df %>% 
   distinct(ad_sector_codes, ad_sector_names, sector_group, sector_group_name) %>%
