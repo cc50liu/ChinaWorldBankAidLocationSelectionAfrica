@@ -22,10 +22,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-#fund_sect_param <- "ch_430"
-#run <- "cnn_5k_3yr"
-#iterations <- 1000
-#time_approach <- "3yr"   #other option: "annual"
+fund_sect_param <- "ch_430"
+run <- "cnn_5k_3yr"
+iterations <- 1000
+time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -376,18 +376,19 @@ if (treat_count < 100) {
       lat = input_df$lat,
       #concatenate the image file location and oda start year into a single keys parameter
       imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-      #acquireImageFxn = acquireImageRepFromDisk,
+      #acquireImageFxn = acquireImageRepFromDisk,  no longer used
       file = tf_rec_filename,
-      samplingType = "balancedTrain",
+      #samplingType = "balancedTrain",
       nSGD = iterations,
-      nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 3L,
-      modelClass = "cnn",
+      #nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, 
+      strides = 2L, kernelSize = 3L,
+      #modelClass = "cnn",
       dropoutRate = 0.1, 
-      nFilters = 50L,
+      #nFilters = 50L,
       figuresPath = results_dir, # figures saved here
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
-      tagInFigures = T,
+      #tagInFigures = T,
       conda_env = NULL, # conda env to try to activate
       conda_env_required = F
     )
