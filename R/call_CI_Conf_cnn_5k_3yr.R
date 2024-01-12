@@ -358,9 +358,11 @@ if (treat_count < 100) {
                    " Start creating tfrecord file: ",tf_rec_filename))
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
-                                  imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,
+                                  uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
                                                             input_df$year_group),
-                                  acquireImageFxn = acquireImageRepFromDisk
+                                  acquireImageFxn = acquireImageRepFromDisk,
+                                  conda_env = NULL,
+                                  conda_env_required = F
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Finished creating tfrecord file: ",tf_rec_filename))
