@@ -22,10 +22,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-fund_sect_param <- "ch_430"
-run <- "cnn_5k_3yr"
-iterations <- 1000
-time_approach <- "3yr"   #other option: "annual"
+#fund_sect_param <- "ch_430"
+#run <- "cnn_5k_3yr"
+#iterations <- 1000
+#time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -41,7 +41,8 @@ other_funder <- ifelse(funder_param=="wb","ch","wb")
 
 ##### read confounder and treatment data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_5k_confounders.csv") %>% 
-  select(-year)  #remove survey year column that could be confused with oda year
+  select(-year)  %>% #remove survey year column that could be confused with oda year
+  mutate(across(starts_with("log_trans_proj_cum_n"),as.numeric)) #ensure numeric not integer
 
 #get list of all dhs_id's and their iso3 for use below
 dhs_iso3_df <- dhs_confounders_df %>% 
@@ -242,12 +243,12 @@ if (treat_count < 100) {
         year_group == '2008:2010' ~ log_deaths2005_2007,
         year_group == '2011:2013' ~ log_deaths2008_2010,
         year_group == '2014:2016' ~ log_deaths2011_2013), 
-      log_trans_proj_cum_n = case_when(
+      log_trans_proj_cum_n = as.numeric(case_when(
         year_group == '2002:2004' ~ log_trans_proj_cum_n_2001,
         year_group == '2005:2007' ~ log_trans_proj_cum_n_2004,
         year_group == '2008:2010' ~ log_trans_proj_cum_n_2007,
         year_group == '2011:2013' ~ log_trans_proj_cum_n_2010,
-        year_group == '2014:2016' ~ log_trans_proj_cum_n_2013), 
+        year_group == '2014:2016' ~ log_trans_proj_cum_n_2013)),
       #set indicator variables for the combination of satellite images in pre-project images
       #Landsat 5 only in images from 1990:1998, excluded here because of missing data
       #Landsat 5&7 in images from    1999:2010  - won't include this column to avoid collinearity
@@ -277,7 +278,7 @@ if (treat_count < 100) {
              
   run_df <- obs_year_group_df %>% 
     left_join(country_confounders_df,
-              by=join_by(iso3, year_group == year_group))
+              by=c("iso3", "year_group"))
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
@@ -369,25 +370,25 @@ if (treat_count < 100) {
     # call AnalyzeImageConfounding
     ###############################
     ImageConfoundingAnalysis <- AnalyzeImageConfounding(
-      obsW = input_df$treated,
-      obsY = input_df$iwi_est_post_oda,  
-      X = conf_matrix,
-      long = input_df$lon,
-      lat = input_df$lat,
+      obsW = input_df$treated,            #type: num
+      obsY = input_df$iwi_est_post_oda,   #type:num 
+      X = conf_matrix,                    #types:  str
+      file = tf_rec_filename,             #type: character
+      imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), #type: character
+      lat = input_df$lat,                 #type: num
+      long = input_df$lon,                #type: num
       #concatenate the image file location and oda start year into a single keys parameter
-      imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
       #acquireImageFxn = acquireImageRepFromDisk,  no longer used
-      file = tf_rec_filename,
       #samplingType = "balancedTrain",
-      nSGD = iterations,
+      nSGD = iterations,                 #type: num
       #nDepthHidden_conv = 3L, nDepthHidden_dense = 1L, maxPoolSize = 2L, 
       strides = 2L, kernelSize = 3L,
       #modelClass = "cnn",
       dropoutRate = 0.1, 
-      #nFilters = 50L,
-      figuresPath = results_dir, # figures saved here
+      nDepth_ImageRep = 50L, #replaces nFilters
+      figuresPath = results_dir,         #type: character
       plotBands=c(3,2,1),  #red, green, blue
-      figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
+      figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations), #type: character
       #tagInFigures = T,
       conda_env = NULL, # conda env to try to activate
       conda_env_required = F
