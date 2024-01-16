@@ -22,10 +22,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-#fund_sect_param <- "ch_430"
-#run <- "cnn_5k_3yr"
-#iterations <- 1000
-#time_approach <- "3yr"   #other option: "annual"
+# fund_sect_param <- "ch_430"
+# run <- "cnn_5k_3yr"
+# iterations <- 1000
+# time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -161,7 +161,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   simplify="array")  #using simplify = "array" combines images slices together
 
   # convert images to tensorflow array for further processing
-  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float32),0L)
+  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float16),0L)
   array_ <- tensorflow::tf$transpose(array_,c(3L,0L,1L,2L))
   return( array_ )
 }
@@ -347,6 +347,10 @@ if (treat_count < 100) {
        dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_group_df,
        run_df, pre_shuffle_df)
     
+    #FOR TESTING!
+    # input_df <- input_df[1:800,]
+    # conf_matrix <- conf_matrix[1:800, ]
+    
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
@@ -356,6 +360,7 @@ if (treat_count < 100) {
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Start creating tfrecord file: ",tf_rec_filename))
+      
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
                                   uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
@@ -387,7 +392,8 @@ if (treat_count < 100) {
       strides = 2L, kernelSize = 3L,
       #modelClass = "cnn",
       dropoutRate = 0.1, 
-      nDepth_ImageRep = 50L, #replaces nFilters
+      nDepth_ImageRep = 3L, 
+      nWidth_ImageRep = 128L, #replaces nFilters
       figuresPath = results_dir,         #type: character
       plotBands=c(3,2,1),  #red, green, blue
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations), #type: character
