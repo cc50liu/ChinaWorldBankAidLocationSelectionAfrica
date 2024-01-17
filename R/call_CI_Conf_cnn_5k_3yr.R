@@ -426,7 +426,7 @@ if (treat_count < 100) {
     
     #join the input and output and sort by treatment propensity
     ica_long2_df <- ica_long_df %>% 
-      inner_join(input_r_df,join_by(col_index==rnum)) %>% 
+      inner_join(input_r_df,dplyr::join_by(col_index==rnum)) %>% 
       arrange(prW_est)
     
     least_likely_df <- ica_long2_df %>% 
@@ -632,13 +632,10 @@ if (treat_count < 100) {
       select(starts_with("SalienceX."))  %>%
       rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
       pivot_longer(cols=everything())
-										   
-										  
-																		 
-    
+										
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
+      right_join(tab_conf_salience_df, dplyr::join_by("term"=="name")) %>% 
       rename(Salience_AIC = value)
     
     #write to file
