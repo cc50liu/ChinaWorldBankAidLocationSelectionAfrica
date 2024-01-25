@@ -22,10 +22,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_430"
-# run <- "cnn_5k_3yr"
-# iterations <- 1000
-# time_approach <- "3yr"   #other option: "annual"
+fund_sect_param <- "ch_430"
+run <- "cnn_5k_3yr"
+iterations <- 2000
+time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -399,7 +399,9 @@ if (treat_count < 100) {
       figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations), #type: character
       #tagInFigures = T,
       conda_env = NULL, # conda env to try to activate
-      conda_env_required = F
+      conda_env_required = F,
+      ImageModelClass = "CNN",
+      atError = 'debug'
     )
 
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
