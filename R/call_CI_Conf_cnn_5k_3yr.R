@@ -22,10 +22,10 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-fund_sect_param <- "ch_430"
-run <- "cnn_5k_3yr"
-iterations <- 2000
-time_approach <- "3yr"   #other option: "annual"
+#fund_sect_param <- "ch_430"
+#run <- "cnn_5k_3yr"
+#iterations <- 2000
+#time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
