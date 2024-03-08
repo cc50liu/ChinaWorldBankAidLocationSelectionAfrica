@@ -11,27 +11,35 @@ af_disasters_df <- read_excel("./data/EM-DAT/public_emdat_custom_request_2024-03
                            sheet = "EM-DAT Data") 
 #2582 obs. Includes technological and biological disasters that haven't been geocoded
 
-# Read GDIS Geodatabase file of vector objects 
+# Read GDIS Geodatabase file of vector objects:  39953 obs
 disaster_sf <- st_read(dsn = "./data/GDIS/pend-gdis-1960-2018-disasterlocations.gdb") %>% 
   #add a match id including the 3 digit ISO code added by EM-DAT in the Excel file
-  mutate(match_id = paste(DisNo.,ISO,sep = "-"))
+  mutate(match_id = paste(disasterno,iso3,sep = "-"))
 #Simple feature collection with 39953 features and 17 fields
 
-# Subset vector objects based on the IDs from the Excel file
-af_disaster_sf <- disaster_sf %>% 
-  filter(disasterno %in% match_id)
-#leaves 3395 obs
+# Inner join to excel file to subset to rows there and add excel columns - leaves 2503 obs 
+af_disaster_attr_sf <- inner_join(disaster_sf, af_disasters_df, 
+                                  by=join_by(match_id==DisNo.)) %>% 
+  rename(CapCountry=Country,
+         CapLocation=Location)
 
-# Join to excel file to add the additional data found there and limit to records available there 
-af_disaster_attr_sf <- inner_join(af_disaster_sf, af_disasters_df, 
-                                  by=join_by(disasterno==match_id))
-af_disaster_attr_sf %>% 
-  filter(disasterno=="2009-0092")
+# af_disaster_attr_sf %>% 
+#   filter(disasterno=="2009-0092")
+# 
+# af_disaster_attr_sf %>% 
+#   select(disasterno, DisNo., iso3, ISO, Country)
+# 
+# af_disaster_attr_sf %>% 
+#   select(country,CapCountry,match_id) %>% 
+#   filter(country!=CapCountry) %>% 
+#   print(n=100)
+# 
+# af_disaster_attr_sf %>% 
+#   select(location,CapLocation,match_id) %>% 
+#   filter(location!=CapLocation) %>% 
+#   print(n=100)
 
-af_disaster_attr_sf %>% 
-  select(disasterno, DisNo., iso3, ISO, Country)
-
-#Save subsetted sf file with additional columns for use later
+#Save subsetted sf file with additional columns for use in later script
 st_write(af_disaster_attr_sf, "./data/interim/af_disasters.geojson", driver = "GeoJSON")
 #af_disaster_attr_sf <- st_read("./data/interim/af_disasters.geojson")
 
