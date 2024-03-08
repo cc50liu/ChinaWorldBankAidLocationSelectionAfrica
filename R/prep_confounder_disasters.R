@@ -8,31 +8,31 @@ rm(list=ls())
 
 # Read an EM-DAT excel file that has a subset of disasters that happened in Africa between 2001 and 2014
 af_disasters_df <- read_excel("./data/EM-DAT/public_emdat_custom_request_2024-03-07_aa95ca9d-5402-497c-b0c5-e0ca2e57cf56.xlsx",
-                           sheet = "EM-DAT Data") %>% 
-  mutate(match_id = sub("^(.*?-.*)-.*$", "\\1", DisNo.))
+                           sheet = "EM-DAT Data") 
 #2582 obs. Includes technological and biological disasters that haven't been geocoded
 
 # Read GDIS Geodatabase file of vector objects 
-disaster_sf <- st_read(dsn = "./data/GDIS/pend-gdis-1960-2018-disasterlocations.gdb")
+disaster_sf <- st_read(dsn = "./data/GDIS/pend-gdis-1960-2018-disasterlocations.gdb") %>% 
+  #add a match id including the 3 digit ISO code added by EM-DAT in the Excel file
+  mutate(match_id = paste(DisNo.,ISO,sep = "-"))
 #Simple feature collection with 39953 features and 17 fields
 
 # Subset vector objects based on the IDs from the Excel file
-af_disaster_sf <- disaster_sf[disaster_sf$disasterno %in% af_disasters$match_id, ]
+af_disaster_sf <- disaster_sf %>% 
+  filter(disasterno %in% match_id)
 #leaves 3395 obs
 
-# Add in the rest of the columns in the Excel file to the sf object
+# Join to excel file to add the additional data found there and limit to records available there 
 af_disaster_attr_sf <- inner_join(af_disaster_sf, af_disasters_df, 
-                                  by=join_by(disasterno==match_id),
-                                  relationship = "many-to-many") %>% 
-  rename(longLocation=Location) %>% 
-  select(-country)
-                                  
+                                  by=join_by(disasterno==match_id))
 af_disaster_attr_sf %>% 
-  select(disasterno, Country, location, Location) %>% 
-  filter(location!=Location)
+  filter(disasterno=="2009-0092")
+
+af_disaster_attr_sf %>% 
+  select(disasterno, DisNo., iso3, ISO, Country)
 
 #Save subsetted sf file with additional columns for use later
 st_write(af_disaster_attr_sf, "./data/interim/af_disasters.geojson", driver = "GeoJSON")
+#af_disaster_attr_sf <- st_read("./data/interim/af_disasters.geojson")
 
-sort(names(af_disaster_attr_sf))
 
