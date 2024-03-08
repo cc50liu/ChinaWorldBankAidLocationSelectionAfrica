@@ -65,6 +65,7 @@ source("./code/R/select_dhs_treat_control_5k.R", local=TRUE)
 #Prepare confounder Data for each dhs point/scene
 #python  0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
 source("./code/R/prep_confounders_dhs_5k_raster.R", local=TRUE)
+source("./code/R/prep_confounder_disasters.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
 source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
