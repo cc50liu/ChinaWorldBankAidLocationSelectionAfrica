@@ -9,7 +9,7 @@ rm(list=ls())
 
 ################################################
 ### Load administrative borders and general data
-
+################################################
 #get Africa ISO codes
 africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 projection <- "ESRI:102023"
@@ -35,6 +35,7 @@ africa_map_isos_df <- read.csv("./data/interim/africa_map_isos.csv")
 
 ################################################
 # Conflict Deaths, limit to precise-enough for subnational use
+################################################
 ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>% 
   filter(region=="Africa" &
          year %in% 1997:2013 & 
@@ -163,8 +164,9 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
   rm(log_deaths_columns)
   rm(gadm1_udcp_log_map_sf)
 
-  #########
+  #########################################################
   #get DHS points 
+  #########################################################
   dhs_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
     select(dhs_id, lat, lon)
   
@@ -285,5 +287,61 @@ dhs_vector_df <- dhs_deaths_df %>%
   left_join(plad_africa_adm1_df, by = "ID_adm1") %>% 
   mutate(across(starts_with("leader"), ~ ifelse(is.na(.),0,.)))
 
+################################################
+# Natural Disasters
+################################################
+af_disaster_sf <- sf::st_read("./data/interim/af_disasters.geojson") %>% 
+  sf::st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
+  sf::st_transform(crs=sf::st_crs(projection))
+
+#spatially join disasters with dhs points
+dhs_disaster_sf <- sf::st_join(dhs_sf, 
+                               af_disaster_sf, 
+                               join = sf::st_intersects, 
+                               left=FALSE) 
+
+
+#create a dataframe version, making columns that are counts by year
+dhs_disaster_df <- dhs_disaster_sf %>% 
+  sf::st_drop_geometry() %>% 
+  group_by(dhs_id, match_id, Start.Year, End.Year) %>% 
+  mutate(year=list(Start.Year:End.Year)) %>% 
+  unnest(cols = c(year)) %>% 
+  ungroup() %>% 
+  group_by(dhs_id, year) %>% 
+  count() %>% 
+  ungroup() %>% 
+  filter(year >= 2001 & year <= 2013) %>% 
+  pivot_wider(names_prefix="disasters", names_from=year, values_from=n, 
+              names_sort=TRUE, values_fill=0)
+#warnings are due to there being duplicate matches, such as if the event was coded
+#at both adm3 and adm1 levels,  The same match_id will be counted omly once per dhs_id.
+  
+#join to the dhs_vector_df to add the disaster columns there
+dhs_vector_df <- dhs_vector_df %>%
+  left_join(dhs_disaster_df, by = "dhs_id")
+
 write.csv(dhs_vector_df,"./data/interim/dhs_treat_control_vector.csv",row.names=FALSE)  
 #dhs_vector_df <-  read.csv("./data/interim/dhs_treat_control_vector.csv") 
+
+#loop through the years to create a map for each
+for (year in 2001:2013) {
+  #year <- 2001  #uncomment to test
+  map_title <- paste0("Natural disasters in ",year)
+  disaster_map <- tm_shape(gadm0_map_sf) +
+    tm_borders() +
+    tm_shape(dhs_disaster_sf[dhs_disaster_sf$Start.Year <= year & 
+                               dhs_disaster_sf$End.Year >= year,]) + 
+    tm_dots(size=.3,col="Disaster.Type", palette = "RdYlBu", alpha=.5,title="Disaster Type") +
+    tm_layout(main.title.size=1,
+              main.title = map_title,
+              main.title.position=c("center","top"),
+              legend.width = 1.2) +
+    tm_legend(legend.position = c("left", "bottom"))
+
+
+   tmap_save(disaster_map, paste0("./figures/africa_disasters_", year, ".png"))
+  
+}
+
+
