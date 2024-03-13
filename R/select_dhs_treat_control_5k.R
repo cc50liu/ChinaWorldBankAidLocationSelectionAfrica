@@ -235,6 +235,8 @@ unique(sf::st_is_valid(dhs_sf))
 if (debug_msg) print(paste("Obs in dhs_sf:",nrow(dhs_sf)))
 
 ####################################################
+# call main function to process sectors
+####################################################
 output <- lapply(sectors_v, function(sector) {
   process_sectors(sector, projection, dhs_sf, wb_oda_df,
                   ch_oda_df, adm2_borders, debug_msg)

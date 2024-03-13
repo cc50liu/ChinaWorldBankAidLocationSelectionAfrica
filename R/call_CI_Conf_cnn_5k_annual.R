@@ -159,7 +159,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
                         lyrs=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
       #rescale to original setting for RGB printing
-      im <- im/.0001
+      im <- im/.0001  #collection 1 scale factor
       # place the image in the correct place in the array
       array_shell[,,,i] <- matrix(im, byrow = T, nrow = imageHeight, ncol = imageWidth)
     }

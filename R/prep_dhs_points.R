@@ -1,6 +1,7 @@
 #prep_dhs_points.R
 library(dplyr)
 library(stringr)
+library(sf)
 
 rm(list=ls())
 
@@ -9,15 +10,6 @@ dhs_df <- read.csv("./data/AIGlobalLab/dhs_clusters.csv")
 #assign an id to each survey location
 #start with 0 to match numbers assigned in Markus' code 
 dhs_df$dhs_id <- 0:(nrow(dhs_df)-1) 
-
-#add the location of each downloaded image file 
-# (later realized these had 60m resolution when downloaded from GEE, so don't use)
-dhs_df <-   dhs_df %>% 
-  group_by(country, year) %>% 
-  mutate(image_file = paste0("./data/dhs_tifs/",country,"_",year,"/",
-                             str_pad(row_number() - 1,width = 5, pad="0"),
-                             ".tif")) %>% 
-  ungroup()
 
 #add an ISO3 column
 dhs_df <- dhs_df %>%
@@ -124,5 +116,62 @@ dhs_iwi_5k <- dhs_tc_est_df %>%
                                     ".tif")
   ) %>% 
   ungroup()
+
+
+#####################################################
+#### Lookup adm2 for each dhs point for fixed effects
+#####################################################
+projection <- "ESRI:102023"   #WGS 1984 Equidistant Conic for Africa.
+
+#load administrative borders
+adm2_borders <- sf::st_read("./data/country_regions/gadm2_clean.shp")  %>%
+  filter(ISO %in% africa_isos_df$iso3)
+sf::st_crs(adm2_borders) = "EPSG:4326"
+adm2_borders <- sf::st_transform(adm2_borders,crs=st_crs(projection))
+adm2_borders <- sf::st_make_valid(adm2_borders)
+unique(sf::st_is_valid(adm2_borders))
+
+#create an sf version of the dhs points
+dhs_sf <- dhs_iwi_5k  %>%
+  st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
+  select(dhs_id,year,iso3,rural,geometry) 
+
+dhs_sf <- sf::st_transform(dhs_sf,crs=st_crs(projection))
+dhs_sf <- sf::st_make_valid(dhs_sf)
+unique(sf::st_is_valid(dhs_sf))
+
+#do a spatial join
+dhs_adm2_sf <- st_join(dhs_sf,
+        adm2_borders,
+        left=TRUE)
+
+#did we find an adm2 for each dhs point?  If some locations are outside official 
+#ADM2 borders (like in a bay), find nearest
+if (nrow(dhs_adm2_sf) != nrow(dhs_sf)) {
+  #would need to change this.  this is copied from select_dhs_treat_control_5k.R
+  un_original <- length(unique(oda_sf$geoname_id))
+  un_buffer <- length(unique(oda_buff_sf$geoname_id))
+  print(paste("Buffer has", nrow(oda_sf) - nrow(oda_buff_sf),
+              "fewer than original. Unique geonames in original:", un_original,
+              "buffer:",un_buffer))
+  if (un_buffer < un_original) 
+  {
+    
+    not_in_oda_buff <- !(oda_sf$geoname_id %in% oda_buff_sf$geoname_id)
+    missing_sf <- oda_sf[not_in_oda_buff, ]
+    
+    missing_nn_sf <- missing_sf %>% 
+      mutate(adm2_id = unlist(nngeo::st_nn(.,adm2_sf)),
+             adm2_geometry = st_geometry(adm2_sf[adm2_id, ]),
+             geometry = adm2_geometry) 
+    print(paste("nngeo found", nrow(missing_nn_sf[st_geometry_type(missing_nn_sf)!="POINT",])))
+    
+    oda_buff_sf <- rbind(oda_buff_sf,
+                         missing_nn_sf %>% 
+                           select(geoname_id,precision_code,
+                                  transactions_start_year, geometry))
+    
+  }
+}
 
 write.csv(dhs_iwi_5k,"./data/interim/dhs_est_iwi.csv", row.names=FALSE)
