@@ -22,7 +22,7 @@ dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>%
 dhs_natl_res_df <-  read.csv("./data/interim/dhs_natl_res.csv") %>% 
   select(dhs_id, starts_with("log"))
 
-dhs_loan_transp_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>% 
+dhs_ch_loan_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>% 
   select(dhs_id, starts_with("log"))
 
 #get iwi estimate and all other attributes here
@@ -62,7 +62,7 @@ dhs_confounders_df <- dhs_iwi_df %>%
   inner_join(dhs_vector_df, by="dhs_id") %>% 
   inner_join(dhs_raster_df, by="dhs_id") %>% 
   inner_join(dhs_natl_res_df, by="dhs_id") %>%  
-  inner_join(dhs_loan_transp_df, by="dhs_id") %>% 
+  inner_join(dhs_ch_loan_df, by="dhs_id") %>% 
   inner_join(pc_nl_log_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
               
 #group them into 3-year sets matching 3-year-image years
@@ -89,8 +89,14 @@ dhs_5k_3yr_confounders <- dhs_confounders_df %>%
          log_pc_nl_2002_2004 = rowMeans(select(.,log_pc_nl_2002,log_pc_nl_2003,log_pc_nl_2004), na.rm=TRUE),
          log_pc_nl_2005_2007 = rowMeans(select(.,log_pc_nl_2005,log_pc_nl_2006,log_pc_nl_2007), na.rm=TRUE),
          log_pc_nl_2008_2010 = rowMeans(select(.,log_pc_nl_2008,log_pc_nl_2009,log_pc_nl_2010), na.rm=TRUE),
-         log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE))
-
+         log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE),
+         log_ch_loan_proj_n_1999_2001 = rowSums(select(.,log_ch_loan_proj_n_1999,log_ch_loan_proj_n_2000,log_ch_loan_proj_n_2001), na.rm=TRUE),
+         log_ch_loan_proj_n_2002_2004 = rowSums(select(.,log_ch_loan_proj_n_2002,log_ch_loan_proj_n_2003,log_ch_loan_proj_n_2004), na.rm=TRUE),
+         log_ch_loan_proj_n_2005_2007 = rowSums(select(.,log_ch_loan_proj_n_2005,log_ch_loan_proj_n_2006,log_ch_loan_proj_n_2007), na.rm=TRUE),
+         log_ch_loan_proj_n_2008_2010 = rowSums(select(.,log_ch_loan_proj_n_2008,log_ch_loan_proj_n_2009,log_ch_loan_proj_n_2010), na.rm=TRUE),
+         log_ch_loan_proj_n_2011_2013 = rowSums(select(.,log_ch_loan_proj_n_2011,log_ch_loan_proj_n_2012,log_ch_loan_proj_n_2013), na.rm=TRUE),
+         log_ch_loan_proj_n_2014_2016 = log_ch_loan_proj_n_2014)
+         
 write.csv(dhs_5k_3yr_confounders,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
 
 names(dhs_5k_3yr_confounders)

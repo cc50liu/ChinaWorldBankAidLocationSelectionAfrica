@@ -42,7 +42,7 @@ other_funder <- ifelse(funder_param=="wb","ch","wb")
 ##### read confounder and treatment data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_5k_confounders.csv") %>% 
   select(-year)  %>% #remove survey year column that could be confused with oda year
-  mutate(across(starts_with("log_trans_proj_cum_n"),as.numeric)) #ensure numeric not integer
+  mutate(across(starts_with("log_ch_loan_proj_n"),as.numeric)) #ensure numeric not integer
 
 #get list of all dhs_id's and their iso3 for use below
 dhs_iso3_df <- dhs_confounders_df %>% 
@@ -91,14 +91,14 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city","agglomeration",
                "log_dist_km_to_gold","log_dist_km_to_gems",        
                "log_dist_km_to_dia","log_dist_km_to_petro", 
-               "leader_birthplace","log_trans_proj_cum_n",
+               "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini",
                "landsat578","treated_other_funder")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-3,log)","Pop Density (t-3,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-3)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-3)","Prior Transport Projs",
+                "Dist to Oil (km,log)","Leader birthplace (t-3)","Concurrent Loan Projs",
                 "Conflict deaths (t-3,log)",
                 "Country Polity2 (t-3)","Cntry GDP/cap (t-3,log)","Country gini (t-3)",
                 "Landsat 5,7,& 8","Treated Other Funder")
@@ -243,12 +243,12 @@ if (treat_count < 100) {
         year_group == '2008:2010' ~ log_deaths2005_2007,
         year_group == '2011:2013' ~ log_deaths2008_2010,
         year_group == '2014:2016' ~ log_deaths2011_2013), 
-      log_trans_proj_cum_n = as.numeric(case_when(
-        year_group == '2002:2004' ~ log_trans_proj_cum_n_2001,
-        year_group == '2005:2007' ~ log_trans_proj_cum_n_2004,
-        year_group == '2008:2010' ~ log_trans_proj_cum_n_2007,
-        year_group == '2011:2013' ~ log_trans_proj_cum_n_2010,
-        year_group == '2014:2016' ~ log_trans_proj_cum_n_2013)),
+      log_ch_loan_proj_n = as.numeric(case_when(
+        year_group == '2002:2004' ~ log_ch_loan_proj_n_2002_2004,
+        year_group == '2005:2007' ~ log_ch_loan_proj_n_2005_2007,
+        year_group == '2008:2010' ~ log_ch_loan_proj_n_2008_2010,
+        year_group == '2011:2013' ~ log_ch_loan_proj_n_2011_2013,
+        year_group == '2014:2016' ~ log_ch_loan_proj_n_2014_2016)),
       #set indicator variables for the combination of satellite images in pre-project images
       #Landsat 5 only in images from 1990:1998, excluded here because of missing data
       #Landsat 5&7 in images from    1999:2010  - won't include this column to avoid collinearity
@@ -285,7 +285,7 @@ if (treat_count < 100) {
     select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
            year_group, image_file_5k_3yr, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
-           log_3yr_pre_conflict_deaths, log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
+           log_3yr_pre_conflict_deaths, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
     rename(cnty = country) %>% 
@@ -314,7 +314,7 @@ if (treat_count < 100) {
         "agglomeration"              =input_df$agglomeration,               #scene level
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_trans_proj_cum_n"       =input_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
+        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,        #inherited from ADM1, ADM2
         "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
@@ -663,7 +663,7 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-                             "log_trans_proj_cum_n" ~ "ch_transp_projs",
+                             "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",

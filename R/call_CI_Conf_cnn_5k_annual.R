@@ -94,17 +94,18 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city","agglomeration",
                "log_dist_km_to_gold","log_dist_km_to_gems",        
                "log_dist_km_to_dia","log_dist_km_to_petro", 
-               "leader_birthplace","log_trans_proj_cum_n",
+               "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths",
                "polity2","log_gdp_per_cap_USD2015","country_gini",
                "landsat578","treated_other_funder")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                 "Landsat 5,7,& 8","Treated Other Funder")
+
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -255,10 +256,10 @@ if (treat_count < 100) {
                                                "_",
                                                start_year - 1))
     ) %>% ungroup() %>%  
-    #set loan-based transport projects based on year prior to earliest aid project 
+    #set concurrent loan-based projects to same year as aid project 
     rowwise() %>% mutate(
-      log_trans_proj_cum_n = get(paste0("log_trans_proj_cum_n_",
-                                        start_year - 1))
+      log_ch_loan_proj_n = get(paste0("log_ch_loan_proj_n_",
+                                        start_year))
     ) %>% ungroup()  
   
   #join to country-level parameters, which are year specific
@@ -275,7 +276,7 @@ if (treat_count < 100) {
     select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
            start_year, image_file_annual, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
-           log_3yr_pre_conflict_deaths, log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
+           log_3yr_pre_conflict_deaths, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
     rename(cnty = country) %>% 
@@ -302,7 +303,7 @@ if (treat_count < 100) {
         "agglomeration"              =input_df$agglomeration,               #scene level
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_trans_proj_cum_n"       =input_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
+        "log_ch_loan_proj_n"       =input_df$log_ch_loan_proj_n,        #inherited from ADM1, ADM2
         "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
@@ -641,7 +642,7 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-                             "log_trans_proj_cum_n" ~ "ch_transp_projs",
+                             "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",
