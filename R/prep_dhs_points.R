@@ -62,7 +62,7 @@ dhs_t_c_df %>%
   distinct(country, iso3, year)
 # country                  iso3   year
 # <chr>                    <chr> <int>
-# 1 cameroon                 CMR    1991  #change to 2004
+# 1 cameroon                 CMR    1991  #changed to 2004
 # 2 central_african_republic CAF    1995  #no better year
 
 #include outcome estimates
@@ -118,10 +118,11 @@ dhs_iwi_5k <- dhs_tc_est_df %>%
   ungroup()
 
 
-#####################################################
-#### Lookup adm2 for each dhs point for fixed effects
-#####################################################
+#############################################################
+#### Lookup adm2 for each dhs point for use in fixed effects
+#############################################################
 projection <- "ESRI:102023"   #WGS 1984 Equidistant Conic for Africa.
+africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 
 #load administrative borders
 adm2_borders <- sf::st_read("./data/country_regions/gadm2_clean.shp")  %>%
@@ -140,38 +141,39 @@ dhs_sf <- sf::st_transform(dhs_sf,crs=st_crs(projection))
 dhs_sf <- sf::st_make_valid(dhs_sf)
 unique(sf::st_is_valid(dhs_sf))
 
-#do a spatial join
+#do a spatial join between dhs points and adm2 borders
 dhs_adm2_sf <- st_join(dhs_sf,
         adm2_borders,
-        left=TRUE)
+        left=FALSE)
 
-#did we find an adm2 for each dhs point?  If some locations are outside official 
-#ADM2 borders (like in a bay), find nearest
+#If some locations are outside official ADM2 borders (like in a bay), 
+#find nearest using the nngeo package
 if (nrow(dhs_adm2_sf) != nrow(dhs_sf)) {
-  #would need to change this.  this is copied from select_dhs_treat_control_5k.R
-  un_original <- length(unique(oda_sf$geoname_id))
-  un_buffer <- length(unique(oda_buff_sf$geoname_id))
-  print(paste("Buffer has", nrow(oda_sf) - nrow(oda_buff_sf),
-              "fewer than original. Unique geonames in original:", un_original,
-              "buffer:",un_buffer))
-  if (un_buffer < un_original) 
-  {
-    
-    not_in_oda_buff <- !(oda_sf$geoname_id %in% oda_buff_sf$geoname_id)
-    missing_sf <- oda_sf[not_in_oda_buff, ]
-    
-    missing_nn_sf <- missing_sf %>% 
-      mutate(adm2_id = unlist(nngeo::st_nn(.,adm2_sf)),
-             adm2_geometry = st_geometry(adm2_sf[adm2_id, ]),
-             geometry = adm2_geometry) 
-    print(paste("nngeo found", nrow(missing_nn_sf[st_geometry_type(missing_nn_sf)!="POINT",])))
-    
-    oda_buff_sf <- rbind(oda_buff_sf,
-                         missing_nn_sf %>% 
-                           select(geoname_id,precision_code,
-                                  transactions_start_year, geometry))
-    
-  }
+  missing_dhs_ids <- !(dhs_sf$dhs_id %in% dhs_adm2_sf$dhs_id)
+  missing_sf <- dhs_sf[missing_dhs_ids, ]
+  #make a version of the adm2 object with no geometry for field updates
+  adm2_borders_no_geo <- adm2_borders %>% st_drop_geometry()
+  
+  missing_nn_sf <- missing_sf %>% 
+    mutate(missing_index = unlist(nngeo::st_nn(.,adm2_borders)),
+           ID_adm2 = adm2_borders_no_geo[missing_index,"ID_adm2"],
+           ISO = adm2_borders_no_geo[missing_index,"ISO"],
+           part_area = adm2_borders_no_geo[missing_index,"part_area"],
+           adm2_geometry = st_geometry(adm2_borders[missing_index, ]),
+           geometry = adm2_geometry) 
+  dhs_adm2_sf <- rbind(dhs_adm2_sf,
+                       missing_nn_sf %>% 
+                         select(dhs_id,year,iso3,rural, geometry,ID_adm2,ISO,
+                                part_area))
+  
 }
+#convert sf to df object with columns we need for join with other dhs_attributes
+dhs_adm2_df <- dhs_adm2_sf %>% 
+  st_drop_geometry() %>% 
+  select(dhs_id, ID_adm2, part_area)
 
-write.csv(dhs_iwi_5k,"./data/interim/dhs_est_iwi.csv", row.names=FALSE)
+#join with other dhs_attributes
+dhs_iwi_adm2_5k <- dhs_iwi_5k %>% 
+  inner_join(dhs_adm2_df,by="dhs_id")
+
+write.csv(dhs_iwi_adm2_5k,"./data/interim/dhs_est_iwi.csv", row.names=FALSE)
