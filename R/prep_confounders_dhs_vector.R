@@ -311,21 +311,57 @@ dhs_disaster_df <- dhs_disaster_sf %>%
   group_by(dhs_id, year) %>% 
   count() %>% 
   ungroup() %>% 
-  filter(year >= 2001 & year <= 2013) %>% 
+  filter(year >= 1999 & year <= 2013) %>% 
   pivot_wider(names_prefix="disasters", names_from=year, values_from=n, 
               names_sort=TRUE, values_fill=0)
 #warnings are due to there being duplicate matches, such as if the event was coded
 #at both adm3 and adm1 levels,  The same match_id will be counted omly once per dhs_id.
-  
+
+
+#create a density plot to look at the distribution of the values
+disaster_density <- dhs_disaster_df %>% 
+  pivot_longer(starts_with("disasters"), names_to = "disaster_years", values_to = "disaster_count") %>%
+  ggplot(aes(disaster_count, color=disaster_years)) +
+  geom_density() +
+  labs(x = "Total Disasters", y = "Density across DHS points",
+       title="Natural Disasters across DHS points",color="Year")  +
+  scale_color_discrete(labels = function(x) gsub("disasters?(\\d{4})$", "\\1", x)) +
+  theme_bw()
+
+#highy right skewed - use the log
+ggsave("./figures/disaster_density.png",disaster_density, width=6, height = 10, dpi=300,
+       bg="white", units="in")
+rm(disaster_density)
+
+#create logged versions of variables, adding .01 to avoid taking log of 0
+disaster_density_log_df <- dhs_disaster_df %>%
+  mutate(
+    across(starts_with("disasters"), ~ log(. + .01), .names = "log_{.col}")
+  )
+
+# Generate density plots for each logged variable
+disaster_log_density <- disaster_density_log_df %>%
+  pivot_longer(starts_with("log_disasters"), names_to = "disaster_years", values_to = "log_disaster_count") %>%
+  ggplot(aes(log_disaster_count, color=disaster_years)) +
+  geom_density() +
+  labs(x = "Log (+.01) Total Disasters", y = "Density across DHS points",
+       title="Natural Disasters across DHS points",color="Year")  +
+  scale_color_discrete(labels = function(x) gsub("log_disasters?(\\d{4})$", "\\1", x)) +
+  theme_bw()
+
+
+ggsave("./figures/log_disaster_density.png", disaster_log_density, width = 6, height = 6, dpi = 300, bg = "white", units = "in")
+rm(disaster_log_density)
+
 #join to the dhs_vector_df to add the disaster columns there
-dhs_vector_df <- dhs_vector_df %>%
+dhs_vector_df <- disaster_density_log_df %>%
   left_join(dhs_disaster_df, by = "dhs_id")
 
 write.csv(dhs_vector_df,"./data/interim/dhs_treat_control_vector.csv",row.names=FALSE)  
 #dhs_vector_df <-  read.csv("./data/interim/dhs_treat_control_vector.csv") 
 
 #loop through the years to create a map for each
-for (year in 2001:2013) {
+for (year in 1999:2013) {
   #year <- 2001  #uncomment to test
   map_title <- paste0("Natural disasters in ",year)
   disaster_map <- tm_shape(gadm0_map_sf) +
@@ -341,7 +377,7 @@ for (year in 2001:2013) {
 
 
    tmap_save(disaster_map, paste0("./figures/africa_disasters_", year, ".png"))
-  
+   
 }
 
 
