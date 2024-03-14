@@ -92,15 +92,15 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_dist_km_to_gold","log_dist_km_to_gems",        
                "log_dist_km_to_dia","log_dist_km_to_petro", 
                "leader_birthplace","log_ch_loan_proj_n",
-               "log_3yr_pre_conflict_deaths",
+               "log_3yr_pre_conflict_deaths","log_disasters",
                "polity2","log_gdp_per_cap_USD2015","country_gini",
                "landsat578","treated_other_funder")
-var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-3,log)","Pop Density (t-3,log)",
-                "Minutes to City (2000,log)","Agglomeration (t-3)","Dist to Gold (km,log)",
+var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
+                "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-3)","Concurrent Loan Projs",
-                "Conflict deaths (t-3,log)",
-                "Country Polity2 (t-3)","Cntry GDP/cap (t-3,log)","Country gini (t-3)",
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
+                "Conflict deaths (t-1,log)","Natural disasters (t-1,log)",
+                "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                 "Landsat 5,7,& 8","Treated Other Funder")
 
 ################################################################################
@@ -243,6 +243,12 @@ if (treat_count < 100) {
         year_group == '2008:2010' ~ log_deaths2005_2007,
         year_group == '2011:2013' ~ log_deaths2008_2010,
         year_group == '2014:2016' ~ log_deaths2011_2013), 
+      log_disasters = case_when(
+        year_group == '2002:2004' ~ log_disasters1999_2001,
+        year_group == '2005:2007' ~ log_disasters2002_2004,
+        year_group == '2008:2010' ~ log_disasters2005_2007,
+        year_group == '2011:2013' ~ log_disasters2008_2010,
+        year_group == '2014:2016' ~ log_disasters2011_2013),        
       log_ch_loan_proj_n = as.numeric(case_when(
         year_group == '2002:2004' ~ log_ch_loan_proj_n_2002_2004,
         year_group == '2005:2007' ~ log_ch_loan_proj_n_2005_2007,

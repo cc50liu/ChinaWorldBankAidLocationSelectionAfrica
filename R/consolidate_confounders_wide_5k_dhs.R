@@ -90,16 +90,20 @@ dhs_5k_3yr_confounders <- dhs_confounders_df %>%
          log_pc_nl_2005_2007 = rowMeans(select(.,log_pc_nl_2005,log_pc_nl_2006,log_pc_nl_2007), na.rm=TRUE),
          log_pc_nl_2008_2010 = rowMeans(select(.,log_pc_nl_2008,log_pc_nl_2009,log_pc_nl_2010), na.rm=TRUE),
          log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE),
-         log_ch_loan_proj_n_1999_2001 = rowSums(select(.,log_ch_loan_proj_n_1999,log_ch_loan_proj_n_2000,log_ch_loan_proj_n_2001), na.rm=TRUE),
-         log_ch_loan_proj_n_2002_2004 = rowSums(select(.,log_ch_loan_proj_n_2002,log_ch_loan_proj_n_2003,log_ch_loan_proj_n_2004), na.rm=TRUE),
-         log_ch_loan_proj_n_2005_2007 = rowSums(select(.,log_ch_loan_proj_n_2005,log_ch_loan_proj_n_2006,log_ch_loan_proj_n_2007), na.rm=TRUE),
-         log_ch_loan_proj_n_2008_2010 = rowSums(select(.,log_ch_loan_proj_n_2008,log_ch_loan_proj_n_2009,log_ch_loan_proj_n_2010), na.rm=TRUE),
-         log_ch_loan_proj_n_2011_2013 = rowSums(select(.,log_ch_loan_proj_n_2011,log_ch_loan_proj_n_2012,log_ch_loan_proj_n_2013), na.rm=TRUE),
-         log_ch_loan_proj_n_2014_2016 = log_ch_loan_proj_n_2014)
+         log_ch_loan_proj_n_1999_2001 = rowMeans(select(.,log_ch_loan_proj_n_1999,log_ch_loan_proj_n_2000,log_ch_loan_proj_n_2001), na.rm=TRUE),
+         log_ch_loan_proj_n_2002_2004 = rowMeans(select(.,log_ch_loan_proj_n_2002,log_ch_loan_proj_n_2003,log_ch_loan_proj_n_2004), na.rm=TRUE),
+         log_ch_loan_proj_n_2005_2007 = rowMeans(select(.,log_ch_loan_proj_n_2005,log_ch_loan_proj_n_2006,log_ch_loan_proj_n_2007), na.rm=TRUE),
+         log_ch_loan_proj_n_2008_2010 = rowMeans(select(.,log_ch_loan_proj_n_2008,log_ch_loan_proj_n_2009,log_ch_loan_proj_n_2010), na.rm=TRUE),
+         log_ch_loan_proj_n_2011_2013 = rowMeans(select(.,log_ch_loan_proj_n_2011,log_ch_loan_proj_n_2012,log_ch_loan_proj_n_2013), na.rm=TRUE),
+         log_ch_loan_proj_n_2014_2016 = log_ch_loan_proj_n_2014,
+         log_disasters1999_2001 = rowMeans(select(.,log_disasters1999,log_disasters2000,log_disasters2001), na.rm=TRUE),
+         log_disasters2002_2004 = rowMeans(select(.,log_disasters2002,log_disasters2003,log_disasters2004), na.rm=TRUE),
+         log_disasters2005_2007 = rowMeans(select(.,log_disasters2005,log_disasters2006,log_disasters2007), na.rm=TRUE),
+         log_disasters2008_2010 = rowMeans(select(.,log_disasters2008,log_disasters2009,log_disasters2010), na.rm=TRUE),
+         log_disasters2011_2013 = rowMeans(select(.,log_disasters2011,log_disasters2012,log_disasters2013), na.rm=TRUE),
+         log_disasters2014 = log_disasters2014)
          
 write.csv(dhs_5k_3yr_confounders,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
-
-names(dhs_5k_3yr_confounders)
 
 ############################################
 # Descriptive stats for per capita nightlights
