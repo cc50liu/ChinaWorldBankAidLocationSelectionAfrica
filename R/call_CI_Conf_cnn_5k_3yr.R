@@ -22,7 +22,7 @@ time_approach <- args[4]
 
 #uncomment to test
 #fund_sect_param <- "wb_110"
-#fund_sect_param <- "ch_430"
+# fund_sect_param <- "ch_430"
 # run <- "cnn_5k_3yr"
 # iterations <- 2000
 # time_approach <- "3yr"   #other option: "annual"
@@ -53,6 +53,17 @@ dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>%
   filter(sector==sector_param & funder==funder_param &
            #exclude DHS points where confounder data not available 
            dhs_id %in% dhs_confounders_df$dhs_id) 
+
+#get logged count of projects in other sectors for each dhs point and year group
+dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
+  filter(sector!=sector_param & funder==funder_param &
+           #exclude DHS points where confounder data not available 
+           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  group_by(dhs_id, year_group) %>% 
+  summarize(other_sect_n=sum(proj_count),.groups="drop") %>% 
+  mutate(log_other_sect_n=log(other_sect_n + 1)) %>% 
+  ungroup() %>% 
+  select(-other_sect_n)
 
 #identify countries where funder is operating in this sector
 funder_sector_iso3 <- dhs_confounders_df %>% 
@@ -94,14 +105,14 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths","log_disasters",
                "polity2","log_gdp_per_cap_USD2015","country_gini",
-               "landsat578","treated_other_funder")
+               "landsat578","treated_other_funder","log_other_sect_n")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder")
+                "Landsat 5,7,& 8","Treated Other Funder","Other Sector Projs")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -152,7 +163,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
                         lyrs=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
       #rescale to original setting for RGB printing
-      im <- im/.0001
+      im <- im/.0001  #collection 1 scale factor
       # place the image in the correct place in the array
       array_shell[,,,i] <- matrix(im, byrow = T, nrow = imageHeight, ncol = imageWidth)
     }
@@ -201,6 +212,9 @@ if (treat_count < 100) {
        mutate(treated=0) %>% 
        select(dhs_id,year_group,treated,treated_other_funder)
     ) %>% 
+    left_join(dhs_other_sect_n_df,by=c("dhs_id","year_group")) %>%
+    #replace NAs with 0s for dhs points untreated in other sectors
+    mutate(log_other_sect_n=if_else(is.na(log_other_sect_n),0,log_other_sect_n)) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
       iwi_est_post_oda = case_when(
@@ -276,7 +290,7 @@ if (treat_count < 100) {
     group_by(iso3,year_group) %>% 
     summarize(mean_log_gdp_per_cap_USD2015=mean(log_gdp_per_cap_USD2015),
               mean_country_gini=mean(country_gini),
-              mean_polity2=mean(polity2)) %>% 
+              mean_polity2=mean(polity2),.groups="drop") %>% 
     rename(log_gdp_per_cap_USD2015 = mean_log_gdp_per_cap_USD2015,
            country_gini = mean_country_gini,
            polity2 = mean_polity2) %>% 
@@ -289,9 +303,9 @@ if (treat_count < 100) {
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
     select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
-           year_group, image_file_5k_3yr, iwi_est_post_oda,
+           log_other_sect_n, year_group, image_file_5k_3yr, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
-           log_3yr_pre_conflict_deaths, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
+           log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
     rename(adm2 = ID_adm2) %>%
@@ -313,13 +327,15 @@ if (treat_count < 100) {
         "first_year_group"           =input_df$first_year_group,
         "first_year_group_squared"   =input_df$first_year_group^2,
         "treated_other_funder"       =input_df$treated_other_funder,
+        "log_other_sect_n"           =input_df$log_other_sect_n,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
         "agglomeration"              =input_df$agglomeration,               #scene level
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1, ADM2, or ADM3					 
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,        #inherited from ADM1, ADM2
+        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
         "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
@@ -457,10 +473,28 @@ if (treat_count < 100) {
     
     
     ############################################################################
-    # generate boxplots for this run
+    # generate plots for this run
     ############################################################################
     library(ggplot2)
-  
+     
+    #plot the distribution of other sector project counts
+    log_other_sect_projs <- input_df %>% 
+      mutate(year_color=as.factor(year_group)) %>% 
+      ggplot(aes(log_other_sect_n, color=year_color)) +
+      geom_density() +
+      labs(x = paste0(toupper(funder_param)," project count (log + 1) in sectors other than ",sector_param), 
+           y = "Density across DHS points",
+           title=paste0(toupper(funder_param),
+                        " project count (log + 1) by year in sectors other than ",
+                        sector_param),
+           color="Year")  +
+      theme_bw()
+
+    ggsave(paste0(results_dir,log_other_sect_projs,"_15other_sect_projs_",run,".pdf"),
+           log_other_sect_projs,
+           width=6, height = 6, dpi=300,
+           bg="white", units="in")
+     
     long_funder <- case_when(
       startsWith(fund_sect_param, "ch") ~ "China",
       startsWith(fund_sect_param, "wb") ~ "World Bank",
@@ -668,7 +702,7 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-							               "log_disasters" ~ "natural_disasters",								   
+                             "log_disasters" ~ "natural_disasters",								   
                              "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",

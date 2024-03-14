@@ -60,6 +60,17 @@ dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>%
            #exclude DHS points where confounder data not available 
            dhs_id %in% dhs_confounders_df$dhs_id) 
 
+#get logged count of projects in other sectors for each dhs point and year 
+dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
+  filter(sector!=sector_param & funder==funder_param & start_year >= 2002 &
+           #exclude DHS points where confounder data not available 
+           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  group_by(dhs_id, start_year) %>% 
+  summarize(other_sect_n=sum(proj_count),.groups="drop") %>% 
+  mutate(log_other_sect_n=log(other_sect_n + 1)) %>% 
+  ungroup() %>% 
+  select(-other_sect_n)
+
 #identify countries where funder is operating in this sector
 funder_sector_iso3 <- dhs_confounders_df %>% 
   filter(dhs_id %in% (dhs_t_df %>%  pull(dhs_id))) %>% 
@@ -97,14 +108,14 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths","log_disasters",
                "polity2","log_gdp_per_cap_USD2015","country_gini",
-               "landsat578","treated_other_funder")
+               "landsat578","treated_other_funder","log_other_sect_n")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder")
+                "Landsat 5,7,& 8","Treated Other Funder","Other Sector Projs")
 
 
 ################################################################################
@@ -210,6 +221,9 @@ if (treat_count < 100) {
        mutate(treated=0) %>% 
        select(dhs_id,start_year,treated,treated_other_funder)
     ) %>% 
+    left_join(dhs_other_sect_n_df,by=c("dhs_id","start_year")) %>% 
+    #replace NAs with 0s for dhs points untreated in other sectors
+    mutate(log_other_sect_n=if_else(is.na(log_other_sect_n),0,log_other_sect_n)) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
       iwi_est_post_oda = case_when(
@@ -278,7 +292,7 @@ if (treat_count < 100) {
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
     select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
-           start_year, image_file_annual, iwi_est_post_oda,
+           log_other_sect_n, start_year, image_file_annual, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
            leader_birthplace, log_dist_km_to_gold,
@@ -301,6 +315,7 @@ if (treat_count < 100) {
         "start_year"                 =input_df$start_year,
         "start_year_squared"         =input_df$start_year^2,
         "treated_other_funder"       =input_df$treated_other_funder,
+        "log_other_sect_n"           =input_df$log_other_sect_n,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
@@ -436,10 +451,28 @@ if (treat_count < 100) {
     
     
     ############################################################################
-    # generate boxplots for this run
+    # generate plots for this run
     ############################################################################
     library(ggplot2)
-  
+    
+    #plot the distribution of other sector project counts
+    log_other_sect_projs <- input_df %>% 
+      mutate(year_color=as.factor(start_year)) %>% 
+      ggplot(aes(log_other_sect_n, color=year_color)) +
+      geom_density() +
+      labs(x = paste0(toupper(funder_param)," project count (log + 1) in sectors other than ",sector_param), 
+           y = "Density across DHS points",
+           title=paste0(toupper(funder_param),
+                        " project count (log + 1) by year in sectors other than ",
+                        sector_param),
+           color="Year")  +
+      theme_bw()
+
+    ggsave(paste0(results_dir,log_other_sect_projs,"_15other_sect_projs_",run,".pdf"),
+           log_other_sect_projs,
+           width=6, height = 6, dpi=300,
+           bg="white", units="in")
+    
     long_funder <- case_when(
       startsWith(fund_sect_param, "ch") ~ "China",
       startsWith(fund_sect_param, "wb") ~ "World Bank",
