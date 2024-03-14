@@ -23,9 +23,9 @@ time_approach <- args[4]
 #uncomment to test
 #fund_sect_param <- "wb_110"
 #fund_sect_param <- "ch_430"
-#run <- "cnn_5k_3yr"
-#iterations <- 2000
-#time_approach <- "3yr"   #other option: "annual"
+# run <- "cnn_5k_3yr"
+# iterations <- 2000
+# time_approach <- "3yr"   #other option: "annual"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -99,7 +99,7 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
-                "Conflict deaths (t-1,log)","Natural disasters (t-1,log)",
+                "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
                 "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
                 "Landsat 5,7,& 8","Treated Other Funder")
 
@@ -288,16 +288,15 @@ if (treat_count < 100) {
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
+    select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
            year_group, image_file_5k_3yr, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
-    rename(cnty = country) %>% 
-    mutate(cnty = stringr::str_to_title(cnty),
-           #extract first year of group to use in function
-           first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
+    rename(adm2 = ID_adm2) %>%
+    #extract first year of group to use in function
+    mutate(first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
   
   #shuffle data to reorder it before use; set.seed call makes it reproducible
   set.seed(sector_param)
@@ -330,8 +329,8 @@ if (treat_count < 100) {
         "polity2"                    =input_df$polity2,                     #country level
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
-      #multiple columns for country variables
-      model.matrix(~ cnty - 1, input_df)
+      #multiple columns for adm2 fixed effects variables
+      model.matrix(~ adm2 - 1, input_df)
     )
     
     #remove any columns that have 0 standard deviation before passing to function
@@ -652,9 +651,9 @@ if (treat_count < 100) {
               row.names = FALSE)
     
     #plot these
-    #before doing so, remove country variables
+    #before doing so, remove ADM2 variables
     tab_conf_compare_df <- tab_conf_compare_df %>% 
-      filter(!grepl("cnty",term))
+      filter(!grepl("adm2",term))
     #determine the limits of the plot
     max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
                                    abs(tab_conf_compare_df$Salience_AIC)),
@@ -669,6 +668,7 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
+							               "log_disasters" ~ "natural_disasters",								   
                              "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",

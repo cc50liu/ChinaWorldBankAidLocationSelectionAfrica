@@ -277,15 +277,14 @@ if (treat_count < 100) {
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
+    select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
            start_year, image_file_annual, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
            leader_birthplace, log_dist_km_to_gold,
            log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
            log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
-    rename(cnty = country) %>% 
-    mutate(cnty = stringr::str_to_title(cnty))
+    rename(adm2 = ID_adm2) 
   
   #shuffle data to reorder it before use; set.seed call makes it reproducible
   set.seed(sector_param)
@@ -319,8 +318,8 @@ if (treat_count < 100) {
         "polity2"                    =input_df$polity2,                     #country level
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
-      #multiple columns for country variables
-      model.matrix(~ cnty - 1, input_df)
+      #multiple columns for adm2 fixed effects variables
+      model.matrix(~ adm2 - 1, input_df)
     )
     
     #remove any columns that have 0 standard deviation before passing to function
@@ -632,9 +631,9 @@ if (treat_count < 100) {
               row.names = FALSE)
     
     #plot these
-    #before doing so, remove country variables
+    #before doing so, remove ADM2 variables
     tab_conf_compare_df <- tab_conf_compare_df %>% 
-      filter(!grepl("cnty",term))
+      filter(!grepl("adm2",term))
     
     #determine the limits of the plot
     max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
