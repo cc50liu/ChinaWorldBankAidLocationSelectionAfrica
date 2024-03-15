@@ -104,14 +104,19 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_dist_km_to_dia","log_dist_km_to_petro", 
                "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths","log_disasters",
-               "polity2","log_gdp_per_cap_USD2015","country_gini",
+               "country_gini",
+               "corruption_control", "gov_effectiveness", "political_stability",
+               "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","treated_other_funder","log_other_sect_n")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
+                "Country gini (t-1)",
+                "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
+                "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
+                "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
                 "Landsat 5,7,& 8","Treated Other Funder","Other Sector Projs")
 
 ################################################################################
@@ -286,16 +291,13 @@ if (treat_count < 100) {
              year %in% 2002:2004 ~ '2005:2007',
              year %in% 2005:2007 ~ '2008:2010',
              year %in% 2008:2010 ~ '2011:2013',
-             year %in% 2011:2013 ~ '2014:2016')) %>% 
+             year %in% 2011:2013 ~ '2014:2016')) %>%
     group_by(iso3,year_group) %>% 
-    summarize(mean_log_gdp_per_cap_USD2015=mean(log_gdp_per_cap_USD2015),
-              mean_country_gini=mean(country_gini),
-              mean_polity2=mean(polity2),.groups="drop") %>% 
-    rename(log_gdp_per_cap_USD2015 = mean_log_gdp_per_cap_USD2015,
-           country_gini = mean_country_gini,
-           polity2 = mean_polity2) %>% 
-    ungroup()
-             
+    #calculate a mean for each year group for each numeric variable
+    summarize(across(where(is.numeric), mean, na.rm = TRUE), .groups = "drop") %>%
+    ungroup() %>% 
+    select(-year)
+  
   run_df <- obs_year_group_df %>% 
     left_join(country_confounders_df,
               by=c("iso3", "year_group"))
@@ -305,9 +307,11 @@ if (treat_count < 100) {
     select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
            log_other_sect_n, year_group, image_file_5k_3yr, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
-           log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, leader_birthplace, log_dist_km_to_gold,
-           log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
-           log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
+           log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
+           leader_birthplace, log_dist_km_to_gold, log_dist_km_to_gems, 
+           log_dist_km_to_dia, log_dist_km_to_petro, country_gini, 
+           corruption_control,gov_effectiveness, political_stability, 
+           reg_quality, rule_of_law, voice_accountability, landsat578) %>% 
     rename(adm2 = ID_adm2) %>%
     #extract first year of group to use in function
     mutate(first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
@@ -340,9 +344,13 @@ if (treat_count < 100) {
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
-        "log_gdp_per_cap_USD2015"    =input_df$log_gdp_per_cap_USD2015,     #country level
         "country_gini"               =input_df$country_gini,                #country level
-        "polity2"                    =input_df$polity2,                     #country level
+        "corruption_control"         =input_df$corruption_control,          #country level
+        "gov_effectiveness"          =input_df$gov_effectiveness,           #country level 
+        "political_stability"        =input_df$political_stability,         #country level
+        "reg_quality"                =input_df$reg_quality,                 #country level
+        "rule_of_law"                =input_df$rule_of_law,                 #country level           
+        "voice_accountability"       =input_df$voice_accountability,        #country level                      #country level
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
       #multiple columns for adm2 fixed effects variables
