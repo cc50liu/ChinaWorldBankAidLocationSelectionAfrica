@@ -205,10 +205,47 @@ all_wgi_plus_imputed_df <- bind_rows(all_wgi_df,imputed_2001) %>%
   )
 
 #join the governance indicators into country_confounder_complete_df
-country_confounder_complete_df <- country_confounder_step1_df %>%
+country_confounder_step2_df <- country_confounder_step1_df %>%
   left_join(all_wgi_plus_imputed_df,  by = c("iso3", "year"))
+
+################################################################
+### Election indicators from Database of Political Institutions
+################################################################
+dpi_df <- readxl::read_excel("./data/DPI/Database DPI2017/DPI2017_basefile_Jan2018.xlsx",
+                             col_names=TRUE) %>% 
+  select(countryname, year,yrcurnt) %>% 
+  filter(year %in% 1999:2014) %>% 
+  filter(countryname %in% africa_isos_df$name |
+         countryname %in% c("Cent. Af. Rep.","Comoro Is.",
+                            "Congo (DRC)","Cote d'Ivoire","Eq. Guinea",
+                            "Swaziland","S. Africa","Tanzania")) %>% 
+  #update countrynames to match my source
+  mutate(countryname=case_match(countryname,
+                               "Cent. Af. Rep." ~ "Central African Republic",
+                               "Comoro Is." ~ "Comoros",
+                               "Congo (DRC)" ~ "Congo, Democratic Republic of the",
+                               "Cote d'Ivoire" ~ "Côte d'Ivoire",
+                               "Eq. Guinea" ~ "Equatorial Guinea",
+                               "Swaziland" ~ "Eswatini",
+                               "S. Africa" ~ "South Africa",
+                               "Tanzania" ~ "Tanzania, United Republic of",
+                               .default=countryname)) %>% 
+  #join to africa_isos_df to pick up iso codes
+  left_join(africa_isos_df,by=join_by(countryname==name)) %>% 
+  #remove South Sudan, which has incomplete data and isn't in my sample anyway
+  filter(iso3 != "SSD") %>% 
+  #add election year indicator, yrcurnt==0 during election years
+  #set to non-election near if yrcurnt is NA or has -999
+  mutate(election_year = if_else(is.na(yrcurnt),0,
+                                 if_else(yrcurnt==0,1,0))) %>% 
+  select(iso3,year,election_year)
+
+#join to rest of confounders
+country_confounder_complete_df <- country_confounder_step2_df %>%
+  left_join(dpi_df,  by = c("iso3", "year"))
 
 #####################################################
 ### Write file used later in the analysis
 #####################################################
 write.csv(country_confounder_complete_df,"./data/interim/country_confounders.csv",row.names=FALSE)  
+#country_confounder_complete_df <- read.csv("./data/interim/country_confounders.csv")  
