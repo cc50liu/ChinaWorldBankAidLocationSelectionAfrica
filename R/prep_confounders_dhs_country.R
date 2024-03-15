@@ -241,8 +241,24 @@ dpi_df <- readxl::read_excel("./data/DPI/Database DPI2017/DPI2017_basefile_Jan20
   select(iso3,year,election_year)
 
 #join to rest of confounders
-country_confounder_complete_df <- country_confounder_step2_df %>%
+country_confounder_step3_df <- country_confounder_step2_df %>%
   left_join(dpi_df,  by = c("iso3", "year"))
+
+################################################################
+### Temporary UN Security Council Membership
+################################################################
+unsc_df <- readxl::read_excel("./data/Dreher/UNSCdata.xls",
+                              sheet="data",
+                             col_names=TRUE) %>% 
+  filter(year %in% 1999:2014 &
+          code %in% africa_isos_df$iso3) %>% 
+  mutate(unsc=as.integer(unsc)) %>% 
+  select(code,year,unsc) %>% 
+  rename(iso3=code)
+
+#join to rest of confounders
+country_confounder_complete_df <- country_confounder_step3_df  %>%
+  left_join(unsc_df, by = c("iso3", "year"))
 
 #####################################################
 ### Write file used later in the analysis
