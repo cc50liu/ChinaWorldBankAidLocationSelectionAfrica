@@ -4,6 +4,7 @@ library(tidyr)
 library(purrr)
 #install.packages("countrycode")
 library(countrycode)
+library(ggplot2)
 rm(list=ls())
 
 
@@ -16,7 +17,7 @@ africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 ################################################
 ### Load DHS points
 ################################################
-dhs_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
+dhs_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>% 
   select(dhs_id, lat, lon, country, iso3)
   
 ################################################
@@ -29,17 +30,6 @@ polity_df <- readxl::read_excel("./data/PolityV/p5v2018.xls") %>%
   select(country, iso3, year, polity2) 
 
 #remove extra Sudan 2011 record that collides with south/north specific measures
-#using the same iso code, record 7 below
-polity_df %>% 
-  filter(year %in% 2011:2013 & iso3 %in% c("SDN","SSD"))
-# 1 Sudan-North SDN    2011      -4
-# 2 Sudan-North SDN    2012      -4
-# 3 Sudan-North SDN    2013      -4
-# 4 South Sudan SSD    2011       0
-# 5 South Sudan SSD    2012       0
-# 6 South Sudan SSD    2013       0
-# 7 Sudan       SDN    2011      -2
-
 polity_df <- polity_df %>% 
   filter(!(year==2011 & country=="Sudan-North")) 
 
@@ -91,13 +81,6 @@ country_confounder_gini_fill_df <- country_confounder_df %>%
   tidyr::fill(country_gini, .direction = "downup") %>%
   ungroup()
 
-#check results
-# country_confounder_gini_fill_df %>% 
-#   filter(iso3=="ZMB")
-# 
-# country_confounder_df %>% 
-#   filter(iso3=="ZMB")
-
 
 #fill in missing gdp_per_cap_USD2015 values using same approach
 country_confounder_gdp_fill_df <- country_confounder_gini_fill_df %>%
@@ -111,13 +94,6 @@ country_confounder_gdp_fill_df <- country_confounder_gini_fill_df %>%
   ) %>%
   tidyr::fill(gdp_per_cap_USD2015, .direction = "downup") %>%
   ungroup()
-
-#verify results
-# country_confounder_gini_fill_df %>%
-#   filter(iso3=="DJI")
-# 
-# country_confounder_gdp_fill_df %>%
-#   filter(iso3=="DJI")
 
 #convert gdp and gini scores to numbers, log the gdp & scale gini
 country_confounder_step1_df <- country_confounder_gdp_fill_df %>% 
@@ -256,9 +232,52 @@ unsc_df <- readxl::read_excel("./data/Dreher/UNSCdata.xls",
   select(code,year,unsc) %>% 
   rename(iso3=code)
 
+################################################################
+### Alignment with US in UNSC voting 
+################################################################
+unsc_us_align_df <- readxl::read_excel("./data/Dreher/UNSC_voting_update_Nov2022.xlsx",
+                              sheet="data",
+                              col_names=TRUE) 
+
+#set column names to values in first row and then delete it, 
+# which have iso3 codes instead of country names
+names(unsc_us_align_df) <- as.character(unsc_us_align_df[1, ])
+unsc_us_align_df <- unsc_us_align_df[-1,]
+
+#create a df with UNSC temporary members and the years they served
+unsc_temp_mems_df <- unsc_df %>% 
+  filter(unsc==1) %>% 
+  select(iso3,year) 
+
+#make a long format only with rows and columns we need
+unsc_us_align_mems_df <- unsc_us_align_df %>%  
+  #limit votes to study years
+  filter(Year %in% 1999:2014) %>%
+  rename(US_vote = USA,
+         year = Year) %>% 
+  mutate(year = as.integer(year)) %>% 
+  #limit to unsc temp members in Africa
+  select(Res_count, year, US_vote, all_of(unsc_temp_mems_df$iso3)) %>% 
+  pivot_longer(cols = !!unsc_temp_mems_df$iso3,
+             names_to = "iso3",
+             values_to = "vote") %>% 
+  #keep only rows for years each country was on the security council
+  semi_join(unsc_temp_mems_df, by=c("iso3","year")) %>% 
+  mutate(aligned_US = if_else(vote==US_vote,1,0))
+
+#summarize by country and year, with unsc_full_US_aligned = 2 if all votes match US, 
+# 1 otherwise.  Will use 0 for country-years where country wasn't a member of UNSC.
+unsc_us_full_align_df <- unsc_us_align_mems_df %>% 
+  group_by(iso3,year) %>% 
+  summarize(unsc_full_US_aligned=if_else(all(aligned_US==1),2,1),.groups="drop") %>% 
+  select(iso3,year,unsc_full_US_aligned)
+
 #join to rest of confounders
 country_confounder_complete_df <- country_confounder_step3_df  %>%
-  left_join(unsc_df, by = c("iso3", "year"))
+  left_join(unsc_us_full_align_df, by = c("iso3", "year")) %>% 
+  #set unsc_full_US_aligned to 0 (not member of UNSC) where it is NA
+  mutate(unsc_full_US_aligned=if_else(is.na(unsc_full_US_aligned),0,
+                                      unsc_full_US_aligned))
 
 #####################################################
 ### Write file used later in the analysis
