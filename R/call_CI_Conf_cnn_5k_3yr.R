@@ -104,7 +104,8 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_dist_km_to_dia","log_dist_km_to_petro", 
                "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths","log_disasters",
-               "election_year","unsc","country_gini",
+               "election_year","unsc_full_US_aligned","temp_avg_c","precip_avg_mm",
+               "country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","treated_other_funder","log_other_sect_n")
@@ -113,7 +114,8 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Election year (t-1)", "UNSC Temporary Member (t-1)","Country gini (t-1)",
+                "Election year (t-1)", "UNSC Membership & Voting (t-1)",
+                "Temperature (C,avg,t-1)", "Rainfall (mm,avg,t-1)", "Country gini (t-1)",
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
                 "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
                 "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
@@ -309,8 +311,8 @@ if (treat_count < 100) {
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
            leader_birthplace, log_dist_km_to_gold, log_dist_km_to_gems, 
-           log_dist_km_to_dia, log_dist_km_to_petro, election_year, unsc,
-           country_gini, 
+           log_dist_km_to_dia, log_dist_km_to_petro, election_year, unsc_full_US_aligned,
+           temp_avg_c,precip_avg_mm,country_gini, 
            corruption_control,gov_effectiveness, political_stability, 
            reg_quality, rule_of_law, voice_accountability, landsat578) %>% 
     rename(adm2 = ID_adm2) %>%
@@ -346,7 +348,9 @@ if (treat_count < 100) {
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
         "election_year"              =input_df$election_year,               #country level
-        "unsc"                       =input_df$unsc,                        #country level
+        "unsc_full_US_aligned"       =input_df$unsc_full_US_aligned,        #country level
+        "temp_avg_c"                 =input_df$temp_avg_c,                  #country level
+        "precip_avg_mm"              =input_df$precip_avg_mm,               #country level
         "country_gini"               =input_df$country_gini,                #country level
         "corruption_control"         =input_df$corruption_control,          #country level
         "gov_effectiveness"          =input_df$gov_effectiveness,           #country level 

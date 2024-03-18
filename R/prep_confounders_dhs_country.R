@@ -273,11 +273,46 @@ unsc_us_full_align_df <- unsc_us_align_mems_df %>%
   select(iso3,year,unsc_full_US_aligned)
 
 #join to rest of confounders
-country_confounder_complete_df <- country_confounder_step3_df  %>%
+country_confounder_step4_df <- country_confounder_step3_df  %>%
   left_join(unsc_us_full_align_df, by = c("iso3", "year")) %>% 
   #set unsc_full_US_aligned to 0 (not member of UNSC) where it is NA
   mutate(unsc_full_US_aligned=if_else(is.na(unsc_full_US_aligned),0,
                                       unsc_full_US_aligned))
+
+#####################################################
+### Annual temperature and precipitation
+#####################################################
+#temperature
+temp_df <- readxl::read_excel("./data/ClimateChangeKnowledgePortal/temperature.xlsx",
+                             .name_repair="universal") %>% 
+  rename(country=name,
+         iso3=code) %>% 
+  filter(iso3 %in% africa_isos_df$iso3) %>% 
+  pivot_longer(cols=grep("^\\.\\.\\d{4}.07$", names(.),value=TRUE),
+               names_to="year_long",values_to="temp_avg_c") %>% 
+  mutate(year = as.integer(sub(".*(\\d{4}).*", "\\1", year_long))) %>% 
+  filter(year %in% 1999:2014) %>% 
+  select(iso3, year, temp_avg_c)
+
+
+#join data to rest of confounders
+country_confounder_step5_df <- country_confounder_step4_df  %>%
+  left_join(temp_df, by = c("iso3", "year")) 
+
+#precipitation
+precip_df <- readxl::read_excel("./data/ClimateChangeKnowledgePortal/precipitation.xlsx",
+                            .name_repair="universal") %>% 
+  rename(country=name,
+         iso3=code) %>% 
+  filter(iso3 %in% africa_isos_df$iso3) %>% 
+  pivot_longer(cols=grep("^\\.\\.\\d{4}.07$", names(.),value=TRUE),
+               names_to="year_long",values_to="precip_avg_mm") %>% 
+  mutate(year = as.integer(sub(".*(\\d{4}).*", "\\1", year_long))) %>% 
+  filter(year %in% 1999:2014) %>% 
+  select(iso3, year, precip_avg_mm)
+
+country_confounder_complete_df <-  country_confounder_step5_df %>%
+  left_join(precip_df, by = c("iso3", "year")) 
 
 #####################################################
 ### Write file used later in the analysis
