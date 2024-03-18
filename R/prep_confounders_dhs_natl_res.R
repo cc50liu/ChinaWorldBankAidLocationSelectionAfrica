@@ -19,7 +19,7 @@ unique(sf::st_is_valid(gadm0_sf))
 
 ################################################
 ### get DHS points 
-dhs_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
+dhs_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>% 
   select(dhs_id, lat, lon)
   
 #convert to sf object

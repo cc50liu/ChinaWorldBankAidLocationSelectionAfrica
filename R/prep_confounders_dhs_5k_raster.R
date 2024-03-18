@@ -88,8 +88,6 @@ rm(list=ls())
   #write to file for later use
   dhs_df %>% 
     write.csv(.,"./data/interim/dhs_treat_control_5k_raster_no_log.csv",row.names=FALSE)  
-  #dhs_df <- read.csv("./data/interim/dhs_treat_control_raster_no_log.csv")
-  
 
   #look at points where couldn't determine pop density
   dhs_df %>%
@@ -132,8 +130,7 @@ rm(list=ls())
   #write to file for later use
   dhs_log_df %>% 
     write.csv(.,"./data/interim/dhs_treat_control_5k_raster.csv",row.names=FALSE)    
-  #dhs_log_df <- read.csv("./data/interim/dhs_treat_control_raster.csv")    
-  
+
 #plot the distribution of travel minutes         
 minutes_travel_density <- dhs_log_df %>% 
   ggplot(aes(avg_min_to_city)) +

@@ -239,7 +239,7 @@ names(dhs_df)
 
 #understand points that had a high number of NA's in the population density tif
 #read file that didn't lose lon/lat
-dhs_df <- read.csv("./data/interim/dhs_treat_control_raster.csv")
+dhs_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv")
 summary(dhs_df$pop_dens_na_count)
 dhs_df %>% 
   filter(pop_dens_na_count > 150) %>% 

@@ -167,7 +167,7 @@ ucdp_p4_sf <- read.csv("./data/UCDP/GEDEvent_v23_1.csv") %>%
   #########################################################
   #get DHS points 
   #########################################################
-  dhs_df <- read.csv("./data/interim/dhs_treat_control_raster.csv") %>% 
+  dhs_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>% 
     select(dhs_id, lat, lon)
   
   #convert to sf object
