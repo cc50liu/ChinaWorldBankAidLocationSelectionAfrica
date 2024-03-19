@@ -21,7 +21,7 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-#fund_sect_param <- "wb_110"
+# fund_sect_param <- "wb_110"
 # fund_sect_param <- "ch_430"
 # run <- "cnn_5k_3yr"
 # iterations <- 2000
@@ -104,8 +104,8 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_dist_km_to_dia","log_dist_km_to_petro", 
                "leader_birthplace","log_ch_loan_proj_n",
                "log_3yr_pre_conflict_deaths","log_disasters",
-               "election_year","unsc_full_US_aligned","temp_avg_c","precip_avg_mm",
-               "country_gini",
+               "election_year","unsc_aligned_us","unsc_non_aligned_us",
+               "temp_avg_c","precip_avg_mm","country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","treated_other_funder","log_other_sect_n")
@@ -114,7 +114,7 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Election year (t-1)", "UNSC Membership & Voting (t-1)",
+                "Election year (t-1)", "UNSC Member US aligned (t-1)","UNSC Member non-US aligned (t-1)",
                 "Temperature (C,avg,t-1)", "Rainfall (mm,avg,t-1)", "Country gini (t-1)",
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
                 "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
@@ -231,9 +231,12 @@ if (treat_count < 100) {
         year_group == '2011:2013' ~ iwi_2014_2016_est,
         year_group == '2014:2016' ~ iwi_2017_2019_est),
       log_dist_km_to_gold = log_dist_km_to_gold_2001,
-      log_dist_km_to_petro = if_else(
-        year_group == '2002:2004', 
-        log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003),
+      log_dist_km_to_petro = case_when(
+        year_group == '2002:2004' ~ log_dist_km_to_petro_1999_2001,
+        year_group == '2005:2007' ~ log_dist_km_to_petro_2002_2004,
+        year_group == '2008:2010' ~ log_dist_km_to_petro_2005_2007,
+        year_group == '2011:2013' ~ log_dist_km_to_petro_2008_2010,
+        year_group == '2014:2016' ~ log_dist_km_to_petro_2011_2013),        
       log_pc_nl_pre_oda = case_when(
         year_group == '2002:2004' ~ log_pc_nl_2000_2001,
         year_group == '2005:2007' ~ log_pc_nl_2002_2004,
@@ -284,8 +287,10 @@ if (treat_count < 100) {
       #Landsat 7&8 in images from 2014:2019 - we aren't using any of these
       ) 
 
-  #join to country-level parameters, which are year specific, get year group average
+  #join to country-level parameters, which are year specific, and construct year group data
   country_confounders_df <- read.csv("./data/interim/country_confounders.csv")  %>% 
+    #exclude countries where we don't have dhs points
+    filter(iso3 %in% dhs_iso3_df$iso3) %>% 
     select(-country) %>%
     #set year group to pre-treatment 3-year span for join below
     mutate(year_group = case_when(
@@ -294,12 +299,18 @@ if (treat_count < 100) {
              year %in% 2005:2007 ~ '2008:2010',
              year %in% 2008:2010 ~ '2011:2013',
              year %in% 2011:2013 ~ '2014:2016')) %>%
-    group_by(iso3,year_group) %>% 
-    #calculate a mean for each year group for each numeric variable
-    summarize(across(where(is.numeric), mean, na.rm = TRUE), .groups = "drop") %>%
-    ungroup() %>% 
-    select(-year)
-  
+    group_by(iso3,year_group)  %>% 
+    #calculate the max for binary variables (three-year group 1 if any year was 1)
+    summarize(across(c("election_year","unsc_aligned_us","unsc_non_aligned_us"), 
+                     ~max(., na.rm = TRUE)),
+              #calculate a mean for each year group for each continuous variable
+              across(c("country_gini","polity2","log_gdp_per_cap_USD2015","corruption_control",
+                       "gov_effectiveness","political_stability","reg_quality",
+                       "rule_of_law","voice_accountability","temp_avg_c",
+                       "precip_avg_mm" ), 
+                     ~mean(., na.rm = TRUE))) %>%
+    ungroup() 
+
   run_df <- obs_year_group_df %>% 
     left_join(country_confounders_df,
               by=c("iso3", "year_group"))
@@ -311,7 +322,8 @@ if (treat_count < 100) {
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
            leader_birthplace, log_dist_km_to_gold, log_dist_km_to_gems, 
-           log_dist_km_to_dia, log_dist_km_to_petro, election_year, unsc_full_US_aligned,
+           log_dist_km_to_dia, log_dist_km_to_petro, election_year, 
+           unsc_aligned_us, unsc_non_aligned_us,
            temp_avg_c,precip_avg_mm,country_gini, 
            corruption_control,gov_effectiveness, political_stability, 
            reg_quality, rule_of_law, voice_accountability, landsat578) %>% 
@@ -348,7 +360,8 @@ if (treat_count < 100) {
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
         "election_year"              =input_df$election_year,               #country level
-        "unsc_full_US_aligned"       =input_df$unsc_full_US_aligned,        #country level
+        "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
+        "unsc_non_aligned_us"        =input_df$unsc_non_aligned_us,         #country level
         "temp_avg_c"                 =input_df$temp_avg_c,                  #country level
         "precip_avg_mm"              =input_df$precip_avg_mm,               #country level
         "country_gini"               =input_df$country_gini,                #country level

@@ -244,8 +244,9 @@ if (treat_count < 100) {
         start_year %in% 2000:2001 ~ log_dist_km_to_gold_pre2001,
         start_year > 2001 ~ log_dist_km_to_gold_2001),
       log_dist_km_to_petro = if_else(
-        start_year < 2003, 
-        log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003),
+        start_year==1999,log_dist_km_to_petro_1999,
+        if_else(start_year < 2003,log_dist_km_to_petro_2000_2002,
+                log_dist_km_to_petro_2003)),
       #set indicator variables for the combination of satellite images in pre-project images
       #Landsat 5 only in images from 1990:1998 - now excluded from study years
       #Landsat 5&7 in images from    1999:2010 - won't include this column to avoid collinearity

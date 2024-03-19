@@ -6,7 +6,7 @@ rm(list=ls())
 
 #read only the dhs_id and the columns each file is "responsible" for
 dhs_vector_df <- read.csv("./data/interim/dhs_treat_control_vector.csv") %>% 
-  select(dhs_id, starts_with("log_"), starts_with("leader_"))
+  select(dhs_id, starts_with("log_"), starts_with("leader_"), starts_with("disasters"))
 
 #calculate annual agglomeration index here
 dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>%
@@ -20,10 +20,10 @@ dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>%
   select(dhs_id, rural, starts_with("log"), starts_with("agglom"))
 
 dhs_natl_res_df <-  read.csv("./data/interim/dhs_natl_res.csv") %>% 
-  select(dhs_id, starts_with("log"))
+  select(dhs_id, starts_with("log"), starts_with("dist_km_to_petro"))
 
 dhs_ch_loan_df <- read.csv("./data/interim/dhs_loan_projs.csv") %>% 
-  select(dhs_id, starts_with("log"))
+  select(dhs_id, starts_with("ch_loan_proj"), starts_with("log"))
 
 #get iwi estimate and all other attributes here
 dhs_iwi_df <- read.csv("./data/interim/dhs_est_iwi.csv") 
@@ -64,46 +64,57 @@ dhs_confounders_df <- dhs_iwi_df %>%
   inner_join(dhs_natl_res_df, by="dhs_id") %>%  
   inner_join(dhs_ch_loan_df, by="dhs_id") %>% 
   inner_join(pc_nl_log_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
-              
+
 #group them into 3-year sets matching 3-year-image years
 dhs_5k_3yr_confounders <- dhs_confounders_df %>% 
-  mutate(leader_1999_2001 = rowMeans(select(.,leader_1999,leader_2000,leader_2001), na.rm=TRUE),
-         leader_2002_2004 = rowMeans(select(.,leader_2002,leader_2003,leader_2004), na.rm=TRUE),
-         leader_2005_2007 = rowMeans(select(.,leader_2005,leader_2006,leader_2007), na.rm=TRUE),
-         leader_2008_2010 = rowMeans(select(.,leader_2008,leader_2009,leader_2010), na.rm=TRUE),
-         leader_2011_2013 = rowMeans(select(.,leader_2011,leader_2012,leader_2013), na.rm=TRUE),
+  mutate(leader_1999_2001 = if_else((leader_1999==1 | leader_2000==1 |leader_2001==1),1,0),
+         leader_2002_2004 = if_else((leader_2002==1 | leader_2003==1 |leader_2004==1),1,0),
+         leader_2005_2007 = if_else((leader_2005==1 | leader_2006==1 |leader_2007==1),1,0),
+         leader_2008_2010 = if_else((leader_2008==1 | leader_2009==1 |leader_2010==1),1,0),
+         leader_2011_2013 = if_else((leader_2011==1 | leader_2012==1 |leader_2013==1),1,0),
+         #new petroleum deposits discovered in 2000 and 2003, take weighted averages of distances
+         #for year ranges that span the discoveries
+         log_dist_km_to_petro_1999_2001 = log(1 + ((dist_km_to_petro_1999 +         #1999
+                                                    dist_km_to_petro_1999 +         #2000
+                                                    dist_km_to_petro_2000_2002)/3)),#2001
+         log_dist_km_to_petro_2002_2004 = log(1 + ((dist_km_to_petro_2000_2002 +    #2002
+                                                    dist_km_to_petro_2000_2002 +    #2003
+                                                    dist_km_to_petro_2003)/3)),     #2004
+         log_dist_km_to_petro_2005_2007 = log_dist_km_to_petro_2003,
+         log_dist_km_to_petro_2008_2010 = log_dist_km_to_petro_2003,
+         log_dist_km_to_petro_2011_2013 = log_dist_km_to_petro_2003,
          log_avg_pop_dens_2000_2001 = rowMeans(select(.,log_avg_pop_dens_2000,log_avg_pop_dens_2001), na.rm=TRUE),
          log_avg_pop_dens_2002_2004 = rowMeans(select(.,log_avg_pop_dens_2002,log_avg_pop_dens_2003,log_avg_pop_dens_2004), na.rm=TRUE),
          log_avg_pop_dens_2005_2007 = rowMeans(select(.,log_avg_pop_dens_2005,log_avg_pop_dens_2006,log_avg_pop_dens_2007), na.rm=TRUE),
          log_avg_pop_dens_2008_2010 = rowMeans(select(.,log_avg_pop_dens_2008,log_avg_pop_dens_2009,log_avg_pop_dens_2010), na.rm=TRUE),
          log_avg_pop_dens_2011_2013 = rowMeans(select(.,log_avg_pop_dens_2011,log_avg_pop_dens_2012,log_avg_pop_dens_2013), na.rm=TRUE),
-         agglom_2000_2001 = rowMeans(select(.,agglom_2000,agglom_2001), na.rm=TRUE),
-         agglom_2002_2004 = rowMeans(select(.,agglom_2002,agglom_2003,agglom_2004), na.rm=TRUE),
-         agglom_2005_2007 = rowMeans(select(.,agglom_2005,agglom_2006,agglom_2007), na.rm=TRUE),
-         agglom_2008_2010 = rowMeans(select(.,agglom_2008,agglom_2009,agglom_2010), na.rm=TRUE),
-         agglom_2011_2013 = rowMeans(select(.,agglom_2011,agglom_2012,agglom_2013), na.rm=TRUE),         
-         log_dist_km_to_petro_2002_2004 = rowMeans(select(.,log_dist_km_to_petro_2000_2002,
-                                                          log_dist_km_to_petro_2003,
-                                                          log_dist_km_to_petro_2003), na.rm=TRUE),  
+         agglom_2000_2001 = if_else((agglom_2000==1 | agglom_2001==1),1,0),
+         agglom_2002_2004 = if_else((agglom_2002==1 | agglom_2003==1 | agglom_2004==1),1,0),
+         agglom_2005_2007 = if_else((agglom_2005==1 | agglom_2006==1 | agglom_2007==1),1,0),
+         agglom_2008_2010 = if_else((agglom_2008==1 | agglom_2009==1 | agglom_2010==1),1,0),
+         agglom_2011_2013 = if_else((agglom_2011==1 | agglom_2012==1 | agglom_2013==1),1,0),
          log_pc_nl_2000_2001 = rowMeans(select(.,log_pc_nl_2000,log_pc_nl_2001), na.rm=TRUE),
          log_pc_nl_2002_2004 = rowMeans(select(.,log_pc_nl_2002,log_pc_nl_2003,log_pc_nl_2004), na.rm=TRUE),
          log_pc_nl_2005_2007 = rowMeans(select(.,log_pc_nl_2005,log_pc_nl_2006,log_pc_nl_2007), na.rm=TRUE),
          log_pc_nl_2008_2010 = rowMeans(select(.,log_pc_nl_2008,log_pc_nl_2009,log_pc_nl_2010), na.rm=TRUE),
          log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE),
-         log_ch_loan_proj_n_1999_2001 = rowMeans(select(.,log_ch_loan_proj_n_1999,log_ch_loan_proj_n_2000,log_ch_loan_proj_n_2001), na.rm=TRUE),
-         log_ch_loan_proj_n_2002_2004 = rowMeans(select(.,log_ch_loan_proj_n_2002,log_ch_loan_proj_n_2003,log_ch_loan_proj_n_2004), na.rm=TRUE),
-         log_ch_loan_proj_n_2005_2007 = rowMeans(select(.,log_ch_loan_proj_n_2005,log_ch_loan_proj_n_2006,log_ch_loan_proj_n_2007), na.rm=TRUE),
-         log_ch_loan_proj_n_2008_2010 = rowMeans(select(.,log_ch_loan_proj_n_2008,log_ch_loan_proj_n_2009,log_ch_loan_proj_n_2010), na.rm=TRUE),
-         log_ch_loan_proj_n_2011_2013 = rowMeans(select(.,log_ch_loan_proj_n_2011,log_ch_loan_proj_n_2012,log_ch_loan_proj_n_2013), na.rm=TRUE),
+         #sum first, then take the log
+         log_ch_loan_proj_n_1999_2001 = log(rowSums(select(.,ch_loan_proj_n_1999,ch_loan_proj_n_2000,ch_loan_proj_n_2001), na.rm=TRUE) + .01),
+         log_ch_loan_proj_n_2002_2004 = log(rowSums(select(.,ch_loan_proj_n_2002,ch_loan_proj_n_2003,ch_loan_proj_n_2004), na.rm=TRUE) + .01),
+         log_ch_loan_proj_n_2005_2007 = log(rowSums(select(.,ch_loan_proj_n_2005,ch_loan_proj_n_2006,ch_loan_proj_n_2007), na.rm=TRUE) + .01),
+         log_ch_loan_proj_n_2008_2010 = log(rowSums(select(.,ch_loan_proj_n_2008,ch_loan_proj_n_2009,ch_loan_proj_n_2010), na.rm=TRUE) + .01),
+         log_ch_loan_proj_n_2011_2013 = log(rowSums(select(.,ch_loan_proj_n_2011,ch_loan_proj_n_2012,ch_loan_proj_n_2013), na.rm=TRUE) + .01),
          log_ch_loan_proj_n_2014_2016 = log_ch_loan_proj_n_2014,
-         log_disasters1999_2001 = rowMeans(select(.,log_disasters1999,log_disasters2000,log_disasters2001), na.rm=TRUE),
-         log_disasters2002_2004 = rowMeans(select(.,log_disasters2002,log_disasters2003,log_disasters2004), na.rm=TRUE),
-         log_disasters2005_2007 = rowMeans(select(.,log_disasters2005,log_disasters2006,log_disasters2007), na.rm=TRUE),
-         log_disasters2008_2010 = rowMeans(select(.,log_disasters2008,log_disasters2009,log_disasters2010), na.rm=TRUE),
-         log_disasters2011_2013 = rowMeans(select(.,log_disasters2011,log_disasters2012,log_disasters2013), na.rm=TRUE),
+         #sum first, then take the log
+         log_disasters1999_2001 = log(rowSums(select(.,disasters1999,disasters2000,disasters2001), na.rm=TRUE) + .01),
+         log_disasters2002_2004 = log(rowSums(select(.,disasters2002,disasters2003,disasters2004), na.rm=TRUE) + .01),
+         log_disasters2005_2007 = log(rowSums(select(.,disasters2005,disasters2006,disasters2007), na.rm=TRUE) + .01),
+         log_disasters2008_2010 = log(rowSums(select(.,disasters2008,disasters2009,disasters2010), na.rm=TRUE) + .01),
+         log_disasters2011_2013 = log(rowSums(select(.,disasters2011,disasters2012,disasters2013), na.rm=TRUE) + .01),
          log_disasters2014 = log_disasters2014)
-         
+
 write.csv(dhs_5k_3yr_confounders,"./data/interim/dhs_5k_confounders.csv",row.names=FALSE)
+#dhs_5k_3yr_confounders  <- read.csv("./data/interim/dhs_5k_confounders.csv")
 
 ############################################
 # Descriptive stats for per capita nightlights

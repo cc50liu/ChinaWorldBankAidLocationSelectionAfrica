@@ -123,13 +123,15 @@ output <- lapply(sheets_v, function(one_sheet) {
   #select estimates, make a long format
   wgi_est_df <- wgi_df %>%
     rename(iso3=Code_NA) %>% 
+    #data uses a different iso3 code for DR Congo than the rest of the datasets
+    mutate(iso3=if_else(iso3=="ZAR","COD",iso3)) %>% 
     filter(iso3 %in% africa_isos_df$iso3) %>% 
     select(iso3,starts_with("Estimate")) %>% 
     pivot_longer(cols=starts_with("Estimate"),
                  names_to = "year",
                  names_prefix="Estimate_",
                  values_to=one_sheet) %>% 
-    filter(year %in% 1999:2013)
+    filter(year %in% 1998:2013)
   
   return(wgi_est_df)
 })
@@ -157,6 +159,7 @@ wgi_density <- all_wgi_df %>%
   labs(x = "Score", y = "Density across countries",
        title="World Governance Indicators across African countries",color="Year")  +
   facet_wrap(~measure) +
+  scale_color_grey() +
   theme_bw()
 
 ggsave("./figures/wgi_density.png", wgi_density, width = 7, height = 6, dpi = 300, bg = "white", units = "in")
@@ -169,8 +172,16 @@ imputed_2001 <- all_wgi_df %>%
   mutate(year = as.integer(2001)) %>% 
   select(iso3, year,all_of(sheets_v))
 
-#bind both, and rename columns
-all_wgi_plus_imputed_df <- bind_rows(all_wgi_df,imputed_2001) %>% 
+#since there are no 1999 values, impute as average of 1998 and 2000
+imputed_1999 <- all_wgi_df %>%
+  filter(year %in% c(2000,1998)) %>% 
+  group_by(iso3) %>% 
+  summarize(across(all_of(sheets_v), ~ mean(., na.rm=TRUE))) %>% 
+  mutate(year = as.integer(1999)) %>% 
+  select(iso3, year,all_of(sheets_v))
+
+#bind all, rename columns, and remove 1998 values used only for imputation
+all_wgi_plus_imputed_df <- bind_rows(all_wgi_df,imputed_2001,imputed_1999) %>% 
   #rename columns using my variable style
   rename(political_stability=`Political StabilityNoViolence`,
          corruption_control="ControlofCorruption",
@@ -178,7 +189,8 @@ all_wgi_plus_imputed_df <- bind_rows(all_wgi_df,imputed_2001) %>%
          reg_quality="RegulatoryQuality",
          rule_of_law="RuleofLaw",                   
          voice_accountability="VoiceandAccountability"   
-  )
+  ) %>% 
+  filter(year!=1998)
 
 #join the governance indicators into country_confounder_complete_df
 country_confounder_step2_df <- country_confounder_step1_df %>%
@@ -235,22 +247,22 @@ unsc_df <- readxl::read_excel("./data/Dreher/UNSCdata.xls",
 ################################################################
 ### Alignment with US in UNSC voting 
 ################################################################
-unsc_us_align_df <- readxl::read_excel("./data/Dreher/UNSC_voting_update_Nov2022.xlsx",
+unsc_votes_df <- readxl::read_excel("./data/Dreher/UNSC_voting_update_Nov2022.xlsx",
                               sheet="data",
                               col_names=TRUE) 
 
 #set column names to values in first row and then delete it, 
 # which have iso3 codes instead of country names
-names(unsc_us_align_df) <- as.character(unsc_us_align_df[1, ])
-unsc_us_align_df <- unsc_us_align_df[-1,]
+names(unsc_votes_df) <- as.character(unsc_votes_df[1, ])
+unsc_votes_df <- unsc_votes_df[-1,]
 
 #create a df with UNSC temporary members and the years they served
 unsc_temp_mems_df <- unsc_df %>% 
   filter(unsc==1) %>% 
   select(iso3,year) 
 
-#make a long format only with rows and columns we need
-unsc_us_align_mems_df <- unsc_us_align_df %>%  
+#make a long format, one row per vote including an indicator of US alignment
+unsc_us_align_votes_df <- unsc_votes_df %>%  
   #limit votes to study years
   filter(Year %in% 1999:2014) %>%
   rename(US_vote = USA,
@@ -265,19 +277,26 @@ unsc_us_align_mems_df <- unsc_us_align_df %>%
   semi_join(unsc_temp_mems_df, by=c("iso3","year")) %>% 
   mutate(aligned_US = if_else(vote==US_vote,1,0))
 
-#summarize by country and year, with unsc_full_US_aligned = 2 if all votes match US, 
-# 1 otherwise.  Will use 0 for country-years where country wasn't a member of UNSC.
-unsc_us_full_align_df <- unsc_us_align_mems_df %>% 
+#summarize by country and year, creating two variables
+#unsc_aligned_us = 1 if unsc member and always voted for US, 0 otherwise
+#unsc_non_aligned_us = 1 if unsc member and voted against US at least once, 0 otherwise
+# Non UNSC member years will be 0 for both variables 
+unsc_us_full_align_df <- unsc_us_align_votes_df %>% 
   group_by(iso3,year) %>% 
-  summarize(unsc_full_US_aligned=if_else(all(aligned_US==1),2,1),.groups="drop") %>% 
-  select(iso3,year,unsc_full_US_aligned)
+  summarize(unsc_full_US_aligned=if_else(all(aligned_US==1),1,0),.groups="drop") %>% 
+  select(iso3,year,unsc_full_US_aligned) %>% 
+  mutate(unsc_aligned_us=if_else(unsc_full_US_aligned==1,1,0),
+         unsc_non_aligned_us=if_else(unsc_full_US_aligned==0,1,0)) %>% 
+  select(-unsc_full_US_aligned)
 
 #join to rest of confounders
 country_confounder_step4_df <- country_confounder_step3_df  %>%
   left_join(unsc_us_full_align_df, by = c("iso3", "year")) %>% 
-  #set unsc_full_US_aligned to 0 (not member of UNSC) where it is NA
-  mutate(unsc_full_US_aligned=if_else(is.na(unsc_full_US_aligned),0,
-                                      unsc_full_US_aligned))
+  #set two variables to 0 when NA (not member of UNSC)
+  mutate(unsc_aligned_us=if_else(is.na(unsc_aligned_us),0,
+                                 unsc_aligned_us),
+         unsc_non_aligned_us=if_else(is.na(unsc_non_aligned_us),0,
+                                     unsc_non_aligned_us))
 
 #####################################################
 ### Annual temperature and precipitation
