@@ -50,8 +50,8 @@
 # Runs: 5K
 ##############################################################################
 #Basic data prep
+source("./code/R/prep_iso_codes.R", local=TRUE)
 source("./code/R/prep_projects.R", local=TRUE)
-#writes africa_oda_sector_group_v2.csv
 source("./code/R/prep_dhs_points.R", local=TRUE) 
 
 #Determine treatments/controls

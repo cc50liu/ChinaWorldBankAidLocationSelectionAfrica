@@ -7,39 +7,11 @@ library(dplyr)
 library(sf)
 
 rm(list=ls())
+
+africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 ################################################################################
-# Get list of Africa ISO country codes                          
+####  World Bank                                                    
 ################################################################################
-africa_isos_df <- read.csv("./data/all.csv",na.strings="") %>%
-  #use na.strings so NA of Namibia isn't interpreted as not available
- filter(region=="Africa") %>%
- select(name, alpha.3, alpha.2) %>%
- rename(iso3=alpha.3,
-        iso2=alpha.2)
-
-#write it for use in other scripts
-write.csv(africa_isos_df,"./data/interim/africa_isos.csv",row.names = FALSE)
-#africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
-
-#create a version without small islands for use in maps
-africa_map_isos_df <- africa_isos_df %>% 
-  filter(!iso3 %in% c("ATF","CPV", "COM","IOT","MUS","REU", "SHN", "STP", "SYC"))
-# ATF French Southern Territories
-# CPV Cape Verde
-# COM Comoros
-# IOT British Indian Ocean Territory   
-# MUS Mauritius
-# REU Reunion
-# SHN Saint Helena
-# STP Sao Tome and Principe
-# SYC Seychelles
-
-#write it for use in other scripts
-write.csv(africa_map_isos_df,"./data/interim/africa_map_isos.csv",row.names = FALSE)
-
-########################################################################
-####  World Bank                                                    ####
-########################################################################
 wb_proj <- read.csv("./data/AiddataWB1.4.2/projects.csv")
 wb_locs <- read.csv("./data/AiddataWB1.4.2/locations.csv")
 wb_geocoded <-  inner_join(wb_proj, wb_locs, by="project_id",multiple = "all")

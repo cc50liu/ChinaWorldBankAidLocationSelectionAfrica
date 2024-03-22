@@ -343,20 +343,20 @@ if (treat_count < 100) {
       as.matrix(data.frame(
         "first_year_group"           =input_df$first_year_group,
         "first_year_group_squared"   =input_df$first_year_group^2,
-        "treated_other_funder"       =input_df$treated_other_funder,
-        "log_other_sect_n"           =input_df$log_other_sect_n,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
         "agglomeration"              =input_df$agglomeration,               #scene level
-        "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
-        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1, ADM2, or ADM3					 
-        "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
         "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
+        "treated_other_funder"       =input_df$treated_other_funder,        #inherited from ADM2
+        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
+        "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
+        "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1, ADM2, or ADM3					 
+        "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
         "election_year"              =input_df$election_year,               #country level
         "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
         "unsc_non_aligned_us"        =input_df$unsc_non_aligned_us,         #country level
@@ -366,7 +366,7 @@ if (treat_count < 100) {
         "political_stability"        =input_df$political_stability,         #country level
         "reg_quality"                =input_df$reg_quality,                 #country level
         "rule_of_law"                =input_df$rule_of_law,                 #country level           
-        "voice_accountability"       =input_df$voice_accountability,        #country level                      #country level
+        "voice_accountability"       =input_df$voice_accountability,        #country level 
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
       #multiple columns for adm2 fixed effects variables
