@@ -183,11 +183,11 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
 ################################################################################
 # main code starts here
 ################################################################################
-wb_oda_df <- read.csv("./data/interim/africa_oda_sector_group_v2.csv") %>% 
+wb_oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv") %>% 
   filter(precision_code %in% c(1,2,3) &  #Exact, near, ADM2
          funder=="WB" & 
          transactions_start_year>=2002) 
-ch_oda_df <- read.csv("./data/interim/africa_oda_sector_group_v2.csv") %>% 
+ch_oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv") %>% 
   filter(precision_code %in% c(1,2,3) &  #Exact, near, ADM2
         funder=="CH" & 
           transactions_start_year>=2002) 
