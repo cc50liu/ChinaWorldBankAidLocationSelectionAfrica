@@ -248,25 +248,15 @@ all_sectors <- do.call(rbind,output)
 write.csv(all_sectors,"./data/interim/all_sectors.csv",row.names=FALSE)
 
 #use this variable to ensure a consistent column ordering working with the data
-column_order <- c("sector","funder","start_year","dhs_id","proj_count","treated_other_funder","year_group","sector_group")
-
-#identify places that had aid from both funders in a year - n=1933
-treated_both <- all_sectors %>%
-  group_by(dhs_id, start_year, sector) %>% 
-  filter(any(funder == "wb") && any(funder == "ch")) %>% 
-  distinct(dhs_id, start_year, sector) %>% 
-  ungroup() %>% 
-  mutate(treated_other_funder = 1)  
+column_order <- c("sector","funder","start_year","dhs_id","proj_count","year_group","sector_group")
 
 #get sector group names
 sector_groups_df <- read.csv("./data/interim/sector_group_names.csv")
   
-#add treated_other_funder and year group columns n=86295
+#add year group columns n=86295
 all_sectors_expanded_df <- all_sectors %>% 
-  left_join(treated_both, by=c("dhs_id", "start_year", "sector")) %>% 
   left_join(sector_groups_df, join_by(sector==ad_sector_codes)) %>% 
-  mutate(treated_other_funder = ifelse(is.na(treated_other_funder),0,treated_other_funder),
-         year_group = case_when(
+  mutate(year_group = case_when(
             start_year %in% 1999:2001 ~ '1999:2001',
             start_year %in% 2002:2004 ~ '2002:2004',
             start_year %in% 2005:2007 ~ '2005:2007',
@@ -326,10 +316,8 @@ all_sectors_expanded_df %>%
 #####################################
 treated_year_group <- all_sectors_expanded_df %>% 
   group_by(sector, funder, dhs_id, year_group) %>% 
-  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE),
-            max_treated_other_funder = max(treated_other_funder)) %>% 
-  rename(proj_count = sum_proj_count,
-         treated_other_funder = max_treated_other_funder) %>% 
+  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
+  rename(proj_count = sum_proj_count) %>% 
   ungroup()
 #n=76256
 
@@ -379,10 +367,8 @@ treated_year_group %>%
 #####################################
 treated_sector_group_annual <- all_sectors_expanded_df %>% 
   group_by(sector_group, funder, dhs_id, start_year) %>% 
-  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE),
-            max_treated_other_funder = max(treated_other_funder)) %>% 
-  rename(proj_count = sum_proj_count,
-         treated_other_funder = max_treated_other_funder) %>% 
+  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
+  rename(proj_count = sum_proj_count) %>% 
   ungroup()
 #n=57628
 
@@ -415,10 +401,8 @@ treated_sector_group_annual %>%
 #####################################
 treated_sgroup_3yr <- all_sectors_expanded_df %>% 
   group_by(sector_group, funder, dhs_id, year_group) %>% 
-  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE),
-            max_treated_other_funder = max(treated_other_funder)) %>% 
-  rename(proj_count = sum_proj_count,
-         treated_other_funder = max_treated_other_funder) %>% 
+  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
+  rename(proj_count = sum_proj_count) %>% 
   ungroup()
 #n=45150
 

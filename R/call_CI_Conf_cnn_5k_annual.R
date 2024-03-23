@@ -28,11 +28,11 @@ iterations <- as.integer(args[3])
 time_approach <- args[4]
 
 #uncomment to test
-#fund_sect_param <- "wb_110"
- # fund_sect_param <- "ch_520"
- # run <- "cnn_5k_annual"
- # iterations <- 1000
- # time_approach <- "annual"   #other option: "3yr"
+# fund_sect_param <- "wb_110"
+# fund_sect_param <- "ch_520"
+# run <- "cnn_5k_annual"
+# iterations <- 1000
+# time_approach <- "annual"   #other option: "3yr"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -71,6 +71,17 @@ dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") 
   ungroup() %>% 
   select(-other_sect_n)
 
+#get logged count of the other funder's simultaneous projects
+dhs_treated_other_funder_n_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
+  filter(funder==other_funder &
+         #exclude DHS points where confounder data not available 
+         dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  group_by(dhs_id, start_year) %>% 
+  summarize(treated_other_funder_n=sum(proj_count),.groups="drop") %>% 
+  mutate(log_treated_other_funder_n=log(treated_other_funder_n + 1)) %>% 
+  ungroup() %>% 
+  select(-treated_other_funder_n)
+
 #identify countries where funder is operating in this sector
 funder_sector_iso3 <- dhs_confounders_df %>% 
   filter(dhs_id %in% (dhs_t_df %>%  pull(dhs_id))) %>% 
@@ -95,11 +106,8 @@ dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>%
 #construct controls 
 dhs_c_df <- all_t_c_df %>% 
   #exclude dhs_points treated in each year
-  anti_join(dhs_t_df,by=c("dhs_id","start_year")) %>% 
-  #populate treated_other_funder, which will be 1 if this join successful
-  left_join(dhs_t_other_df,by=c("dhs_id","start_year")) %>% 
-  #set treated_other_funder to 0 where it is NA
-  mutate(treated_other_funder = if_else(is.na(treated_other_funder),0,1))
+  anti_join(dhs_t_df,by=c("dhs_id","start_year")) 
+
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city","agglomeration",
@@ -110,7 +118,7 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "election_year","unsc_aligned_us","unsc_non_aligned_us", "country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability",       
-               "landsat578","treated_other_funder","log_other_sect_n")
+               "landsat578","treated_other_funder_n","log_other_sect_n")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
@@ -121,7 +129,7 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
                 "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
                 "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder","Other Sector Projs")
+                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n")
 
 
 ################################################################################
@@ -222,14 +230,20 @@ if (treat_count < 100) {
   obs_year_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,start_year,treated,treated_other_funder),
+       select(dhs_id,start_year,treated),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,start_year,treated,treated_other_funder)
+       select(dhs_id,start_year,treated)
     ) %>% 
+	#get logged count of funder's projs in other sectors for both treated and controls
     left_join(dhs_other_sect_n_df,by=c("dhs_id","start_year")) %>% 
     #replace NAs with 0s for dhs points untreated in other sectors
     mutate(log_other_sect_n=if_else(is.na(log_other_sect_n),0,log_other_sect_n)) %>% 
+    #get logged count of other funder's projs for both treated and controls
+    left_join(dhs_treated_other_funder_n_df,by=c("dhs_id","start_year")) %>% 
+    #replace NAs with 0s for dhs points untreated by the other funder
+    mutate(log_treated_other_funder_n = if_else(is.na(log_treated_other_funder_n),
+                                                  0,log_treated_other_funder_n)) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
       iwi_est_post_oda = case_when(
@@ -298,7 +312,7 @@ if (treat_count < 100) {
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, treated_other_funder,
+    select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, log_treated_other_funder_n,
            log_other_sect_n, start_year, image_file_annual, iwi_est_post_oda,
            log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
            log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
@@ -332,7 +346,7 @@ if (treat_count < 100) {
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level  
-        "treated_other_funder"       =input_df$treated_other_funder,        #inherited from ADM2
+        "log_treated_other_funder_n" =input_df$log_treated_other_funder_n,        #inherited from ADM2
         "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
         "log_disasters"              =input_df$log_disasters,               #inherited from ADM1,2,or3
