@@ -111,7 +111,7 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","treated_other_funder_n","log_other_sect_n")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
-                "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
+                "Minutes to City (2000,log)","Urban (t-1)","Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
@@ -739,6 +739,7 @@ if (treat_count < 100) {
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",
                              "log_dist_km_to_petro" ~ "dist_to_petro",
+                             "agglomeration" ~ "urban",
                              .default=term)) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
