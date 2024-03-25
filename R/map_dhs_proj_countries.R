@@ -15,17 +15,17 @@ dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv")
 #summarize countries by their DHS status
 country_attr <- africa_map_isos_df %>%
   mutate(dhs_state = case_when(
-    iso3 %in% dhs_df$iso3[dhs_df$year < 2001] &
-      !(iso3 %in% dhs_df$iso3[dhs_df$year > 2014]) ~ "Pre-2001 only",   
+    iso3 %in% dhs_df$iso3[dhs_df$year < 2002] &
+      !(iso3 %in% dhs_df$iso3[dhs_df$year > 2014]) ~ "Pre-2002 only",   
     !(iso3 %in% dhs_df$iso3[dhs_df$year < 2000]) &
       iso3 %in% dhs_df$iso3[dhs_df$year > 2014] ~ "Post-2014 only", 
-    iso3 %in% dhs_df$iso3[dhs_df$year < 2001] &
+    iso3 %in% dhs_df$iso3[dhs_df$year < 2002] &
       iso3 %in% dhs_df$iso3[dhs_df$year > 2014] ~ "Both Pre & Post",    
     TRUE ~ "No DHS"
   ))
 
 country_attr$dhs_state <- base::factor(country_attr$dhs_state,
-               levels=c("No DHS","Pre-2001 only","Post-2014 only","Both Pre & Post"),
+               levels=c("No DHS","Pre-2002 only","Post-2014 only","Both Pre & Post"),
                ordered=T)
 
 #put dot on maps for projects 
@@ -52,22 +52,25 @@ adm0_sf <- adm0_sf %>%
   dplyr::left_join(country_attr,by=join_by(ISO==iso3))
 
 dhs_oda_map <- tm_shape(adm0_sf) +
-  tm_polygons(col="dhs_state", palette=brewer.pal(4, "YlOrBr"),title="DHS Availability") +
+  tm_polygons(col="dhs_state", palette=brewer.pal(4, "Greens"),title="DHS Availability") +
   tm_shape(adm0_sf) +
   tm_borders() +
   tm_shape(adm0_sf[adm0_sf$ch_oda, ]) +
-  tm_symbols(size = .5, col = "indianred1", shape = 16, jitter=0.2) +
+  tm_symbols(size = .5, col = "indianred1", shape = 16, just=c("left","bottom"),
+             jitter=.4) +
   tm_shape(adm0_sf[adm0_sf$wb_oda, ]) +
-  tm_symbols(size = .5, col = "lightblue1", shape = 17) +
-  tm_layout(main.title.size=1,
-            main.title = "Africa DHS Surveys and Aid (2001-2014)",
-            main.title.position=c("center","top")) +
+  tm_symbols(size = .5, col = "lightblue1", shape = 17, just=c("right","top")) +
+  tm_layout(main.title.size=2,
+            main.title = "Africa DHS Surveys and Aid (2002-2014)",
+            main.title.position=c("center","top"),
+            legend.title.size = 2) +
   tm_add_legend(type = "symbol"
                 , shape=c(16,17)
                 , col = c("indianred1","lightblue1")
                 , labels = c("China Aid","WB Aid"))  +
   tm_legend(legend.position = c("left", "bottom"),
-            legend.text.size = 1,
+            legend.text.size = 1.7,
+            legend.width = -1,
             frame = F,
             legend.outside = F, 
             outer.margins = c(0, 0, 0, 0)) 
