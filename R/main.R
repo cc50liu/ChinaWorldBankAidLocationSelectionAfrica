@@ -73,18 +73,21 @@ source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
 #consolidate all confounder data in a wide format, one row per dhs point
 source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
 
-# Call Causal Image Confounding Analysis
-source("./code/R/call_CI_Conf_emb_5k_annual.R", local=TRUE)
-source("./code/R/call_CI_Conf_emb_5k_3yr.R", local=TRUE)
-source("./code/R/call_CI_Conf_emb_5k_sgroup_3yr.R", local=TRUE)
-source("./code/R/call_CI_Conf_emb_5k_sgroup_annual.R", local=TRUE)
+# Call Causal Image Confounding Analysis for each of the vision backbones
+# and for 3year and annual images
+#slurm scripts:
+./code/scripts/run_emb_5k_3yr.sh
+./code/scripts/run_cnn_5k_3yr.sh
+./code/scripts/run_vt_5k_3yr.sh
 
-source("./code/R/call_CI_Conf_cnn_5k_annual.R", local=TRUE)
-source("./code/R/call_CI_Conf_cnn_5k_3yr.R", local=TRUE)
-source("./code/R/call_CI_Conf_cnn_5k_sgroup_3yr.R", local=TRUE)
-source("./code/R/call_CI_Conf_cnn_5k_sgroup_annual.R", local=TRUE)
-#I use slurm scripts with the same name to run these for all all sectors and funders
-#They are located in the /scripts directory
+./code/scripts/run_emb_5k_annual.sh
+./code/scripts/run_cnn_5k_annual.sh
+./code/scripts/run_vt_5k_annual.sh
+
+#these scripts call either
+# R/call_CI_Conf_5k_annual.R or
+# R/call_CI_Conf_5k_3yr.R 
+#with appropriate parameters for the specific run
 
 #run will create a subdirectory named after the run, where all the output files will be
 #for sector-based runs, run (from results directory):
