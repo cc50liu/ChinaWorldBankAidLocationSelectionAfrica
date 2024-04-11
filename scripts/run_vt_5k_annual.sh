@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Submit slurm scripts every minute
+submit_and_wait() {
+  sbatch "$1" "$2" "$3" "$4" "$5" "$6" # Submit the Slurm script with parameters
+  sleep 1m     # Sleep for 1 minute
+}
+
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_430 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_520 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_700 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_140 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_230 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_220 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_310 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_160 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_330 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_410 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_110 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_240 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_210 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_220 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_150 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_320 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_230 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_110 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm ch_120 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_120 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_310 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_160 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_140 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_210 vt_5k_annual 1000 annual vt
+submit_and_wait call_CI_Conf_5k_annual.slurm wb_150 vt_5k_annual 1000 annual vt
+

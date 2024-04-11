@@ -7,12 +7,10 @@
 echo "Command-line arguments: $@"
 start_time=$(date +%s)
 
-FUNDER_SECTOR=$1
-RUN_NAME=$2
-ITERATIONS=$3
+FUNDER_SECTOR=$@
 
-apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs.R "$FUNDER_SECTOR" "RUN_NAME" "ITERATIONS"
+apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_dhs_i2tag.R "$FUNDER_SECTOR"
 
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
-echo "Total Elapsed Time: $(date -u -d @"$elapsed_time" +"%H:%M:%S") for $FUNDER_SECTOR, run $RUN_NAME, iter: $ITERATIONS"
+echo "Total Elapsed Time: $(date -u -d @"$elapsed_time" +"%H:%M:%S") for $FUNDER_SECTOR"

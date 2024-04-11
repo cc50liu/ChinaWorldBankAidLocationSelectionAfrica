@@ -17,7 +17,7 @@ cmr_3yr_terra_r <- terra::rast("./data/dhs_tifs_c1_5k_3yr/cameroon_2004/00119.ti
                                lyrs=c("00119_13","00119_14","00119_15"))
 terra::cellSize(cmr_3yr_terra_r)
 sqrt(891.2482)
-#years 1999-2001
+#years 2005-2007
 cmr_3yr_rgb <-  cmr_3yr_terra_r[[c(1,2,3)]]
 cmr_3yr_scaled <- cmr_3yr_rgb/.0001
 dev.off()

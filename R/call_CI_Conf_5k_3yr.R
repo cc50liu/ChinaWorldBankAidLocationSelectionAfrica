@@ -1,11 +1,8 @@
-# call_CI_Conf_emb_5k_3yr.R
-# Desc:  Calls Causal Image Confounding over DHS points, using 5 satellite bands.
+# call_CI_Conf_5k_3yr.R
+# Desc:  Calls Causal Image Confounding over DHS points.
 #        Uses three-year composite images, three-year averages of
-#        confounders, and 5k square images.
-#     IWI measured 3 years post-project start	
-#     Exclude treatments < 2002
-#     Confounder variable if other funder had a treatment in same year
-#     Full panel of control points (not only treated by neither)
+#        confounders. 
+#        Caller specifies computer vision backbone parameter.
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -19,13 +16,15 @@ fund_sect_param <- args[1]
 run <- args[2]
 iterations <- as.integer(args[3])
 time_approach <- args[4]
+vision_backbone <- args[5]
 
 #uncomment to test
-#fund_sect_param <- "wb_110"
-#fund_sect_param <- "ch_430"
-#run <- "emb_5k_3yr"
-#iterations <- 1000
-#time_approach <- "3yr"   #other option: "annual"
+# fund_sect_param <- "wb_110"
+# fund_sect_param <- "ch_430"
+# run <- "cnn_5k_3yr"
+# iterations <- 2000
+# time_approach <- "3yr"   #other option: "annual"
+# vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -41,17 +40,40 @@ other_funder <- ifelse(funder_param=="wb","ch","wb")
 
 ##### read confounder and treatment data from files
 dhs_confounders_df <- read.csv("./data/interim/dhs_5k_confounders.csv") %>% 
-  select(-year)  #remove survey year column that could be confused with oda year
+  select(-year)  %>% #remove survey year column that could be confused with oda year
+  mutate(across(starts_with("log_ch_loan_proj_n"),as.numeric)) #ensure numeric not integer
 
 #get list of all dhs_id's and their iso3 for use below
 dhs_iso3_df <- dhs_confounders_df %>% 
   distinct(dhs_id,iso3)
 
-#get treated by this funder, which already has treated_other_funder column populated
+#get treated by this funder
 dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
   filter(sector==sector_param & funder==funder_param &
            #exclude DHS points where confounder data not available 
            dhs_id %in% dhs_confounders_df$dhs_id) 
+
+#get logged count of projects in other sectors for each dhs point and year group
+dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
+  filter(sector!=sector_param & funder==funder_param &
+           #exclude DHS points where confounder data not available 
+           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  group_by(dhs_id, year_group) %>% 
+  summarize(other_sect_n=sum(proj_count),.groups="drop") %>% 
+  mutate(log_other_sect_n=log(other_sect_n + 1)) %>% 
+  ungroup() %>% 
+  select(-other_sect_n)
+
+#get logged count of the other funder's simultaneous projects
+dhs_treated_other_funder_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
+  filter(funder==other_funder &
+         #exclude DHS points where confounder data not available 
+         dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+  group_by(dhs_id, year_group) %>% 
+  summarize(treated_other_funder_n=sum(proj_count),.groups="drop") %>% 
+  mutate(log_treated_other_funder_n=log(treated_other_funder_n + 1)) %>% 
+  ungroup() %>% 
+  select(-treated_other_funder_n)
 
 #identify countries where funder is operating in this sector
 funder_sector_iso3 <- dhs_confounders_df %>% 
@@ -70,37 +92,34 @@ year_group_v <- c('2002:2004', '2005:2007', '2008:2010', '2011:2013', '2014:2016
 all_t_c_df <- data.frame(expand.grid(year_group = year_group_v,
                         dhs_id = dhs_in_operating_countries)) 
 
-#get treated by other funder to set treated_other_funder on control points
-dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
-  filter(sector==sector_param & funder==other_funder & 
-           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
-  mutate(treated_other_funder = 1)
-
 #construct controls 
 dhs_c_df <- all_t_c_df %>% 
   #exclude dhs_points treated in each year_group
-  anti_join(dhs_t_df,by=c("dhs_id","year_group")) %>% 
-  #populate treated_other_funder, which will be 1 if this join successful
-  left_join(dhs_t_other_df,by=c("dhs_id","year_group")) %>% 
-  #set treated_other_funder to 0 where it is NA
-  mutate(treated_other_funder = if_else(is.na(treated_other_funder),0,1))
+  anti_join(dhs_t_df,by=c("dhs_id","year_group")) 
 
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
-               "log_avg_min_to_city","agglomeration",
+               "log_avg_min_to_city",
                "log_dist_km_to_gold","log_dist_km_to_gems",        
                "log_dist_km_to_dia","log_dist_km_to_petro", 
-               "leader_birthplace","log_trans_proj_cum_n",
-               "log_3yr_pre_conflict_deaths",
-               "polity2","log_gdp_per_cap_USD2015","country_gini",
-               "landsat578","treated_other_funder")
-var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-3,log)","Pop Density (t-3,log)",
-                "Minutes to City (2000,log)","Agglomeration (t-3)","Dist to Gold (km,log)",
+               "leader_birthplace","log_ch_loan_proj_n",
+               "log_3yr_pre_conflict_deaths","log_disasters",
+               "election_year","unsc_aligned_us","unsc_non_aligned_us",
+               "country_gini",
+               "corruption_control", "gov_effectiveness", "political_stability",
+               "reg_quality", "rule_of_law","voice_accountability", 																				
+               "landsat578","treated_other_funder_n","log_other_sect_n")
+var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
+                "Minutes to City (2000,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-3)","Prior Transport Projs",
-                "Conflict deaths (t-3,log)",
-                "Country Polity2 (t-3)","Cntry GDP/cap (t-3,log)","Country gini (t-3)",
-                "Landsat 5,7,& 8","Treated Other Funder")
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
+                "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
+                "Election year (t-1)", "UNSC Member US aligned (t-1)","UNSC Member non-US aligned (t-1)",
+                "Country gini (t-1)",
+                "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
+                "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
+                "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
+                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -151,8 +170,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
                         lyrs=paste0(gsub(pattern=".*/(\\d{5})\\.tif$","\\1", x=image_file)
                                     ,"_",band_))
       #rescale to original setting for RGB printing
-      im <- im/.0001
-	  
+      im <- im/.0001  #collection 1 scale factor
       # place the image in the correct place in the array
       array_shell[,,,i] <- matrix(im, byrow = T, nrow = imageHeight, ncol = imageWidth)
     }
@@ -161,7 +179,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   simplify="array")  #using simplify = "array" combines images slices together
 
   # convert images to tensorflow array for further processing
-  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float32),0L)
+  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float16),0L)
   array_ <- tensorflow::tf$transpose(array_,c(3L,0L,1L,2L))
   return( array_ )
 }
@@ -196,11 +214,20 @@ if (treat_count < 100) {
   obs_year_group_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,year_group,treated,treated_other_funder),
+       select(dhs_id,year_group,treated),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,year_group,treated,treated_other_funder)
+       select(dhs_id,year_group,treated)
     ) %>% 
+    #get logged count of funder's projs in other sectors for both treated and controls
+    left_join(dhs_other_sect_n_df,by=c("dhs_id","year_group")) %>%
+    #replace NAs with 0s for dhs points untreated in other sectors
+    mutate(log_other_sect_n=if_else(is.na(log_other_sect_n),0,log_other_sect_n)) %>% 
+    #get logged count of other funder's projs for both treated and controls
+    left_join(dhs_treated_other_funder_n_df,by=c("dhs_id","year_group")) %>% 
+    #replace NAs with 0s for dhs points untreated by the other funder
+    mutate(log_treated_other_funder_n = if_else(is.na(log_treated_other_funder_n),
+                                                  0,log_treated_other_funder_n)) %>% 
     left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
       iwi_est_post_oda = case_when(
@@ -210,9 +237,12 @@ if (treat_count < 100) {
         year_group == '2011:2013' ~ iwi_2014_2016_est,
         year_group == '2014:2016' ~ iwi_2017_2019_est),
       log_dist_km_to_gold = log_dist_km_to_gold_2001,
-      log_dist_km_to_petro = if_else(
-        year_group == '2002:2004', 
-        log_dist_km_to_petro_2000_2002,log_dist_km_to_petro_2003),
+      log_dist_km_to_petro = case_when(
+        year_group == '2002:2004' ~ log_dist_km_to_petro_1999_2001,
+        year_group == '2005:2007' ~ log_dist_km_to_petro_2002_2004,
+        year_group == '2008:2010' ~ log_dist_km_to_petro_2005_2007,
+        year_group == '2011:2013' ~ log_dist_km_to_petro_2008_2010,
+        year_group == '2014:2016' ~ log_dist_km_to_petro_2011_2013),        
       log_pc_nl_pre_oda = case_when(
         year_group == '2002:2004' ~ log_pc_nl_2000_2001,
         year_group == '2005:2007' ~ log_pc_nl_2002_2004,
@@ -225,12 +255,6 @@ if (treat_count < 100) {
         year_group == '2008:2010' ~ log_avg_pop_dens_2005_2007,
         year_group == '2011:2013' ~ log_avg_pop_dens_2008_2010,
         year_group == '2014:2016' ~ log_avg_pop_dens_2011_2013),  
-      agglomeration = case_when(
-        year_group == '2002:2004' ~ agglom_2000_2001,
-        year_group == '2005:2007' ~ agglom_2002_2004,
-        year_group == '2008:2010' ~ agglom_2005_2007,
-        year_group == '2011:2013' ~ agglom_2008_2010,
-        year_group == '2014:2016' ~ agglom_2011_2013), 
       leader_birthplace = case_when(
         year_group == '2002:2004' ~ leader_1999_2001,
         year_group == '2005:2007' ~ leader_2002_2004,
@@ -243,12 +267,18 @@ if (treat_count < 100) {
         year_group == '2008:2010' ~ log_deaths2005_2007,
         year_group == '2011:2013' ~ log_deaths2008_2010,
         year_group == '2014:2016' ~ log_deaths2011_2013), 
-      log_trans_proj_cum_n = case_when(
-        year_group == '2002:2004' ~ log_trans_proj_cum_n_2001,
-        year_group == '2005:2007' ~ log_trans_proj_cum_n_2004,
-        year_group == '2008:2010' ~ log_trans_proj_cum_n_2007,
-        year_group == '2011:2013' ~ log_trans_proj_cum_n_2010,
-        year_group == '2014:2016' ~ log_trans_proj_cum_n_2013), 
+      log_disasters = case_when(
+        year_group == '2002:2004' ~ log_disasters1999_2001,
+        year_group == '2005:2007' ~ log_disasters2002_2004,
+        year_group == '2008:2010' ~ log_disasters2005_2007,
+        year_group == '2011:2013' ~ log_disasters2008_2010,
+        year_group == '2014:2016' ~ log_disasters2011_2013),        
+      log_ch_loan_proj_n = as.numeric(case_when(
+        year_group == '2002:2004' ~ log_ch_loan_proj_n_2002_2004,
+        year_group == '2005:2007' ~ log_ch_loan_proj_n_2005_2007,
+        year_group == '2008:2010' ~ log_ch_loan_proj_n_2008_2010,
+        year_group == '2011:2013' ~ log_ch_loan_proj_n_2011_2013,
+        year_group == '2014:2016' ~ log_ch_loan_proj_n_2014_2016)),
       #set indicator variables for the combination of satellite images in pre-project images
       #Landsat 5 only in images from 1990:1998, excluded here because of missing data
       #Landsat 5&7 in images from    1999:2010  - won't include this column to avoid collinearity
@@ -257,8 +287,10 @@ if (treat_count < 100) {
       #Landsat 7&8 in images from 2014:2019 - we aren't using any of these
       ) 
 
-  #join to country-level parameters, which are year specific, get year group average
+  #join to country-level parameters, which are year specific, and construct year group data
   country_confounders_df <- read.csv("./data/interim/country_confounders.csv")  %>% 
+    #exclude countries where we don't have dhs points
+    filter(iso3 %in% dhs_iso3_df$iso3) %>% 
     select(-country) %>%
     #set year group to pre-treatment 3-year span for join below
     mutate(year_group = case_when(
@@ -266,32 +298,36 @@ if (treat_count < 100) {
              year %in% 2002:2004 ~ '2005:2007',
              year %in% 2005:2007 ~ '2008:2010',
              year %in% 2008:2010 ~ '2011:2013',
-             year %in% 2011:2013 ~ '2014:2016')) %>% 
-    group_by(iso3,year_group) %>% 
-    summarize(mean_log_gdp_per_cap_USD2015=mean(log_gdp_per_cap_USD2015),
-              mean_country_gini=mean(country_gini),
-              mean_polity2=mean(polity2)) %>% 
-    rename(log_gdp_per_cap_USD2015 = mean_log_gdp_per_cap_USD2015,
-           country_gini = mean_country_gini,
-           polity2 = mean_polity2) %>% 
-    ungroup()
-             
+             year %in% 2011:2013 ~ '2014:2016')) %>%
+    group_by(iso3,year_group)  %>% 
+    #calculate the max for binary variables (three-year group 1 if any year was 1)
+    summarize(across(c("election_year","unsc_aligned_us","unsc_non_aligned_us"), 
+                     ~max(., na.rm = TRUE)),
+              #calculate a mean for each year group for each continuous variable
+              across(c("country_gini","polity2","log_gdp_per_cap_USD2015","corruption_control",
+                       "gov_effectiveness","political_stability","reg_quality",
+                       "rule_of_law","voice_accountability"), 
+                     ~mean(., na.rm = TRUE))) %>%
+    ungroup() 
+
   run_df <- obs_year_group_df %>% 
     left_join(country_confounders_df,
-              by=join_by(iso3, year_group == year_group))
+              by=c("iso3", "year_group"))
 
   #create input_df and write to file
   pre_shuffle_df <- run_df %>% 
-    select(dhs_id, country, iso3, lat, lon, treated, treated_other_funder,
-           year_group, image_file_5k_3yr, iwi_est_post_oda,
-           log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens, agglomeration,
-           log_3yr_pre_conflict_deaths, log_trans_proj_cum_n, leader_birthplace, log_dist_km_to_gold,
-           log_dist_km_to_gems, log_dist_km_to_dia, log_dist_km_to_petro,
-           log_gdp_per_cap_USD2015, country_gini, polity2, landsat578) %>% 
-    rename(cnty = country) %>% 
-    mutate(cnty = stringr::str_to_title(cnty),
-           #extract first year of group to use in function
-           first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
+    select(dhs_id, country, iso3, ID_adm2,lat, lon, treated, log_treated_other_funder_n,
+           log_other_sect_n, year_group, image_file_5k_3yr, iwi_est_post_oda,
+           log_pc_nl_pre_oda, log_avg_min_to_city, log_avg_pop_dens,
+           log_3yr_pre_conflict_deaths, log_disasters, log_ch_loan_proj_n, 
+           leader_birthplace, log_dist_km_to_gold, log_dist_km_to_gems, 
+           log_dist_km_to_dia, log_dist_km_to_petro, election_year, 
+           unsc_aligned_us, unsc_non_aligned_us,country_gini, 
+           corruption_control,gov_effectiveness, political_stability, 
+           reg_quality, rule_of_law, voice_accountability, landsat578) %>% 
+    rename(adm2 = ID_adm2) %>%
+    #extract first year of group to use in function
+    mutate(first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
   
   #shuffle data to reorder it before use; set.seed call makes it reproducible
   set.seed(sector_param)
@@ -307,25 +343,33 @@ if (treat_count < 100) {
       as.matrix(data.frame(
         "first_year_group"           =input_df$first_year_group,
         "first_year_group_squared"   =input_df$first_year_group^2,
-        "treated_other_funder"       =input_df$treated_other_funder,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
-        "agglomeration"              =input_df$agglomeration,               #scene level
-        "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
-        "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_trans_proj_cum_n"       =input_df$log_trans_proj_cum_n,        #inherited from ADM1, ADM2
         "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
-        "log_gdp_per_cap_USD2015"    =input_df$log_gdp_per_cap_USD2015,     #country level
+        "log_treated_other_funder_n" =input_df$log_treated_other_funder_n,  #inherited from ADM2
+        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
+        "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
+        "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1, ADM2, or ADM3					 
+        "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
+        "election_year"              =input_df$election_year,               #country level
+        "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
+        "unsc_non_aligned_us"        =input_df$unsc_non_aligned_us,         #country level
         "country_gini"               =input_df$country_gini,                #country level
-        "polity2"                    =input_df$polity2,                     #country level
+        "corruption_control"         =input_df$corruption_control,          #country level
+        "gov_effectiveness"          =input_df$gov_effectiveness,           #country level 
+        "political_stability"        =input_df$political_stability,         #country level
+        "reg_quality"                =input_df$reg_quality,                 #country level
+        "rule_of_law"                =input_df$rule_of_law,                 #country level           
+        "voice_accountability"       =input_df$voice_accountability,        #country level 
         "landsat578"                 =input_df$landsat578                   #pre-treat image 
       )),
-      #multiple columns for country variables
-      model.matrix(~ cnty - 1, input_df)
+      #multiple columns for adm2 fixed effects variables
+      model.matrix(~ adm2 - 1, input_df)
     )
     
     #remove any columns that have 0 standard deviation before passing to function
@@ -347,20 +391,27 @@ if (treat_count < 100) {
        dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_group_df,
        run_df, pre_shuffle_df)
     
+    #FOR TESTING!
+    # input_df <- input_df[1:800,]
+    # conf_matrix <- conf_matrix[1:800, ]
+    
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
     tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k_s3.tfrecord")
+                              time_approach,"_5k.tfrecord")
     
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Start creating tfrecord file: ",tf_rec_filename))
       
+      
       causalimages::WriteTfRecord(file = tf_rec_filename,
-                                  imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,
+                                  uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
                                                             input_df$year_group),
-                                  acquireImageFxn = acquireImageRepFromDisk
+                                  acquireImageFxn = acquireImageRepFromDisk,
+                                  conda_env = NULL,
+                                  conda_env_required = F
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Finished creating tfrecord file: ",tf_rec_filename))
@@ -369,31 +420,80 @@ if (treat_count < 100) {
     ###############################
     # call AnalyzeImageConfounding
     ###############################
-    ImageConfoundingAnalysis <- AnalyzeImageConfounding(
-      obsW = input_df$treated,
-      obsY = input_df$iwi_est_post_oda,  
-      X = conf_matrix,
-      long = input_df$lon,
-      lat = input_df$lat,
-      #concatenate the image file location and oda start year into a single keys parameter
-      imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-      #acquireImageFxn = acquireImageRepFromDisk,
-      file = tf_rec_filename,
-      samplingType = "balancedTrain",
-      nSGD = iterations,
-      nDepthHidden_conv = 1L, nDepthHidden_dense = 1L, maxPoolSize = 2L, strides = 2L, kernelSize = 9L,
-      modelClass = "embeddings",
-      nBoot=30L,
-      nFilters = 50L,
-      nEmbedDim = 128L,	
-      figuresPath = results_dir, # figures saved here
-      plotBands=c(3,2,1),  #red, green, blue
-      figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
-      tagInFigures = T,
-      conda_env = NULL, # conda env to try to activate
-      conda_env_required = F
-    )
-
+    if (vision_backbone=="cnn") {
+      ImageConfoundingAnalysis <- AnalyzeImageConfounding(
+        obsW = input_df$treated,
+        obsY = input_df$iwi_est_post_oda,  
+        X = conf_matrix,
+        file = tf_rec_filename,        
+        #concatenate the image file location and oda start year into a single keys parameter
+        imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
+        #not setting nBoot for cnn--Connor, is that correct?
+        lat = input_df$lat,
+        long = input_df$lon,
+        conda_env = NULL, # not using conda env
+        conda_env_required = F,
+        figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
+        figuresPath = results_dir, # figures saved here
+        plotBands=c(3,2,1),  #red, green, blue
+        nWidth_ImageRep = 128L, 
+        nDepth_ImageRep = 3L, 
+        kernelSize = 3L,
+        ImageModelClass = "CNN",
+        nSGD = iterations,
+        dropoutRate = 0.1, 
+        atError = 'debug')
+    } else if (vision_backbone=="emb") {
+      ImageConfoundingAnalysis <- AnalyzeImageConfounding(
+        obsW = input_df$treated,
+        obsY = input_df$iwi_est_post_oda,  
+        X = conf_matrix,
+        file = tf_rec_filename,
+        #concatenate the image file location and oda start year into a single keys parameter
+        imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
+        nBoot=30L,
+        lat = input_df$lat,
+        long = input_df$lon,
+        conda_env = NULL, # not using conda env
+        conda_env_required = F,
+        figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
+        figuresPath = results_dir, # figures saved here
+        plotBands=c(3,2,1),  #red, green, blue
+        nWidth_ImageRep = 128L,  
+        nDepth_ImageRep = 3L, 
+        kernelSize = 9L,
+        ImageModelClass = "embeddings",
+        nSGD = iterations,
+        #no dropout rate - Connor ok?
+        atError = 'debug'
+      )
+    } else if (vision_backbone=="vt") {
+      #to do: finish with Connor's help
+      ImageConfoundingAnalysis <- AnalyzeImageConfounding(
+        obsW = input_df$treated,
+        obsY = input_df$iwi_est_post_oda,  
+        X = conf_matrix,
+        file = tf_rec_filename,
+        #concatenate the image file location and oda start year into a single keys parameter
+        imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
+        nBoot=30L,
+        lat = input_df$lat,
+        long = input_df$lon,
+        conda_env = NULL, # not using conda env
+        conda_env_required = F,
+        figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
+        figuresPath = results_dir, # figures saved here
+        plotBands=c(3,2,1),  #red, green, blue
+        nWidth_ImageRep = 128L,    
+        nDepth_ImageRep = 3L, 
+        kernelSize = 9L,
+        ImageModelClass = "VisionTransformer",        
+        nSGD = iterations,
+        #no dropout rate - Connor ok?
+        atError = 'debug'
+      )      
+    }
+    
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
     output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
@@ -418,7 +518,7 @@ if (treat_count < 100) {
     
     #join the input and output and sort by treatment propensity
     ica_long2_df <- ica_long_df %>% 
-      inner_join(input_r_df,join_by(col_index==rnum)) %>% 
+      inner_join(input_r_df,dplyr::join_by(col_index==rnum)) %>% 
       arrange(prW_est)
     
     least_likely_df <- ica_long2_df %>% 
@@ -442,10 +542,28 @@ if (treat_count < 100) {
     
     
     ############################################################################
-    # generate boxplots for this run
+    # generate plots for this run
     ############################################################################
     library(ggplot2)
-  
+     
+    #plot the distribution of other sector project counts
+    log_other_sect_projs <- input_df %>% 
+      mutate(year_color=as.factor(year_group)) %>% 
+      ggplot(aes(log_other_sect_n, color=year_color)) +
+      geom_density() +
+      labs(x = paste0(toupper(funder_param)," project count (log + 1) in sectors other than ",sector_param), 
+           y = "Density across DHS points",
+           title=paste0(toupper(funder_param),
+                        " project count (log + 1) by year in sectors other than ",
+                        sector_param),
+           color="Year")  +
+      theme_bw()
+
+    ggsave(paste0(results_dir,log_other_sect_projs,"_15other_sect_projs_",run,".pdf"),
+           log_other_sect_projs,
+           width=6, height = 6, dpi=300,
+           bg="white", units="in")
+     
     long_funder <- case_when(
       startsWith(fund_sect_param, "ch") ~ "China",
       startsWith(fund_sect_param, "wb") ~ "World Bank",
@@ -620,18 +738,28 @@ if (treat_count < 100) {
     ##### add SalienceX & .se to df, save, and plot ridge and SalienceX values
     ############################################################################    
     #extract tabular confounder salience values from image confounding output
-    tab_conf_salience_df <- ica_df %>%
-      select(starts_with("SalienceX"))  %>%
-      pivot_longer(cols=everything()) %>% 
-      separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
-      pivot_wider(names_from = measure, values_from=value) %>% 
-      mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
-             SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
+    if (vision_backbone=="cnn") {
+      #doesn't have se for Salience scores
+      tab_conf_salience_df <- ica_df %>%
+        select(starts_with("SalienceX."))  %>%
+        rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
+        pivot_longer(cols=everything())
+    }
+    else {
+      tab_conf_salience_df <- ica_df %>%
+        select(starts_with("SalienceX"))  %>%
+        pivot_longer(cols=everything()) %>% 
+        separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
+        pivot_wider(names_from = measure, values_from=value) %>% 
+        mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
+               SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
+      
+    }
     
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, by="term") %>% 
-      rename(Salience_AIC = SalienceX)
+      right_join(tab_conf_salience_df, dplyr::join_by("term"=="name")) %>% 
+      rename(Salience_AIC = value)
     
     #write to file
     write.csv(tab_conf_compare_df,
@@ -639,9 +767,9 @@ if (treat_count < 100) {
               row.names = FALSE)
     
     #plot these
-    #before doing so, remove country variables
+    #before doing so, remove ADM2 variables
     tab_conf_compare_df <- tab_conf_compare_df %>% 
-      filter(!grepl("cnty",term))
+      filter(!grepl("adm2",term))
     #determine the limits of the plot
     max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
                                    abs(tab_conf_compare_df$Salience_AIC)),
@@ -656,15 +784,16 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-                             "log_trans_proj_cum_n" ~ "ch_transp_projs",
+                             "log_disasters" ~ "natural_disasters",								   
+                             "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",
                              "log_dist_km_to_petro" ~ "dist_to_petro",
                              .default=term)) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
-      geom_point(color=treat_sig_color) +
-      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_sig_color,
+      geom_point(color=treat_color) +
+      ggrepel::geom_text_repel(box.padding = 1,max.overlaps=Inf,color=treat_color,
                                segment.color="gray80") + 
       geom_vline(xintercept=0,color="gray80") +
       geom_hline(yintercept=0, color="gray80") +
