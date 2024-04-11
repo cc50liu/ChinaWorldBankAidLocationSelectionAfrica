@@ -20,11 +20,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_430"
-# run <- "cnn_5k_3yr"
-# iterations <- 2000
-# time_approach <- "3yr"   #other option: "annual"
-# vision_backbone <- "cnn"     #other options: "emb" and "vt"
+fund_sect_param <- "ch_430"
+run <- "cnn_5k_3yr"
+iterations <- 2000
+time_approach <- "3yr"   #other option: "annual"
+vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -421,14 +421,15 @@ if (treat_count < 100) {
     # call AnalyzeImageConfounding
     ###############################
     if (vision_backbone=="cnn") {
+      
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
         X = conf_matrix,
         file = tf_rec_filename,        
-        #concatenate the image file location and oda start year into a single keys parameter
+        #concatenate the image file location and oda year group into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-        #not setting nBoot for cnn--Connor, is that correct?
+        nBoot=1000L,
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -439,19 +440,22 @@ if (treat_count < 100) {
         nWidth_ImageRep = 128L, 
         nDepth_ImageRep = 3L, 
         kernelSize = 3L,
-        ImageModelClass = "CNN",
+        imageModelClass = "CNN",
+        optimizeImageRep = T,
         nSGD = iterations,
         dropoutRate = 0.1, 
         atError = 'debug')
+      
     } else if (vision_backbone=="emb") {
+      
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
         X = conf_matrix,
         file = tf_rec_filename,
-        #concatenate the image file location and oda start year into a single keys parameter
+        #concatenate the image file location and oda year group into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-        nBoot=30L,
+        nBoot=15L,  #costly operation; do few 
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -460,23 +464,25 @@ if (treat_count < 100) {
         figuresPath = results_dir, # figures saved here
         plotBands=c(3,2,1),  #red, green, blue
         nWidth_ImageRep = 128L,  
-        nDepth_ImageRep = 3L, 
+        nDepth_ImageRep = 1L, 
         kernelSize = 9L,
-        ImageModelClass = "embeddings",
+        imageModelClass = "CNN",
+        optimizeImageRep = F,
         nSGD = iterations,
-        #no dropout rate - Connor ok?
         atError = 'debug'
       )
+      
     } else if (vision_backbone=="vt") {
+      
       #to do: finish with Connor's help
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
         X = conf_matrix,
         file = tf_rec_filename,
-        #concatenate the image file location and oda start year into a single keys parameter
+        #concatenate the image file location and oda year group into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-        nBoot=30L,
+        nBoot=1000L,
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -486,12 +492,12 @@ if (treat_count < 100) {
         plotBands=c(3,2,1),  #red, green, blue
         nWidth_ImageRep = 128L,    
         nDepth_ImageRep = 3L, 
-        kernelSize = 9L,
-        ImageModelClass = "VisionTransformer",        
+        imageModelClass = "VisionTransformer", 
+        optimizeImageRep = T,
         nSGD = iterations,
-        #no dropout rate - Connor ok?
         atError = 'debug'
       )      
+      
     }
     
     ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))

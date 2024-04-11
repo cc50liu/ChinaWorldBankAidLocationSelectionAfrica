@@ -397,6 +397,7 @@ if (treat_count < 100) {
     # call AnalyzeImageConfounding
     ###############################
     if (vision_backbone=="cnn") {
+      
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
@@ -415,12 +416,15 @@ if (treat_count < 100) {
         nWidth_ImageRep = 128L,    
         nDepth_ImageRep = 3L, 
         kernelSize = 3L,
-        ImageModelClass = "CNN",
+        imageModelClass = "CNN",
+        optimizeImageRep = T,
         nSGD = iterations,
         dropoutRate = 0.1, 
         atError = 'debug'
         )
+      
     } else if (vision_backbone=="emb") {
+      
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
@@ -439,12 +443,15 @@ if (treat_count < 100) {
         nWidth_ImageRep = 128L,    
         nDepth_ImageRep = 3L, 
         kernelSize = 9L,
-        ImageModelClass = "embeddings",
+        imageModelClass = "CNN",
+        optimizeImageRep = F,
         nSGD = iterations,
         #no dropout rate - Connor ok?
         atError = 'debug'
       )
+      
     } else if (vision_backbone=="vt") {
+      
       #to do: finish with Connor's help
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
@@ -464,7 +471,8 @@ if (treat_count < 100) {
         nWidth_ImageRep = 128L,    
         nDepth_ImageRep = 3L, 
         kernelSize = 9L,
-        ImageModelClass = "VisionTransformer",
+        imageModelClass = "VisionTransformer",
+        optimizeImageRep = T,
         nSGD = iterations,
         #no dropout rate - Connor ok?
         atError = 'debug'
