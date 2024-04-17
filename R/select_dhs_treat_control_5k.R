@@ -135,7 +135,7 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
         st_drop_geometry() 
 
       #did at least one dhs point intersect with the project?
-      #can happen if project is in a non-DHS country
+      #nrow can be 0 if project is in a non-DHS country
       if (nrow(wb_df) > 0) {
         wb_df <- wb_df %>% 
           group_by(dhs_id) %>%
