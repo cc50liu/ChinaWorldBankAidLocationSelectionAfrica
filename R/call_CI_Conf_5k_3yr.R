@@ -408,10 +408,6 @@ if (treat_count < 100) {
        dhs_iso3_df,dhs_t_df,funder_sector_iso3,obs_year_group_df,
        run_df, pre_shuffle_df)
     
-    #FOR TESTING!
-    # input_df <- input_df[1:800,]
-    # conf_matrix <- conf_matrix[1:800, ]
-    
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
@@ -421,8 +417,7 @@ if (treat_count < 100) {
     if (!file.exists(tf_rec_filename)) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Start creating tfrecord file: ",tf_rec_filename))
-      
-      
+           
       causalimages::WriteTfRecord(file = tf_rec_filename,
                                   uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
                                                             input_df$year_group),
