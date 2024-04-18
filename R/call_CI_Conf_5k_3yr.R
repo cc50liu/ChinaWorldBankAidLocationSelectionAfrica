@@ -22,7 +22,7 @@ vision_backbone <- args[5]
 # fund_sect_param <- "wb_110"
 fund_sect_param <- "ch_430"
 run <- "cnn_5k_3yr"
-iterations <- 2000
+iterations <- 15
 time_approach <- "3yr"   #other option: "annual"
 vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
@@ -97,6 +97,9 @@ dhs_c_df <- all_t_c_df %>%
   #exclude dhs_points treated in each year_group
   anti_join(dhs_t_df,by=c("dhs_id","year_group")) 
 
+#get neighbor project counts for spillover effects
+adm2_adjacent_3yr_treat_count_df <- read.csv("./data/interim/adm2_adjacent_3yr_treat_count.csv")
+
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city",
@@ -108,7 +111,8 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability", 																				
-               "landsat578","treated_other_funder_n","log_other_sect_n")
+               "landsat578","treated_other_funder_n","log_other_sect_n",
+               "log_total_neighbor_projs")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
@@ -119,7 +123,8 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
                 "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
                 "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n")
+                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n",
+                "Neighbor ADM2 Proj n (log+1)")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -214,11 +219,17 @@ if (treat_count < 100) {
   obs_year_group_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,year_group,treated),
+       select(dhs_id,ID_adm2,year_group,treated),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,year_group,treated)
+       select(dhs_id,ID_adm2,year_group,treated)
     ) %>% 
+    #get count of projects in neighboring adm2s for the period
+    left_join(adm2_adjacent_3yr_treat_count_df,by=join_by("ID_adm2","year_group"),
+              multiple="all") %>% 
+    #replace NAs with 0s for dhs points without neighboring projects
+    mutate(log_total_neighbor_projs=if_else(is.na(log_total_neighbor_projs),
+                                                    1,log_total_neighbor_projs)) %>% 
     #get logged count of funder's projs in other sectors for both treated and controls
     left_join(dhs_other_sect_n_df,by=c("dhs_id","year_group")) %>%
     #replace NAs with 0s for dhs points untreated in other sectors
@@ -324,7 +335,8 @@ if (treat_count < 100) {
            log_dist_km_to_dia, log_dist_km_to_petro, election_year, 
            unsc_aligned_us, unsc_non_aligned_us,country_gini, 
            corruption_control,gov_effectiveness, political_stability, 
-           reg_quality, rule_of_law, voice_accountability, landsat578) %>% 
+           reg_quality, rule_of_law, voice_accountability, landsat578,
+           log_total_neighbor_projs) %>% 
     rename(adm2 = ID_adm2) %>%
     #extract first year of group to use in function
     mutate(first_year_group = as.integer(sub("^(\\d{4}).*", "\\1",year_group)))
@@ -354,7 +366,7 @@ if (treat_count < 100) {
         "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
         "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
-        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1, ADM2, or ADM3					 
+        "log_disasters"              =input_df$log_disasters,               #inherited from ADM1,2,or3			 
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
         "election_year"              =input_df$election_year,               #country level
         "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
@@ -366,7 +378,8 @@ if (treat_count < 100) {
         "reg_quality"                =input_df$reg_quality,                 #country level
         "rule_of_law"                =input_df$rule_of_law,                 #country level           
         "voice_accountability"       =input_df$voice_accountability,        #country level 
-        "landsat578"                 =input_df$landsat578                   #pre-treat image 
+        "landsat578"                 =input_df$landsat578,                  #pre-treat image 
+        "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
       )),
       #multiple columns for adm2 fixed effects variables
       model.matrix(~ adm2 - 1, input_df)
@@ -474,7 +487,6 @@ if (treat_count < 100) {
       
     } else if (vision_backbone=="vt") {
       
-      #to do: finish with Connor's help
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
@@ -524,7 +536,7 @@ if (treat_count < 100) {
     
     #join the input and output and sort by treatment propensity
     ica_long2_df <- ica_long_df %>% 
-      inner_join(input_r_df,dplyr::join_by(col_index==rnum)) %>% 
+      inner_join(input_r_df,join_by(col_index==rnum)) %>% 
       arrange(prW_est)
     
     least_likely_df <- ica_long2_df %>% 
@@ -764,7 +776,7 @@ if (treat_count < 100) {
     
     #join to dataframe with ridge output
     tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, dplyr::join_by("term"=="name")) %>% 
+      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
       rename(Salience_AIC = value)
     
     #write to file
@@ -782,8 +794,6 @@ if (treat_count < 100) {
                                  na.rm=T)
     )
     
-    treat_sig_color <- ifelse(tab_conf_compare_df$SalienceX_sig=="","gray80",
-                              treat_color)
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
                              "log_pc_nl_pre_oda" ~ "percap_nightlights",

@@ -21,7 +21,7 @@ vision_backbone <- args[5]
 # fund_sect_param <- "wb_110"
 # fund_sect_param <- "ch_520"
 # run <- "cnn_5k_annual"
-# iterations <- 1000
+# iterations <- 15
 # time_approach <- "annual"   #other option: "3yr"
 # vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
@@ -99,6 +99,9 @@ dhs_c_df <- all_t_c_df %>%
   #exclude dhs_points treated in each year
   anti_join(dhs_t_df,by=c("dhs_id","start_year")) 
 
+#get neighbor project counts for spillover effects
+adm2_adjacent_annual_treat_count_df <- read.csv("./data/interim/adm2_adjacent_annual_treat_count.csv")
+
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "log_avg_min_to_city",
@@ -109,7 +112,8 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "election_year","unsc_aligned_us","unsc_non_aligned_us", "country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability",       
-               "landsat578","treated_other_funder_n","log_other_sect_n")
+               "landsat578","treated_other_funder_n","log_other_sect_n",
+               "log_total_neighbor_projs")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
@@ -120,7 +124,8 @@ var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop 
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
                 "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
                 "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n")
+                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n",
+                "Neighbor ADM2 Proj n (log+1)")
 
 
 ################################################################################
@@ -185,7 +190,7 @@ acquireImageRepFromDisk <- function(keys,training = F){
   simplify="array")  #using simplify = "array" combines images slices together
 
   # convert images to tensorflow array for further processing
-  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float32),0L)
+  array_ <- tensorflow::tf$squeeze(tf$constant(array_,dtype=tf$float16),0L)
   array_ <- tensorflow::tf$transpose(array_,c(3L,0L,1L,2L))
   return( array_ )
 }
@@ -221,11 +226,17 @@ if (treat_count < 100) {
   obs_year_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,start_year,treated),
+       select(dhs_id,ID_adm2,start_year,treated),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,start_year,treated)
+       select(dhs_id,ID_adm2,start_year,treated)
     ) %>% 
+    #get count of projects in neighboring adm2s for the period
+    left_join(adm2_adjacent_annual_treat_count_df,by=join_by("ID_adm2","start_year"),
+              multiple="all") %>% 
+    #replace NAs with 1s for dhs points without neighboring projects
+    mutate(log_total_neighbor_projs=if_else(is.na(log_total_neighbor_projs),
+                                                    1,log_total_neighbor_projs)) %>% 
 	#get logged count of funder's projs in other sectors for both treated and controls
     left_join(dhs_other_sect_n_df,by=c("dhs_id","start_year")) %>% 
     #replace NAs with 0s for dhs points untreated in other sectors
@@ -308,7 +319,7 @@ if (treat_count < 100) {
            election_year, unsc_aligned_us, unsc_non_aligned_us,
            country_gini, corruption_control,      
            gov_effectiveness, political_stability, reg_quality, rule_of_law,
-           voice_accountability, landsat578) %>% 
+           voice_accountability, landsat578,log_total_neighbor_projs) %>% 
     rename(adm2 = ID_adm2) 
   
   #shuffle data to reorder it before use; set.seed call makes it reproducible
@@ -332,12 +343,12 @@ if (treat_count < 100) {
         "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
         "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
         "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level  
-        "log_treated_other_funder_n" =input_df$log_treated_other_funder_n,        #inherited from ADM2
+        "log_treated_other_funder_n" =input_df$log_treated_other_funder_n,  #inherited from ADM2
+        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,  		    #inherited from ADM1, ADM2
         "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
         "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
         "log_disasters"              =input_df$log_disasters,               #inherited from ADM1,2,or3
         "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
-        "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
         "election_year"              =input_df$election_year,               #country level
         "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
         "unsc_non_aligned_us"        =input_df$unsc_non_aligned_us,         #country level
@@ -348,7 +359,8 @@ if (treat_count < 100) {
         "reg_quality"                =input_df$reg_quality,                 #country level
         "rule_of_law"                =input_df$rule_of_law,                 #country level           
         "voice_accountability"       =input_df$voice_accountability,        #country level                      #country level
-        "landsat578"                 =input_df$landsat578                   #pre-treat image 
+        "landsat578"                 =input_df$landsat578,                  #pre-treat image 
+        "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
       )),
       #multiple columns for adm2 fixed effects variables
       model.matrix(~ adm2 - 1, input_df)
@@ -385,9 +397,11 @@ if (treat_count < 100) {
                    " Start creating tfrecord file: ",tf_rec_filename))
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
-                                  imageKeysOfUnits = paste0(input_df$image_file_annual,
+                                  uniqueImageKeys = paste0(input_df$image_file_annual,
                                                             input_df$start_year),
-                                  acquireImageFxn = acquireImageRepFromDisk
+                                  acquireImageFxn = acquireImageRepFromDisk,
+                                  conda_env = NULL,
+                                  conda_env_required = F
       )
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Finished creating tfrecord file: ",tf_rec_filename))
@@ -405,7 +419,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),
-        #not setting nBoot for cnn--Connor, is that correct?
+        nBoot=1000L,
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -420,8 +434,7 @@ if (treat_count < 100) {
         optimizeImageRep = T,
         nSGD = iterations,
         dropoutRate = 0.1, 
-        atError = 'debug'
-        )
+        atError = 'debug')
       
     } else if (vision_backbone=="emb") {
       
@@ -432,7 +445,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year), 
-        nBoot=30L,
+        nBoot=15L,  #costly operation; do few 
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -440,19 +453,17 @@ if (treat_count < 100) {
         figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
         figuresPath = results_dir, # figures saved here
         plotBands=c(3,2,1),  #red, green, blue
-        nWidth_ImageRep = 128L,    
-        nDepth_ImageRep = 3L, 
+        nWidth_ImageRep = 128L,
+        nDepth_ImageRep = 1L, 
         kernelSize = 9L,
         imageModelClass = "CNN",
         optimizeImageRep = F,
         nSGD = iterations,
-        #no dropout rate - Connor ok?
         atError = 'debug'
       )
       
     } else if (vision_backbone=="vt") {
       
-      #to do: finish with Connor's help
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
@@ -460,7 +471,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,        
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),
-        nBoot=30L,
+        nBoot=1000L,
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -470,11 +481,9 @@ if (treat_count < 100) {
         plotBands=c(3,2,1),  #red, green, blue
         nWidth_ImageRep = 128L,    
         nDepth_ImageRep = 3L, 
-        kernelSize = 9L,
         imageModelClass = "VisionTransformer",
         optimizeImageRep = T,
         nSGD = iterations,
-        #no dropout rate - Connor ok?
         atError = 'debug'
       )      
     }

@@ -2,6 +2,7 @@
 library(dplyr)
 library(stringr)
 library(sf)
+library(tidyr)
 
 rm(list=ls())
 
@@ -177,3 +178,23 @@ dhs_iwi_adm2_5k <- dhs_iwi_5k %>%
   inner_join(dhs_adm2_df,by="dhs_id")
 
 write.csv(dhs_iwi_adm2_5k,"./data/interim/dhs_est_iwi.csv", row.names=FALSE)
+
+
+#############################################################
+#### Identify adjacent adm2's for each adm2 for spillovers
+#############################################################
+adjacent_matrix_dense <- st_touches(adm2_borders, remove_self=TRUE, sparse=FALSE)
+rownames(adjacent_matrix_dense) <- adm2_borders$ID_adm2
+colnames(adjacent_matrix_dense) <- adm2_borders$ID_adm2
+
+#convert to a long-format dataframe that includes only neighbors
+adjacent_df <- as.data.frame(adjacent_matrix_dense,
+                             row.names=adm2_borders$ID_adm2,
+                             col.names=adm2_borders$ID_adm2) %>% 
+  mutate(ID_adm2 = rownames(.)) %>% 
+  pivot_longer(cols=-ID_adm2, names_to="neighbor", values_to = "value") %>%
+  filter(value==TRUE) %>% 
+  select(-value)
+
+#write to csv file for later use
+write.csv(adjacent_df,"./data/interim/adjacent_adm2.csv", row.names=FALSE)

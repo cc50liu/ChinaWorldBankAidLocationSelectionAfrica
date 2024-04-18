@@ -268,11 +268,71 @@ all_sectors_expanded_df <- all_sectors %>%
 
 #write for annual run by sector
 write.csv(all_sectors_expanded_df,"./data/interim/dhs_treated_sector_annual.csv",row.names=FALSE)
+#all_sectors_expanded_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv")
 
-#####################################
-# annual records
-#####################################
-#generate commands to submit slurm scripts
+########################################################
+# calculate annual spillover variables
+########################################################
+#count annual treatments by adm2
+annual_adm2_treated <- all_sectors_expanded_df %>%
+  #get ID_adm2 from dhs_df
+  left_join(dhs_df, by="dhs_id") %>% 
+  #dhs points in the ID_adm2 share same proj_count for time period, get it once
+  group_by(ID_adm2,sector,funder,start_year,proj_count) %>% 
+  summarize(count_observations = n()) %>% 
+  #get total proj count for all sectors and funders for each adm2  
+  group_by(ID_adm2, start_year) %>% 
+  summarize(total_projs = sum(proj_count)) %>% 
+  ungroup()
+
+#calculate annual treatment counts in neighboring adm2s
+adjacent_adm2_count_df <- read.csv("./data/interim/adjacent_adm2.csv") %>% 
+  left_join(annual_adm2_treated, by = c("neighbor" = "ID_adm2"),
+                       multiple="all") %>% 
+  filter(!is.na(start_year)) %>% 
+  group_by(ID_adm2, start_year) %>%
+  summarize(total_neighbor_projs = sum(total_projs, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(log_total_neighbor_projs = log(1 + total_neighbor_projs))
+
+
+#write neighbor annual treatment counts 
+write.csv(adjacent_adm2_count_df,"./data/interim/adm2_adjacent_annual_treat_count.csv",row.names=FALSE)
+
+#plot the distribution of neighbor annual treatment counts
+library(ggplot2)
+
+neighbor_projs <- adjacent_adm2_count_df %>% 
+  mutate(year_color=as.factor(start_year)) %>% 
+  ggplot(aes(total_neighbor_projs, color=year_color)) +
+  geom_density() +
+  labs(x = "Project counts (all sectors & funders) in ADM2 neighbors", 
+       y = "Density across DHS points",
+       title="Project counts (all sectors & funders) in ADM2 neighbors",
+       color="Year")  +
+  theme_bw()
+
+ggsave("./figures/neighbor_adm2_proj_n.png",neighbor_projs,
+       width=6, height = 6, dpi=300,
+       bg="white", units="in")
+
+log_neighbor_projs <- adjacent_adm2_count_df %>% 
+  mutate(year_color=as.factor(start_year)) %>% 
+  ggplot(aes(log_total_neighbor_projs, color=year_color)) +
+  geom_density() +
+  labs(x = "Project counts (all sectors & funders, log + 1) in ADM2 neighbors", 
+       y = "Density across DHS points",
+       title="Project counts in ADM2 neighbors (log + 1)",
+       color="Year")  +
+  theme_bw()
+
+ggsave("./figures/neighbor_adm2_proj_logged_n.png",log_neighbor_projs,
+       width=6, height = 6, dpi=300,
+       bg="white", units="in")
+
+###############################################################
+# generate commands to submit slurm scripts for annual records
+###############################################################
 all_sectors_expanded_df %>%
   group_by(funder,sector) %>%
   count() %>%
@@ -323,7 +383,38 @@ treated_year_group <- all_sectors_expanded_df %>%
 
 write.csv(treated_year_group,"./data/interim/dhs_treated_sector_3yr.csv",row.names=FALSE)
 
+########################################################
+# calculate 3yr spillover variables
+########################################################
+#count 3yr treatments by adm2
+adm2_treated_3yr <- treated_year_group %>%
+  #get ID_adm2 from dhs_df
+  left_join(dhs_df, by="dhs_id") %>% 
+  #dhs points in the ID_adm2 share same proj_count for time period, get it once
+  group_by(ID_adm2,sector,funder,year_group,proj_count) %>% 
+  summarize(count_observations = n()) %>% 
+  #get total proj count for all sectors and funders for each adm2  
+  group_by(ID_adm2, year_group) %>% 
+  summarize(total_projs = sum(proj_count)) %>% 
+  ungroup()
+
+#calculate 3yr treatment counts in neighboring adm2s
+adjacent_adm2_3yr_count_df <- read.csv("./data/interim/adjacent_adm2.csv") %>% 
+  left_join(adm2_treated_3yr, by = c("neighbor" = "ID_adm2"),
+            multiple="all") %>% 
+  filter(!is.na(year_group)) %>% 
+  group_by(ID_adm2, year_group) %>%
+  summarize(total_neighbor_projs = sum(total_projs, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(log_total_neighbor_projs = log(1 + total_neighbor_projs))
+
+
+#write neighbor annual treatment counts 
+write.csv(adjacent_adm2_3yr_count_df,"./data/interim/adm2_adjacent_3yr_treat_count.csv",row.names=FALSE)
+
+########################################################
 #generate commands to submit slurm scripts
+########################################################
 treated_year_group %>%
   group_by(funder,sector) %>%
   count() %>%
@@ -362,70 +453,3 @@ treated_year_group %>%
 # 24 sbatch call_CI_Conf_emb_5k_3yr.slurm wb_210 emb_5k_3yr 1000 3yr
 # 25 sbatch call_CI_Conf_emb_5k_3yr.slurm wb_150 emb_5k_3yr 1000 3yr
 
-#####################################
-# sector group annual records
-#####################################
-treated_sector_group_annual <- all_sectors_expanded_df %>% 
-  group_by(sector_group, funder, dhs_id, start_year) %>% 
-  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
-  rename(proj_count = sum_proj_count) %>% 
-  ungroup()
-#n=57628
-
-write.csv(treated_sector_group_annual,"./data/interim/dhs_treated_sector_group_annual.csv",row.names=FALSE)
-
-#generate commands to submit slurm scripts
-treated_sector_group_annual %>%
-  group_by(funder,sector_group) %>%
-  count() %>%
-  arrange(n) %>%
-  filter(n>100) %>% 
-  ungroup() %>% 
-  mutate(run=paste0("sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ",
-                    funder,"_",sector_group," emb_5k_sgroup_annual 1000 annual"
-  )) %>% 
-  select(run) %>% 
-  print (n=100)
-# 1 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ch_OTH emb_5k_sgroup_annual 1000 annual
-# 2 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ch_DIR emb_5k_sgroup_annual 1000 annual
-# 3 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ch_PRO emb_5k_sgroup_annual 1000 annual
-# 4 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm wb_OTH emb_5k_sgroup_annual 1000 annual
-# 5 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ch_EIS emb_5k_sgroup_annual 1000 annual
-# 6 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm wb_PRO emb_5k_sgroup_annual 1000 annual
-# 7 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm ch_SIS emb_5k_sgroup_annual 1000 annual
-# 8 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm wb_EIS emb_5k_sgroup_annual 1000 annual
-# 9 sbatch call_CI_Conf_emb_5k_sgroup_annual.slurm wb_SIS emb_5k_sgroup_annual 1000 annual
-
-#####################################
-# sector group 3yr records
-#####################################
-treated_sgroup_3yr <- all_sectors_expanded_df %>% 
-  group_by(sector_group, funder, dhs_id, year_group) %>% 
-  summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
-  rename(proj_count = sum_proj_count) %>% 
-  ungroup()
-#n=45150
-
-write.csv(treated_sector_group_3yr,"./data/interim/dhs_treated_sector_group_3yr.csv",row.names=FALSE)
-
-#generate commands to submit slurm scripts
-treated_sector_group_3yr %>%
-  group_by(funder,sector_group) %>%
-  count() %>%
-  arrange(n) %>%
-  filter(n>100) %>% 
-  ungroup() %>% 
-  mutate(run=paste0("sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ",
-                    funder,"_",sector_group," emb_5k_sgroup_3yr 1000 3yr"
-  )) %>% 
-  select(run) %>% 
-  print (n=100)
-# 1 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ch_OTH emb_5k_sgroup_3yr 1000 3yr
-# 2 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ch_DIR emb_5k_sgroup_3yr 1000 3yr
-# 3 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ch_PRO emb_5k_sgroup_3yr 1000 3yr
-# 4 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm wb_OTH emb_5k_sgroup_3yr 1000 3yr
-# 5 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ch_EIS emb_5k_sgroup_3yr 1000 3yr
-# 6 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm ch_SIS emb_5k_sgroup_3yr 1000 3yr
-# 7 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm wb_PRO emb_5k_sgroup_3yr 1000 3yr
-# 8 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm wb_EIS emb_5k_sgroup_3yr 1000 3yr
-# 9 sbatch call_CI_Conf_emb_5k_sgroup_3yr.slurm wb_SIS emb_5k_sgroup_3yr 1000 3yr
