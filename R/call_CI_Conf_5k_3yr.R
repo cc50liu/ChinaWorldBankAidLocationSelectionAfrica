@@ -115,10 +115,10 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "country_gini",
                "corruption_control", "gov_effectiveness", "political_stability",
                "reg_quality", "rule_of_law","voice_accountability", 																				
-               "landsat578","treated_other_funder_n","log_other_sect_n",
+               "landsat578","log_treated_other_funder_n","log_other_sect_n",
                "log_total_neighbor_projs")
 var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
-                "Minutes to City (2000,log)",
+                "Minutes to City (2000,log)", "Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
@@ -581,7 +581,7 @@ if (treat_count < 100) {
            color="Year")  +
       theme_bw()
 
-    ggsave(paste0(results_dir,log_other_sect_projs,"_15other_sect_projs_",run,".pdf"),
+    ggsave(paste0(results_dir,fund_sect_param,"_15other_sect_projs_",run,".pdf"),
            log_other_sect_projs,
            width=6, height = 6, dpi=300,
            bg="white", units="in")
@@ -766,8 +766,7 @@ if (treat_count < 100) {
         select(starts_with("SalienceX."))  %>%
         rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
         pivot_longer(cols=everything())
-    }
-    else {
+    } else {
       tab_conf_salience_df <- ica_df %>%
         select(starts_with("SalienceX"))  %>%
         pivot_longer(cols=everything()) %>% 
