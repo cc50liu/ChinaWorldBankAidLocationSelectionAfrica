@@ -47,9 +47,10 @@ dhs_iso3_df <- dhs_confounders_df %>%
 
 #get treated by this funder, which already has treated_other_funder column populated
 dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
-  filter(sector==sector_param & funder==funder_param & start_year >= 2002 &
-           #exclude DHS points where confounder data not available 
-           dhs_id %in% dhs_confounders_df$dhs_id) 
+  filter(sector==sector_param & funder==funder_param & start_year >= 2002) %>% 
+    #exclude DHS points where confounder data not available 
+    inner_join(dhs_confounders_df %>% 
+               select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
 
 #get logged count of projects in other sectors for each dhs point and year 
 dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>% 
@@ -97,7 +98,11 @@ dhs_t_other_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv") %>%
 #construct controls 
 dhs_c_df <- all_t_c_df %>% 
   #exclude dhs_points treated in each year
-  anti_join(dhs_t_df,by=c("dhs_id","start_year")) 
+  anti_join(dhs_t_df,by=c("dhs_id","start_year")) %>% 
+  #exclude DHS points where confounder data not available, get ID_adm2 
+  inner_join(dhs_confounders_df %>% 
+             select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
+
 
 #get neighbor project counts for spillover effects
 adm2_adjacent_annual_treat_count_df <- read.csv("./data/interim/adm2_adjacent_annual_treat_count.csv")
@@ -231,6 +236,7 @@ if (treat_count < 100) {
        mutate(treated=0) %>% 
        select(dhs_id,ID_adm2,start_year,treated)
     ) %>% 
+	left_join(dhs_confounders_df,by="dhs_id") %>% 																		
     #get count of projects in neighboring adm2s for the period
     left_join(adm2_adjacent_annual_treat_count_df,by=join_by("ID_adm2","start_year"),
               multiple="all") %>% 
@@ -246,7 +252,6 @@ if (treat_count < 100) {
     #replace NAs with 0s for dhs points untreated by the other funder
     mutate(log_treated_other_funder_n = if_else(is.na(log_treated_other_funder_n),
                                                   0,log_treated_other_funder_n)) %>% 
-    left_join(dhs_confounders_df,by="dhs_id") %>% 
     mutate(
       iwi_est_post_oda = case_when(
         start_year %in% 2000:2001 ~ iwi_2002_2004_est,
