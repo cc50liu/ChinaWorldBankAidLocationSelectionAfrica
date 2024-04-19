@@ -19,11 +19,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_110"
-# fund_sect_param <- "ch_520"
-# run <- "cnn_5k_annual"
-# iterations <- 15
-# time_approach <- "annual"   #other option: "3yr"
-# vision_backbone <- "cnn"     #other options: "emb" and "vt"
+fund_sect_param <- "ch_430"
+run <- "cnn_5k_annual"
+iterations <- 15
+time_approach <- "annual"   #other option: "3yr"
+vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -231,12 +231,12 @@ if (treat_count < 100) {
   obs_year_df <- rbind(
     dhs_t_df %>% 
        mutate(treated=1) %>% 
-       select(dhs_id,ID_adm2,start_year,treated),
+       select(dhs_id,start_year,treated),
     dhs_c_df %>% 
        mutate(treated=0) %>% 
-       select(dhs_id,ID_adm2,start_year,treated)
+       select(dhs_id,start_year,treated)
     ) %>% 
-	left_join(dhs_confounders_df,by="dhs_id") %>% 																		
+	  left_join(dhs_confounders_df,by="dhs_id") %>% 																		
     #get count of projects in neighboring adm2s for the period
     left_join(adm2_adjacent_annual_treat_count_df,by=join_by("ID_adm2","start_year"),
               multiple="all") %>% 
@@ -787,7 +787,7 @@ if (treat_count < 100) {
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",
-                             "log_dist_km_to_petro" ~ "dist_to_petro"
+                             "log_dist_km_to_petro" ~ "dist_to_petro",
                              .default=term)) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
