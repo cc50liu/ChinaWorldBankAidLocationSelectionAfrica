@@ -19,11 +19,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_110"
-fund_sect_param <- "ch_430"
-run <- "cnn_5k_annual"
-iterations <- 15
-time_approach <- "annual"   #other option: "3yr"
-vision_backbone <- "cnn"     #other options: "emb" and "vt"
+# fund_sect_param <- "ch_430"
+# run <- "cnn_5k_annual"
+# iterations <- 15
+# time_approach <- "annual"   #other option: "3yr"
+# vision_backbone <- "cnn"     #other options: "emb" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -221,7 +221,8 @@ if (treat_count < 100) {
                ", treat n:",treat_count,
                ", control n: ",control_count,
                ", run: ",run,
-               ", iterations: ",iterations
+               ", iterations: ",iterations,
+               ", backbone: ",vision_backbone
   ))
   
   ##############################################################################
