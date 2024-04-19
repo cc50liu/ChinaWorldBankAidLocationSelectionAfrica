@@ -805,6 +805,9 @@ if (treat_count < 100) {
                              "log_dist_km_to_gems" ~ "dist_to_gems",
                              "log_dist_km_to_dia" ~ "dist_to_dia",
                              "log_dist_km_to_petro" ~ "dist_to_petro",
+                             "log_total_neighbor_projs" ~ "neighbor_oda",
+                             "log_other_sect_n" ~ "other_sector_oda",
+                             "log_treated_other_funder_n" ~ "other_funder_oda",
                              .default=term)) %>% 
       ggplot(aes(x = ridge_est, y = Salience_AIC, label = term)) +
       geom_point(color=treat_color) +
