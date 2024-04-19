@@ -11,7 +11,7 @@ ITERATIONS=$3
 TIME_APPROACH=$4
 VISION_BACKBONE=$5
 
-apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_5k_3yr.R "$FUNDER_SECTOR" "$RUN_NAME" "$ITERATIONS" "$TIME_APPROACH" "VISION_BACKBONE"
+apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg_causalimages.sif Rscript /mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb/ChinaWorldBankAidLocationSelectionAfrica/R/call_CI_Conf_5k_3yr.R "$FUNDER_SECTOR" "$RUN_NAME" "$ITERATIONS" "$TIME_APPROACH" "$VISION_BACKBONE"
 
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
