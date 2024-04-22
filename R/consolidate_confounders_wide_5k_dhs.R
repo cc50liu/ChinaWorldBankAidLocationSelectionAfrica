@@ -17,7 +17,7 @@ dhs_raster_df <- read.csv("./data/interim/dhs_treat_control_5k_raster.csv") %>%
            .names = "agglom_{str_extract(.col,'[0-9]{4}')}")
   ) %>%
   ungroup() %>% 
-  select(dhs_id, rural, starts_with("log"), starts_with("agglom"))
+  select(dhs_id, rural, starts_with("log"), starts_with("agglom"), starts_with("avg_pop_dens_"))
 
 dhs_natl_res_df <-  read.csv("./data/interim/dhs_natl_res.csv") %>% 
   select(dhs_id, starts_with("log"), starts_with("dist_km_to_petro"))
