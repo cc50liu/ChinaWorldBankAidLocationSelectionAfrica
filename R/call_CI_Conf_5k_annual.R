@@ -340,8 +340,8 @@ if (treat_count < 100) {
   } else {
     conf_matrix <- cbind(
       as.matrix(data.frame(
-        "start_year"                 =input_df$start_year,
-        "start_year_squared"         =input_df$start_year^2,
+        "start_year"                 =input_df$start_year - 2001,
+        "start_year_squared"         =(input_df$start_year - 2001)^2,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
@@ -421,7 +421,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = scale(conf_matrix),
+        X = conf_matrix,
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),
@@ -447,7 +447,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = scale(conf_matrix),
+        X = conf_matrix,
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year), 
@@ -473,7 +473,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = scale(conf_matrix),
+        X = conf_matrix,
         file = tf_rec_filename,        
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),
