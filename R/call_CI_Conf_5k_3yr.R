@@ -235,7 +235,7 @@ if (treat_count < 100) {
               multiple="all") %>% 
     #replace NAs with 0s for dhs points without neighboring projects
     mutate(log_total_neighbor_projs=if_else(is.na(log_total_neighbor_projs),
-                                                    1,log_total_neighbor_projs)) %>% 
+                                                    0,log_total_neighbor_projs)) %>% 
     #get logged count of funder's projs in other sectors for both treated and controls
     left_join(dhs_other_sect_n_df,by=c("dhs_id","year_group")) %>%
     #replace NAs with 0s for dhs points untreated in other sectors
