@@ -421,7 +421,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = conf_matrix,
+        X = scale(conf_matrix),
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),
@@ -447,7 +447,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = conf_matrix,
+        X = scale(conf_matrix),
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year), 
@@ -473,7 +473,7 @@ if (treat_count < 100) {
       ImageConfoundingAnalysis <- AnalyzeImageConfounding(
         obsW = input_df$treated,
         obsY = input_df$iwi_est_post_oda,  
-        X = conf_matrix,
+        X = scale(conf_matrix),
         file = tf_rec_filename,        
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year),

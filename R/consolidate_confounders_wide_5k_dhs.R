@@ -63,7 +63,7 @@ dhs_confounders_df <- dhs_iwi_df %>%
   inner_join(dhs_raster_df, by="dhs_id") %>% 
   inner_join(dhs_natl_res_df, by="dhs_id") %>%  
   inner_join(dhs_ch_loan_df, by="dhs_id") %>% 
-  inner_join(pc_nl_log_df %>%  select(dhs_id, starts_with("log_")), by="dhs_id")
+  inner_join(pc_nl_log_df %>%  select(dhs_id, starts_with("log_"), starts_with("pc_nl_")), by="dhs_id")
 
 #group them into 3-year sets matching 3-year-image years
 dhs_5k_3yr_confounders <- dhs_confounders_df %>% 
@@ -83,21 +83,21 @@ dhs_5k_3yr_confounders <- dhs_confounders_df %>%
          log_dist_km_to_petro_2005_2007 = log_dist_km_to_petro_2003,
          log_dist_km_to_petro_2008_2010 = log_dist_km_to_petro_2003,
          log_dist_km_to_petro_2011_2013 = log_dist_km_to_petro_2003,
-         log_avg_pop_dens_2000_2001 = rowMeans(select(.,log_avg_pop_dens_2000,log_avg_pop_dens_2001), na.rm=TRUE),
-         log_avg_pop_dens_2002_2004 = rowMeans(select(.,log_avg_pop_dens_2002,log_avg_pop_dens_2003,log_avg_pop_dens_2004), na.rm=TRUE),
-         log_avg_pop_dens_2005_2007 = rowMeans(select(.,log_avg_pop_dens_2005,log_avg_pop_dens_2006,log_avg_pop_dens_2007), na.rm=TRUE),
-         log_avg_pop_dens_2008_2010 = rowMeans(select(.,log_avg_pop_dens_2008,log_avg_pop_dens_2009,log_avg_pop_dens_2010), na.rm=TRUE),
-         log_avg_pop_dens_2011_2013 = rowMeans(select(.,log_avg_pop_dens_2011,log_avg_pop_dens_2012,log_avg_pop_dens_2013), na.rm=TRUE),
+         log_avg_pop_dens_2000_2001 = log(1 + rowMeans(select(.,avg_pop_dens_2000,avg_pop_dens_2001), na.rm=TRUE)),
+         log_avg_pop_dens_2002_2004 = log(1 + rowMeans(select(.,avg_pop_dens_2002,avg_pop_dens_2003,avg_pop_dens_2004), na.rm=TRUE)),
+         log_avg_pop_dens_2005_2007 = log(1 + rowMeans(select(.,avg_pop_dens_2005,avg_pop_dens_2006,avg_pop_dens_2007), na.rm=TRUE)),
+         log_avg_pop_dens_2008_2010 = log(1 + rowMeans(select(.,avg_pop_dens_2008,avg_pop_dens_2009,avg_pop_dens_2010), na.rm=TRUE)),
+         log_avg_pop_dens_2011_2013 = log(1 + rowMeans(select(.,avg_pop_dens_2011,avg_pop_dens_2012,avg_pop_dens_2013), na.rm=TRUE)),
          agglom_2000_2001 = if_else((agglom_2000==1 | agglom_2001==1),1,0),
          agglom_2002_2004 = if_else((agglom_2002==1 | agglom_2003==1 | agglom_2004==1),1,0),
          agglom_2005_2007 = if_else((agglom_2005==1 | agglom_2006==1 | agglom_2007==1),1,0),
          agglom_2008_2010 = if_else((agglom_2008==1 | agglom_2009==1 | agglom_2010==1),1,0),
          agglom_2011_2013 = if_else((agglom_2011==1 | agglom_2012==1 | agglom_2013==1),1,0),
-         log_pc_nl_2000_2001 = rowMeans(select(.,log_pc_nl_2000,log_pc_nl_2001), na.rm=TRUE),
-         log_pc_nl_2002_2004 = rowMeans(select(.,log_pc_nl_2002,log_pc_nl_2003,log_pc_nl_2004), na.rm=TRUE),
-         log_pc_nl_2005_2007 = rowMeans(select(.,log_pc_nl_2005,log_pc_nl_2006,log_pc_nl_2007), na.rm=TRUE),
-         log_pc_nl_2008_2010 = rowMeans(select(.,log_pc_nl_2008,log_pc_nl_2009,log_pc_nl_2010), na.rm=TRUE),
-         log_pc_nl_2011_2013 = rowMeans(select(.,log_pc_nl_2011,log_pc_nl_2012,log_pc_nl_2013), na.rm=TRUE),
+         log_pc_nl_2000_2001 = log(1 + rowMeans(select(.,pc_nl_2000,pc_nl_2001), na.rm=TRUE)),
+         log_pc_nl_2002_2004 = log(1 + rowMeans(select(.,pc_nl_2002,pc_nl_2003,pc_nl_2004), na.rm=TRUE)),
+         log_pc_nl_2005_2007 = log(1 + rowMeans(select(.,pc_nl_2005,pc_nl_2006,pc_nl_2007), na.rm=TRUE)),
+         log_pc_nl_2008_2010 = log(1 + rowMeans(select(.,pc_nl_2008,pc_nl_2009,pc_nl_2010), na.rm=TRUE)),
+         log_pc_nl_2011_2013 = log(1 + rowMeans(select(.,pc_nl_2011,pc_nl_2012,pc_nl_2013), na.rm=TRUE)),
          #sum first, then take the log
          log_ch_loan_proj_n_1999_2001 = log(rowSums(select(.,ch_loan_proj_n_1999,ch_loan_proj_n_2000,ch_loan_proj_n_2001), na.rm=TRUE) + .01),
          log_ch_loan_proj_n_2002_2004 = log(rowSums(select(.,ch_loan_proj_n_2002,ch_loan_proj_n_2003,ch_loan_proj_n_2004), na.rm=TRUE) + .01),
