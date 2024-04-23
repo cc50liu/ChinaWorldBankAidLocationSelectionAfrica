@@ -769,7 +769,6 @@ if (treat_count < 100) {
         rename(Salience_AIC = value)
     } else {
       
-      ica_df <- read.csv("./results/emb_5k_3yr/ICA_ch_430_emb_5k_3yr_i10.csv")
       tab_conf_salience_df <- ica_df %>%
         select(starts_with("SalienceX"))  %>%
         pivot_longer(cols=everything()) %>% 
