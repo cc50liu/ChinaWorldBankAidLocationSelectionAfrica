@@ -468,7 +468,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,
         #concatenate the image file location and oda year group into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-        nBoot=15L,  #costly operation; do few 
+        nBoot=0L,  #costly operation; do few 
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
