@@ -341,7 +341,7 @@ if (treat_count < 100) {
     conf_matrix <- cbind(
       as.matrix(data.frame(
         "start_year"                 =input_df$start_year - 2001,
-        "start_year_squared"         =(input_df$start_year - 2001)^2,
+        #"start_year_squared"         =(input_df$start_year - 2001)^2,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
         "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
         "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
