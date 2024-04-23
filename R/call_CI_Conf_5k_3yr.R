@@ -779,7 +779,8 @@ if (treat_count < 100) {
       
       #join to dataframe with ridge output
       tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-        right_join(tab_conf_salience_df, by="term") 
+        right_join(tab_conf_salience_df, by="term") %>% 
+        rename(Salience_AIC = SalienceX) 
     }
     
 
