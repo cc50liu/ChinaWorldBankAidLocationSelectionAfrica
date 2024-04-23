@@ -745,6 +745,10 @@ if (treat_count < 100) {
         select(starts_with("SalienceX."))  %>%
         rename_with(~sub("^SalienceX\\.", "", .), starts_with("SalienceX.")) %>%
         pivot_longer(cols=everything())
+      #join to dataframe with ridge output
+      tab_conf_compare_df <-  treat_prob_log_r_df %>% 
+        right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
+        rename(Salience_AIC = value)										  
     } else {
       tab_conf_salience_df <- ica_df %>%
         select(starts_with("SalienceX"))  %>%
@@ -754,13 +758,12 @@ if (treat_count < 100) {
         mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
                SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
       
+      #join to dataframe with ridge output
+      tab_conf_compare_df <-  treat_prob_log_r_df %>% 
+        right_join(tab_conf_salience_df, by="term") %>% 
+        rename(Salience_AIC = SalienceX) 										  
     }
-    
-    #join to dataframe with ridge output
-    tab_conf_compare_df <-  treat_prob_log_r_df %>% 
-      right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
-      rename(Salience_AIC = value)
-    
+       
     #write to file
     write.csv(tab_conf_compare_df,
               paste0(results_dir,fund_sect_param,"_tab_conf_compare_", run,".csv"),
