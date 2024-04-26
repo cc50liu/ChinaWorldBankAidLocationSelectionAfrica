@@ -19,12 +19,12 @@ time_approach <- args[4]
 vision_backbone <- args[5]
 
 #uncomment to test
-# fund_sect_param <- "wb_110"
+# fund_sect_param <- "wb_320"
 # fund_sect_param <- "ch_430"
-# run <- "cnn_5k_3yr"
+# run <- "emb_5k_3yr"
 # iterations <- 15
 # time_approach <- "3yr"   #other option: "annual"
-# vision_backbone <- "cnn"     #other options: "emb" and "vt"
+# vision_backbone <- "emb"     #other options: "cnn" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -356,7 +356,41 @@ if (treat_count < 100) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                  run,"_",fund_sect_param,".csv"))
   } else {
-    conf_matrix <- cbind(
+    # conf_matrix <- cbind(
+    #   as.matrix(data.frame(
+    #     "first_year_group"           =input_df$first_year_group - 2001,
+    #     #"first_year_group_squared"   =(input_df$first_year_group - 2001)^2,
+    #     "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
+    #     "log_avg_min_to_city"        =input_df$log_avg_min_to_city,         #scene level
+    #     "log_avg_pop_dens"           =input_df$log_avg_pop_dens,            #scene level
+    #     "log_dist_km_to_gold"        =input_df$log_dist_km_to_gold,         #scene level
+    #     "log_dist_km_to_gems"        =input_df$log_dist_km_to_gems,         #scene level
+    #     "log_dist_km_to_dia"         =input_df$log_dist_km_to_dia,          #scene level
+    #     "log_dist_km_to_petro"       =input_df$log_dist_km_to_petro,        #scene level
+    #     "log_treated_other_funder_n" =input_df$log_treated_other_funder_n,  #inherited from ADM2
+    #     "log_ch_loan_proj_n"         =input_df$log_ch_loan_proj_n,          #inherited from ADM1, ADM2
+    #     "log_other_sect_n"           =input_df$log_other_sect_n,            #inherited from ADM2
+    #     "log_3yr_pre_conflict_deaths"=input_df$log_3yr_pre_conflict_deaths, #inherited from ADM1
+    #     "log_disasters"              =input_df$log_disasters,               #inherited from ADM1,2,or3			 
+    #     "leader_birthplace"          =input_df$leader_birthplace,           #inherited from ADM1
+    #     "election_year"              =input_df$election_year,               #country level
+    #     "unsc_aligned_us"            =input_df$unsc_aligned_us,             #country level
+    #     "unsc_non_aligned_us"        =input_df$unsc_non_aligned_us,         #country level
+    #     "country_gini"               =input_df$country_gini,                #country level
+    #     "corruption_control"         =input_df$corruption_control,          #country level
+    #     "gov_effectiveness"          =input_df$gov_effectiveness,           #country level 
+    #     "political_stability"        =input_df$political_stability,         #country level
+    #     "reg_quality"                =input_df$reg_quality,                 #country level
+    #     "rule_of_law"                =input_df$rule_of_law,                 #country level           
+    #     "voice_accountability"       =input_df$voice_accountability,        #country level 
+    #     "landsat578"                 =input_df$landsat578,                  #pre-treat image 
+    #     "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
+    #   )),
+    #   #multiple columns for adm2 fixed effects variables
+    #   model.matrix(~ adm2 - 1, input_df)
+    # )
+    
+    conf_matrix <- 
       as.matrix(data.frame(
         "first_year_group"           =input_df$first_year_group - 2001,
         #"first_year_group_squared"   =(input_df$first_year_group - 2001)^2,
@@ -385,10 +419,7 @@ if (treat_count < 100) {
         "voice_accountability"       =input_df$voice_accountability,        #country level 
         "landsat578"                 =input_df$landsat578,                  #pre-treat image 
         "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
-      )),
-      #multiple columns for adm2 fixed effects variables
-      model.matrix(~ adm2 - 1, input_df)
-    )
+      ))
     
     #remove any columns that have 0 standard deviation before passing to function
     before_cols <-  colnames(conf_matrix)
@@ -412,23 +443,28 @@ if (treat_count < 100) {
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
-    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k.tfrecord")
-    
-    if (!file.exists(tf_rec_filename)) {
-      print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                   " Start creating tfrecord file: ",tf_rec_filename))
-           
-      causalimages::WriteTfRecord(file = tf_rec_filename,
-                                  uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
-                                                            input_df$year_group),
-                                  acquireImageFxn = acquireImageRepFromDisk,
-                                  conda_env = NULL,
-                                  conda_env_required = F
-      )
-      print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                   " Finished creating tfrecord file: ",tf_rec_filename))
+    if (vision_backbone=="emb") {
+      tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                                time_approach,"_5k_emb.tfrecord")
+      
+      if (!file.exists(tf_rec_filename)) {
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Start creating tfrecord file: ",tf_rec_filename))
+        
+        causalimages::WriteTfRecord(file = tf_rec_filename,
+                                    uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
+                                                             input_df$year_group),
+                                    acquireImageFxn = acquireImageRepFromDisk,
+                                    conda_env = NULL,
+                                    conda_env_required = F
+        )
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Finished creating tfrecord file: ",tf_rec_filename))
+      }
+    } else {
+      #use this space for balanced sampling setup
     }
+
 
     ###############################
     # call AnalyzeImageConfounding
@@ -468,7 +504,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,
         #concatenate the image file location and oda year group into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_5k_3yr,input_df$year_group), 
-        nBoot=0L,  #costly operation; do few 
+        nBoot=10L,  #costly operation; do few 
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -478,7 +514,7 @@ if (treat_count < 100) {
         plotBands=c(3,2,1),  #red, green, blue
         nWidth_ImageRep = 128L,  
         nDepth_ImageRep = 1L, 
-        kernelSize = 9L,
+        kernelSize = 5L,
         imageModelClass = "CNN",
         optimizeImageRep = F,
         nSGD = iterations,
