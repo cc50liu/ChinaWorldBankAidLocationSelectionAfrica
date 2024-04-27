@@ -19,7 +19,7 @@ time_approach <- args[4]
 vision_backbone <- args[5]
 
 #uncomment to test
-# fund_sect_param <- "wb_320"
+# fund_sect_param <- "wb_120"
 # fund_sect_param <- "ch_430"
 # run <- "emb_5k_3yr"
 # iterations <- 15
@@ -462,7 +462,39 @@ if (treat_count < 100) {
                      " Finished creating tfrecord file: ",tf_rec_filename))
       }
     } else {
-      #use this space for balanced sampling setup
+      # setup for balanced sampling 
+      testFrac <- 0.01
+      n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_5k_3yr,
+                                                                       input_df$year_group))) ))
+      TestIndices <- c(which(input_df$treated== 0)[TestC <- 1:ceiling(n_test_size/2)], 
+                       which(input_df$treated== 1)[TestT <- 1:ceiling(n_test_size/2)])
+      ControlIndices <- which(input_df$treated== 0)[-TestC]
+      TreatmentIndices <- which(input_df$treated== 1)[-TestT] 
+      
+      # scramble all the indices now WITHIN type and select data according to indices 
+      set.seed(9939L); input_df <- input_df[c(sample(TestIndices), sample(ControlIndices), sample(TreatmentIndices)),]; set.seed(sector_param)
+      TFRecordControl = list("nTest" = length(TestIndices),
+                             "nControl" = length(ControlIndices),
+                             "nTreatment" = length(TreatmentIndices))
+      
+
+      tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                                time_approach,"_5k_bal.tfrecord")
+      
+      if (!file.exists(tf_rec_filename)) {
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Start creating tfrecord file: ",tf_rec_filename))
+        
+        causalimages::WriteTfRecord(file = tf_rec_filename,
+                                    uniqueImageKeys = paste0(input_df$image_file_5k_3yr,
+                                                             input_df$year_group),
+                                    acquireImageFxn = acquireImageRepFromDisk,
+                                    conda_env = NULL,
+                                    conda_env_required = F
+        )
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Finished creating tfrecord file: ",tf_rec_filename))
+      }
     }
 
 
@@ -493,7 +525,9 @@ if (treat_count < 100) {
         optimizeImageRep = T,
         nSGD = iterations,
         dropoutRate = 0.1, 
-        atError = 'debug')
+        testFrac = testFrac, 
+        TFRecordControl = TFRecordControl,
+        atError = 'stop')
       
     } else if (vision_backbone=="emb") {
       
@@ -518,7 +552,7 @@ if (treat_count < 100) {
         imageModelClass = "CNN",
         optimizeImageRep = F,
         nSGD = iterations,
-        atError = 'debug'
+        atError = 'stop'
       )
       
     } else if (vision_backbone=="vt") {
@@ -543,7 +577,9 @@ if (treat_count < 100) {
         imageModelClass = "VisionTransformer", 
         optimizeImageRep = T,
         nSGD = iterations,
-        atError = 'debug'
+        testFrac = testFrac, 
+        TFRecordControl = TFRecordControl,
+        atError = 'stop'
       )      
       
     }
