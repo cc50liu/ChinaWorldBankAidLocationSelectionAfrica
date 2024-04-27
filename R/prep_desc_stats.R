@@ -6,19 +6,10 @@ rm(list=ls())
 
 #############################################################
 #### Projects by funder
-#oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
-oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group_v2.csv")
-
-
-excluded_precision_count <- oda_sect_group_df %>%
-  filter(precision_code >= 4) %>% 
-  group_by(funder) %>% 
-  summarize(n = n_distinct(project_location_id)) %>%
-  pivot_wider(names_from = funder, values_from = n, values_fill = 0) %>% 
-  mutate(description = "project_precision >=4")
+oda_sect_group_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
+#contains only precisions 1-3; project years 2002-2014
 
 donor_precision_count <- oda_sect_group_df %>%
-  filter(precision_code < 4) %>% 
   group_by(funder, precision_code) %>% 
   summarize(n = n_distinct(project_location_id)) %>%
   pivot_wider(names_from = funder, values_from = n, values_fill = 0) %>% 
@@ -26,42 +17,30 @@ donor_precision_count <- oda_sect_group_df %>%
   rename(description = precision_code)
 
 donor_vars_df <- oda_sect_group_df %>%
-  filter(precision_code < 4) %>% 
   select(funder, project_id, project_location_id, site_iso3, ad_sector_codes) %>%
   group_by(funder) %>%
   summarize(across(everything(), ~n_distinct(.))) %>%
   pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
-oda_sect_group_df %>% 
-  filter(precision_code < 4) %>% 
-  filter(funder=="CH") %>% 
-  distinct(ad_sector_codes) %>% 
-  arrange(ad_sector_codes)
-
-donor_regional_unspecified_df <- oda_sect_group_df %>%
-  filter(precision_code < 4) %>% 
-  select(funder, project_location_id, recipients_iso3) %>%
-  group_by(funder) %>%
-  filter(grepl("regional|Unspecified",recipients_iso3)) %>% 
-  summarize(regional_count= n_distinct(project_location_id)) %>%
-  pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
-  pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
-  
-
-donor_recipient_site_mismatch_df <- oda_sect_group_df %>%
-  filter(precision_code < 4) %>% 
-  select(funder, project_location_id, recipients_iso3, site_iso3) %>%
-  group_by(funder) %>%
-  filter(!grepl("regional|Unspecified",recipients_iso3) &
-         recipients_iso3 != site_iso3) %>% 
-  summarize(mismatch_count= n_distinct(project_location_id)) %>%
-  pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
-  pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
-
+# donor_regional_unspecified_df <- oda_sect_group_df %>%
+#   select(funder, project_location_id, recipients_iso3) %>%
+#   group_by(funder) %>%
+#   filter(grepl("regional|Unspecified",recipients_iso3)) %>% 
+#   summarize(regional_count= n_distinct(project_location_id)) %>%
+#   pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
+#   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
+#   
+# donor_recipient_site_mismatch_df <- oda_sect_group_df %>%
+#   select(funder, project_location_id, recipients_iso3, site_iso3) %>%
+#   group_by(funder) %>%
+#   filter(!grepl("regional|Unspecified",recipients_iso3) &
+#          recipients_iso3 != site_iso3) %>% 
+#   summarize(mismatch_count= n_distinct(project_location_id)) %>%
+#   pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
+#   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
 no_end_date_df <- oda_sect_group_df %>%
-  filter(precision_code < 4) %>% 
   select(funder,end_actual_isodate) %>%
   group_by(funder) %>% 
   summarize(portion_no_end_date = mean(end_actual_isodate=="")) %>% 
@@ -69,27 +48,39 @@ no_end_date_df <- oda_sect_group_df %>%
   pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
   pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
-# description            CH    WB
-# <chr>               <dbl> <dbl>
-#   1 portion_no_end_date  0.69  0.17
+no_funding_df <- oda_sect_group_df %>%
+  select(funder,total_disbursements) %>%
+  group_by(funder) %>% 
+  summarize(portion_no_funding = mean(is.na(total_disbursements))) %>% 
+  mutate(portion_no_funding = round(portion_no_funding,2)) %>% 
+  pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
+  pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
 
-desired_order <- c(3, 4, 1, 2, 8, 9, 5, 6, 7, 10,11)
-donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_unspecified_df,
-                             donor_recipient_site_mismatch_df,excluded_precision_count,
-                             no_end_date_df) %>%
+multisector_df <- oda_sect_group_df %>%
+  select(funder, geoname_id, transactions_start_year, ad_sector_codes) %>%
+  group_by(funder, geoname_id, transactions_start_year, ad_sector_codes) %>% 
+  count() %>% 
+  group_by(funder) %>% 
+  summarize(portion_multisector = mean(n > 1)) %>% 
+  mutate(portion_multisector = round(portion_multisector,2)) %>% 
+  pivot_longer(cols = -funder, names_to = "description", values_to = "distinct_count") %>%
+  pivot_wider(names_from = funder, values_from = distinct_count, values_fill = 0)
+
+desired_order <- c(3, 4, 1, 2, 5, 6, 7, 8, 9, 10)
+donor_comparison_df <- rbind(donor_vars_df,donor_precision_count, no_end_date_df, 
+                             no_funding_df, multisector_df) %>%
   slice(match(desired_order, row_number())) %>% 
   mutate(description = case_match(description,
                                 "site_iso3" ~ "Countries hosting projects count",
                                 "ad_sector_codes" ~ "Sectors funded",
                                 "project_id" ~ "Aid project count",
                                 "project_location_id" ~ "Aid project location count",
-                                "regional_count" ~ "Locations labeled `Regional` or `Unspecified` country",
-                                "mismatch_count" ~ "Locations where recipient and site country differ",
                                 "project_precision 1" ~ "Exact locations available (precision 1)", 
                                 "project_precision 2" ~ "Near (<25km) locations available (precision 2)", 
                                 "project_precision 3" ~ "ADM2 locations available (precision 3)", 
-                                "project_precision >=4" ~ "Excluded Less precise locations (precision 4-8)",
-                                "portion_no_end_date" ~ "Portion lacking end date (precision <=3)",
+                                "portion_no_end_date" ~ "Portion lacking end date",
+                                "portion_no_funding" ~ "Portion lacking funding information",
+                                "portion_multisector" ~ "Portion with concurrent, co-located, multi-sector projects",
                                 .default = description))
 
 # Table 1:  Funder Comparison: China and World Bank
@@ -104,7 +95,6 @@ donor_comparison_df <- rbind(donor_vars_df,donor_precision_count,donor_regional_
 # 7 Exact locations available (precision 1)               1088    4722   
 # 8 Near (<25km) locations available (precision 2)         189     288   
 # 9 ADM2 locations available (precision 3)                 252    3238   
-# 10 Excluded Less precise locations (precision 4-8)        291    3662   
 # 11 Portion lacking end date (precision <=3)                0.69    0.17
 
 #higher than Gehring et al, because they exclude countries with less than 1 million people

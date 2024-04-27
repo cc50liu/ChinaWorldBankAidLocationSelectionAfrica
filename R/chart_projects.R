@@ -6,10 +6,8 @@ library(ggplot2)
 
 rm(list=ls())
 
-#to do:  use newer list at "./data/interim/africa_oda_sector_group_end.csv"
 #read consolidated project list
-#oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
-oda_df <- read.csv("./data/interim/africa_oda_sector_group_v2.csv") %>% 
+oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
   filter(transactions_start_year >= 2002)
 
 ### Project counts by year and funder
