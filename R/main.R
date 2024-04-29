@@ -107,9 +107,12 @@ source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
 
-#can also combine only treatment propensity charts using combine_results_treatprop.bat
+#can also combine 
+# - only treatment propensity charts using combine_results_treatprop.bat
+# - both loss and treatment propensities using combine_loss_hist.bat
 
 #consolidate results and prepare cross run figures
+source("./code/R/consolidate_CI_output_across_runs_cnn.R") 
 source("./code/R/consolidate_CI_output_across_runs_5k_annual.R") 
 
 
