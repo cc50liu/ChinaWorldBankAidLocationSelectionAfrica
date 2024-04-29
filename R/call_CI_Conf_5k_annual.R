@@ -338,8 +338,8 @@ if (treat_count < 100) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                  run,"_",fund_sect_param,".csv"))
   } else {
-    conf_matrix <- cbind(
-      as.matrix(data.frame(
+    conf_matrix <- 
+  	  as.matrix(data.frame(
         "start_year"                 =input_df$start_year - 2001,
         #"start_year_squared"         =(input_df$start_year - 2001)^2,
         "log_pc_nl_pre_oda"          =input_df$log_pc_nl_pre_oda,           #scene level
@@ -367,10 +367,7 @@ if (treat_count < 100) {
         "voice_accountability"       =input_df$voice_accountability,        #country level                      #country level
         "landsat578"                 =input_df$landsat578,                  #pre-treat image 
         "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
-      )),
-      #multiple columns for adm2 fixed effects variables
-      model.matrix(~ adm2 - 1, input_df)
-    )
+      ))
     
     #remove any columns that have 0 standard deviation before passing to function
     before_cols <-  colnames(conf_matrix)
@@ -395,11 +392,12 @@ if (treat_count < 100) {
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
-    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k.tfrecord")
+    if (vision_backbone=="emb") {
+      tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                              time_approach,"_5k_emb.tfrecord")
     
-    if (!file.exists(tf_rec_filename)) {
-      print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+      if (!file.exists(tf_rec_filename)) {
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Start creating tfrecord file: ",tf_rec_filename))
       
       causalimages::WriteTfRecord(file = tf_rec_filename,
@@ -412,6 +410,41 @@ if (treat_count < 100) {
       print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                    " Finished creating tfrecord file: ",tf_rec_filename))
     }
+   } else {
+      # setup for balanced sampling 
+      testFrac <- 0.01
+      n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_annual,
+                                                                       input_df$start_year)))))
+      TestIndices <- c(which(input_df$treated== 0)[TestC <- 1:ceiling(n_test_size/2)], 
+                       which(input_df$treated== 1)[TestT <- 1:ceiling(n_test_size/2)])
+      ControlIndices <- which(input_df$treated== 0)[-TestC]
+      TreatmentIndices <- which(input_df$treated== 1)[-TestT] 
+      
+      # scramble all the indices now WITHIN type and select data according to indices 
+      set.seed(9939L); input_df <- input_df[c(sample(TestIndices), sample(ControlIndices), sample(TreatmentIndices)),]; set.seed(sector_param)
+      TFRecordControl = list("nTest" = length(TestIndices),
+                             "nControl" = length(ControlIndices),
+                             "nTreatment" = length(TreatmentIndices))
+      
+
+      tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+                                time_approach,"_5k_bal.tfrecord")
+      
+      if (!file.exists(tf_rec_filename)) {
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Start creating tfrecord file: ",tf_rec_filename))
+        
+        causalimages::WriteTfRecord(file = tf_rec_filename,
+                                    uniqueImageKeys = paste0(input_df$image_file_annual,
+                                                             input_df$start_year),
+                                    acquireImageFxn = acquireImageRepFromDisk,
+                                    conda_env = NULL,
+                                    conda_env_required = F
+        )
+        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+                     " Finished creating tfrecord file: ",tf_rec_filename))
+      }
+    }	
 
     ###############################
     # call AnalyzeImageConfounding
@@ -433,14 +466,16 @@ if (treat_count < 100) {
         figuresTag = paste0(fund_sect_param,"_",run,"_i",iterations),
         figuresPath = results_dir, # figures saved here
         plotBands=c(3,2,1),  #red, green, blue
-        nWidth_ImageRep = 128L,    
+        nWidth_ImageRep = 128L,
         nDepth_ImageRep = 3L, 
         kernelSize = 3L,
         imageModelClass = "CNN",
         optimizeImageRep = T,
         nSGD = iterations,
         dropoutRate = 0.1, 
-        atError = 'debug')
+        testFrac = testFrac, 
+        TFRecordControl = TFRecordControl,
+        atError = 'stop')
       
     } else if (vision_backbone=="emb") {
       
@@ -451,7 +486,7 @@ if (treat_count < 100) {
         file = tf_rec_filename,
         #concatenate the image file location and oda start year into a single keys parameter
         imageKeysOfUnits = paste0(input_df$image_file_annual,input_df$start_year), 
-        nBoot=15L,  #costly operation; do few 
+        nBoot=10L,  #costly operation; do few 
         lat = input_df$lat,
         long = input_df$lon,
         conda_env = NULL, # not using conda env
@@ -461,11 +496,11 @@ if (treat_count < 100) {
         plotBands=c(3,2,1),  #red, green, blue
         nWidth_ImageRep = 128L,
         nDepth_ImageRep = 1L, 
-        kernelSize = 9L,
+        kernelSize = 5L,
         imageModelClass = "CNN",
         optimizeImageRep = F,
         nSGD = iterations,
-        atError = 'debug'
+        atError = 'stop'
       )
       
     } else if (vision_backbone=="vt") {
@@ -490,7 +525,9 @@ if (treat_count < 100) {
         imageModelClass = "VisionTransformer",
         optimizeImageRep = T,
         nSGD = iterations,
-        atError = 'debug'
+        testFrac = testFrac, 
+        TFRecordControl = TFRecordControl,
+        atError = 'stop'
       )      
     }
 
@@ -748,12 +785,12 @@ if (treat_count < 100) {
       #join to dataframe with ridge output
       tab_conf_compare_df <-  treat_prob_log_r_df %>% 
         right_join(tab_conf_salience_df, join_by("term"=="name")) %>% 
-        rename(Salience_AIC = value)										  
+        rename(Salience_AIC = value)
     } else {
       tab_conf_salience_df <- ica_df %>%
         select(starts_with("SalienceX"))  %>%
         pivot_longer(cols=everything()) %>% 
-        separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
+        tidyr::separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
         pivot_wider(names_from = measure, values_from=value) %>% 
         mutate(SalienceX_tscore = abs(SalienceX/SalienceX_se),
                SalienceX_sig = ifelse(SalienceX_tscore >= 1.96, "*",""))
@@ -761,8 +798,8 @@ if (treat_count < 100) {
       #join to dataframe with ridge output
       tab_conf_compare_df <-  treat_prob_log_r_df %>% 
         right_join(tab_conf_salience_df, by="term") %>% 
-        rename(Salience_AIC = SalienceX) 										  
-    }
+        rename(Salience_AIC = SalienceX)
+		}
        
     #write to file
     write.csv(tab_conf_compare_df,
@@ -775,10 +812,8 @@ if (treat_count < 100) {
       filter(!grepl("adm2",term))
     
     #determine the limits of the plot
-    max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
-                                   abs(tab_conf_compare_df$Salience_AIC)),
-                                 na.rm=T)
-    )
+    max_abs_value_x <- max(abs(tab_conf_compare_df$ridge_est),na.rm=T)
+    max_abs_value_y <- max(abs(tab_conf_compare_df$Salience_AIC),na.rm=T)
     
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
@@ -807,8 +842,8 @@ if (treat_count < 100) {
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Tabular confounders only: Ridge estimate",
            y = "Salience with Image Confounding") +   
-      coord_fixed(ratio=1,xlim=c(-1*max_abs_value,max_abs_value),
-                  ylim=c(-1*max_abs_value,max_abs_value)) +
+      coord_cartesian(xlim=c(-1*max_abs_value_x,max_abs_value_x),
+                  ylim=c(-1*max_abs_value_y,max_abs_value_y)) +
       theme_bw()  +
       theme(panel.grid = element_blank())
     

@@ -855,22 +855,18 @@ if (treat_count < 100) {
         rename(Salience_AIC = SalienceX) 
     }
     
-
-    
     #write to file
     write.csv(tab_conf_compare_df,
               paste0(results_dir,fund_sect_param,"_tab_conf_compare_", run,".csv"),
               row.names = FALSE)
-    
+
     #plot these
     #before doing so, remove ADM2 variables
     tab_conf_compare_df <- tab_conf_compare_df %>% 
       filter(!grepl("adm2",term))
     #determine the limits of the plot
-    max_abs_value <- ceiling(max(c(abs(tab_conf_compare_df$ridge_est),
-                                   abs(tab_conf_compare_df$Salience_AIC)),
-                                 na.rm=T)
-    )
+    max_abs_value_x <- max(abs(tab_conf_compare_df$ridge_est),na.rm=T)
+    max_abs_value_y <- max(abs(tab_conf_compare_df$Salience_AIC),na.rm=T)
     
     tab_est_images <- tab_conf_compare_df %>% 
       mutate(term=case_match(term,
@@ -878,7 +874,7 @@ if (treat_count < 100) {
                              "log_avg_min_to_city" ~ "min_to_city",
                              "log_avg_pop_dens" ~ "pop_dens",
                              "log_3yr_pre_conflict_deaths" ~ "conflict_deaths",
-                             "log_disasters" ~ "natural_disasters",								   
+                             "log_disasters" ~ "natural_disasters",
                              "log_ch_loan_proj_n" ~ "ch_loan_projs",
                              "log_dist_km_to_gold" ~ "dist_to_gold",
                              "log_dist_km_to_gems" ~ "dist_to_gems",
@@ -899,8 +895,8 @@ if (treat_count < 100) {
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Tabular confounders only: Ridge estimate",
            y = "Salience with Image Confounding") +   
-      coord_fixed(ratio=1,xlim=c(-1*max_abs_value,max_abs_value),
-                  ylim=c(-1*max_abs_value,max_abs_value)) +
+      coord_cartesian(xlim=c(-1*max_abs_value_x,max_abs_value_x),
+                  ylim=c(-1*max_abs_value_y,max_abs_value_y)) +
       theme_bw()  +
       theme(panel.grid = element_blank())
     
@@ -909,7 +905,6 @@ if (treat_count < 100) {
            tab_est_images,
            width=6, height = 6, dpi=300,
            bg="white", units="in")
-    
     
     ############################################################################
     #print these messages again to be at the end of the logfile

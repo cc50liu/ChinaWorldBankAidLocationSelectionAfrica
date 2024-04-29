@@ -16,7 +16,7 @@ proj_year_count <- oda_df %>%
   count() %>% 
 ggplot(aes(x = transactions_start_year, y = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "African aid projects by start year",
+  labs(title = "African aid by start year and funder",
        x = "Transaction Start Year", y = "Project Count") +
   theme_bw() + 
   theme(panel.grid = element_blank()) +
@@ -158,7 +158,7 @@ sector_plot <- oda_df %>%
   count() %>% 
   ggplot(aes(y = ad_sector_names, x = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "African Aid projects 2001-2014 by sector and funder",
+  labs(title = "African Aid projects 2002-2014 by sector and funder",
        subtitle = "Aid Project Precisions: Exact, Near, and ADM2",
        y = "Sector", x = "Count") +
   theme_bw() + 
