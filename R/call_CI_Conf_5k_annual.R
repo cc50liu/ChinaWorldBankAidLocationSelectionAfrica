@@ -643,7 +643,7 @@ if (treat_count < 100) {
            bg="white", units="in")
     
     #############################################################################
-    ##### create a line plot comparing confounders to outcome variable
+    ##### create a scatterplot comparing confounders to outcome variable
     #############################################################################
     # Set the treated color based on funder
     treat_color <- case_when(
@@ -665,11 +665,15 @@ if (treat_count < 100) {
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Estimated Wealth Index 3 years post-project",
            y = "Value",
-           color="Treated") +
+           color="") +
       scale_color_manual(values = c("gray60", treat_color),
                          labels = c("Control", "Treated")) +
       theme_bw()  +
-      theme(panel.grid = element_blank())
+      theme(panel.grid = element_blank(),
+            legend.position = "top",
+            legend.justification = c("right","top"),
+            legend.margin=margin(0,0,0,0),
+            legend.direction="horizontal")
     
     ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".png"),
            outcome_confounders_plot,
