@@ -1,8 +1,8 @@
-# call_CI_Conf_5k_3yr.R
-# Desc:  Calls Causal Image Confounding over DHS points.
-#        Uses three-year composite images, three-year averages of
-#        confounders. 
-#        Caller specifies computer vision backbone parameter.
+# regenerate_xy_cnn_5k_3yr.R
+# Desc:  Regenerates xy charts (with new axis limits) for cnn 5k 3yr run
+# by reading a csv into memory and regenerating the chart
+
+#to do: trim this down - currently is a copy of call_CI_Conf_5k_3yr.R
 library(causalimages)
 library(dplyr)
 library(tensorflow)
@@ -117,18 +117,18 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","log_treated_other_funder_n","log_other_sect_n",
                "log_total_neighbor_projs")
-var_labels_all <- c("Wealth (est, t+1)","Nightlights per cap (t-1,log)","Pop Density (t-1,log)",
+var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)", "Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent CH Loan Projs",
+                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Election year (t-1)", "UNSC US aligned (t-1)","UNSC Non-US aligned (t-1)",
+                "Election year (t-1)", "UNSC Member US aligned (t-1)","UNSC Member non-US aligned (t-1)",
                 "Country gini (t-1)",
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
-                "Cntry Political Stability (t-1)","Cntry Reg Quality (t-1)",
-                "Cntry Rule of Law (t-1)","Cntry Voice/Account (t-1)",
-                "Landsat 5,7,& 8","Other Funder Treat n (log)","Other Sector Proj n (log)",
-                "Adj ADM2 Proj n (log)")
+                "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
+                "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
+                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n",
+                "Neighbor ADM2 Proj n (log+1)")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 
@@ -696,7 +696,7 @@ if (treat_count < 100) {
            bg="white", units="in")
     
     #############################################################################
-    ##### create a scatterplot comparing confounders to outcome variable
+    ##### create a line plot comparing confounders to outcome variable
     #############################################################################
     # Set the treated color based on funder
     treat_color <- case_when(
@@ -718,15 +718,11 @@ if (treat_count < 100) {
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Estimated Wealth Index 3 years post-project",
            y = "Value",
-           color="") +
+           color="Treated") +
       scale_color_manual(values = c("gray60", treat_color),
                          labels = c("Control", "Treated")) +
       theme_bw()  +
-      theme(panel.grid = element_blank(),
-            legend.position = "top",
-            legend.justification = c("right","top"),
-            legend.margin=margin(0,0,0,0),
-            legend.direction="horizontal")
+      theme(panel.grid = element_blank())
     
     ggsave(paste0(results_dir,fund_sect_param,"_30conf_iwi_",run,".png"),
            outcome_confounders_plot,
