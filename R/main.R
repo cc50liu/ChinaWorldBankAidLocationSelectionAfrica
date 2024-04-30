@@ -1,7 +1,7 @@
 # main.R
 # This shows the environment setup and sequence of scripts I ran for the 
 # Image Confounding Analysis of WB and CH aid projects
-# I ran most of these manually and haven't tested running them automated through here
+# This script is intended to be run manually.
 
 ##############################################################################
 # Configure NAISS high performance cluster environment apptainers
