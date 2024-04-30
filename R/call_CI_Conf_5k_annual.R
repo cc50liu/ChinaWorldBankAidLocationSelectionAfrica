@@ -392,25 +392,25 @@ if (treat_count < 100) {
     ################################################################################
     # Generate tf_records file for this sector/funder/time_approach if not present 
     ################################################################################
-    if (vision_backbone=="emb") {
-      tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
-                              time_approach,"_5k_emb.tfrecord")
-    
-      if (!file.exists(tf_rec_filename)) {
-        print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                   " Start creating tfrecord file: ",tf_rec_filename))
-      
-      causalimages::WriteTfRecord(file = tf_rec_filename,
-                                  uniqueImageKeys = paste0(input_df$image_file_annual,
-                                                            input_df$start_year),
-                                  acquireImageFxn = acquireImageRepFromDisk,
-                                  conda_env = NULL,
-                                  conda_env_required = F
-      )
-      print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
-                   " Finished creating tfrecord file: ",tf_rec_filename))
-    }
-   } else {
+   #  if (vision_backbone=="emb") {
+   #    tf_rec_filename <- paste0("./data/interim/tfrecords/",fund_sect_param,"_",
+   #                            time_approach,"_5k_emb.tfrecord")
+   #  
+   #    if (!file.exists(tf_rec_filename)) {
+   #      print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+   #                 " Start creating tfrecord file: ",tf_rec_filename))
+   #    
+   #    causalimages::WriteTfRecord(file = tf_rec_filename,
+   #                                uniqueImageKeys = paste0(input_df$image_file_annual,
+   #                                                          input_df$start_year),
+   #                                acquireImageFxn = acquireImageRepFromDisk,
+   #                                conda_env = NULL,
+   #                                conda_env_required = F
+   #    )
+   #    print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
+   #                 " Finished creating tfrecord file: ",tf_rec_filename))
+   #  }
+   # } else {
       # setup for balanced sampling 
       testFrac <- 0.01
       n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_annual,
@@ -444,7 +444,7 @@ if (treat_count < 100) {
         print(paste0("[",format(Sys.time(), "%Y-%m-%d %H:%M:%S"),"]",
                      " Finished creating tfrecord file: ",tf_rec_filename))
       }
-    }	
+#    }	
 
     ###############################
     # call AnalyzeImageConfounding
