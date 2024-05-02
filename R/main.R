@@ -101,8 +101,11 @@ source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
 #copy files to a results directory on laptop
 #run script to convert png files to pdfs and then consolidate into single pdf file for each funder
 #change run name and funder below
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 ch . 
+#..\..\code\scripts\combine_results_png_pdf.bat cnn_5k_3yr wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat cnn_5k_3yr ch . 
+
+#..\..\code\scripts\combine_results_png_pdf.bat emb_5k_3yr wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat emb_5k_3yr ch . 
 
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
