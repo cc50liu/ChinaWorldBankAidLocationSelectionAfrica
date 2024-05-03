@@ -415,7 +415,7 @@ if (treat_count < 100) {
    #  }
    # } else {
       # setup for balanced sampling 
-      testFrac <- 20/length(obsY)
+      testFrac <- .01 #20/length(obsY)
       n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_annual,
                                                                        input_df$start_year)))))
       TestIndices <- c(which(input_df$treated== 0)[TestC <- 1:ceiling(n_test_size/2)], 
