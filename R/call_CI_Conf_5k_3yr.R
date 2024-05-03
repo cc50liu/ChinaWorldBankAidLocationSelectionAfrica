@@ -20,11 +20,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_120"
-fund_sect_param <- "ch_150"
-run <- "emb_5k_3yr"
-iterations <- 15
-time_approach <- "3yr"   #other option: "annual"
-vision_backbone <- "emb"     #other options: "cnn" and "vt"
+# fund_sect_param <- "ch_150"
+# run <- "emb_5k_3yr"
+# iterations <- 15
+# time_approach <- "3yr"   #other option: "annual"
+# vision_backbone <- "emb"     #other options: "cnn" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
