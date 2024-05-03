@@ -119,18 +119,18 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "reg_quality", "rule_of_law","voice_accountability",       
                "landsat578","log_treated_other_funder_n","log_other_sect_n",
                "log_total_neighbor_projs")
-var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
+var_labels_all <- c("Wealth (est, t+1)","Nightlights per cap (t-1,log)","Pop Density (t-1,log)",
                 "Minutes to City (2000,log)", "Dist to Gold (km,log)",
                 "Dist to Gems (km,log)","Dist to Diam (km,log)",
                 "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent Loan Projs",
                 "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Election year (t-1)", "UNSC Member US aligned (t-1)","UNSC Member non-US aligned (t-1)",
+                "Election year (t-1)", "UNSC US aligned (t-1)","UNSC Non-US aligned (t-1)",
                 "Country gini (t-1)",
                 "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
-                "Cntry Political Stability (t-1)","Cntry Regulatory Quality (t-1)",
-                "Cntry Rule of Law (t-1)","Cntry Voice & Accountability (t-1)",
-                "Landsat 5,7,& 8","Treated Other Funder n","Other Sector Proj n",
-                "Neighbor ADM2 Proj n (log+1)")
+                "Cntry Political Stability (t-1)","Cntry Reg Quality (t-1)",
+                "Cntry Rule of Law (t-1)","Ctry Voice/Account (t-1)",
+                "Landsat 5,7,& 8","Other Funder Treat n (log)","Other Sector Proj n (log)",
+                "Adj ADM2 Proj n (log)")
 
 
 ################################################################################
@@ -338,7 +338,7 @@ if (treat_count < 100) {
     print(paste0("Stopping because incomplete cases.  See ./data/interim/input_",
                  run,"_",fund_sect_param,".csv"))
   } else {
-    conf_matrix <- 
+    conf_matrix <- cbind(
   	  as.matrix(data.frame(
         "start_year"                 =input_df$start_year - 2001,
         #"start_year_squared"         =(input_df$start_year - 2001)^2,
@@ -367,7 +367,10 @@ if (treat_count < 100) {
         "voice_accountability"       =input_df$voice_accountability,        #country level                      #country level
         "landsat578"                 =input_df$landsat578,                  #pre-treat image 
         "log_total_neighbor_projs"   =input_df$log_total_neighbor_projs     #neighbor ADM2s
-      ))
+      )),
+      #multiple columns for adm2 fixed effects variables
+      model.matrix(~ adm2 - 1, input_df)
+    )
     
     #remove any columns that have 0 standard deviation before passing to function
     before_cols <-  colnames(conf_matrix)
