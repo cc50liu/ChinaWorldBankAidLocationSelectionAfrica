@@ -19,7 +19,7 @@ time_approach <- args[4]
 vision_backbone <- args[5]
 
 #uncomment to test
-# fund_sect_param <- "wb_120"
+ fund_sect_param <- "wb_120"
 # fund_sect_param <- "ch_150"
 # run <- "emb_5k_3yr"
 # iterations <- 15
@@ -463,7 +463,12 @@ if (treat_count < 100) {
     #   }
     # } else {
       # setup for balanced sampling 
-      testFrac <- 20/length(obsY)
+      if (fund_sect_param %in% c("wb_220","ch_520")) {
+        testFrac <- 20/length(obsY)
+      } else {
+        print("testfrac .01")
+      }
+      
       n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_5k_3yr,
                                                                        input_df$year_group))) ))
       TestIndices <- c(which(input_df$treated== 0)[TestC <- 1:ceiling(n_test_size/2)], 
