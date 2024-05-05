@@ -466,7 +466,7 @@ if (treat_count < 100) {
       if (fund_sect_param %in% c("wb_220","ch_520")) {
         testFrac <- 20/length(obsY)
       } else {
-        print("testfrac .01")
+        testFrac <- .01
       }
       
       n_test_size <-  as.integer(round(testFrac * length(unique(paste0(input_df$image_file_5k_3yr,
