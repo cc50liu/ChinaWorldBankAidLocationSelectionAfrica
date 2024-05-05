@@ -160,7 +160,7 @@ natl_res_map <- tm_shape(gadm0_map_sf) +
                 , labels = c("Oil","Gold","Gems","Diamonds"))  +
   tm_layout(main.title.size=1,
             main.title.position=c("center","top"),
-            main.title = "Africa natural resource locations (1999-2014)",
+            main.title = "Africa natural resource locations",
             legend.width=1,
             legend.text.size=.9) 
 

@@ -73,6 +73,13 @@ consolidated_dt <- rbindlist(lapply(matching_files, read_and_process_file),
 #add/adjust variables
 library(tidyr)
 outcome_df <- consolidated_dt %>% 
+  select(-starts_with("SalienceX.adm2"),
+         -starts_with("SalienceX_se.adm2"),
+         -starts_with("trainIndices"),
+         -starts_with("testIndices"),
+         -starts_with("ridge_est.adm2"),
+         -starts_with("tauHat_propensityHajek_vec"),
+         -starts_with("myGlmnet_coefs")) %>% 
   rename(fund_sec = fund_sect_param) %>% 
   mutate(sector = as.integer(sub(".*_(\\d+).*", "\\1", fund_sec)),
          funder = sub("(wb|ch|both).*", "\\1", fund_sec),
@@ -85,7 +92,7 @@ outcome_df <- consolidated_dt %>%
          fund_sec_run = paste0(fund_sec,"_",run_short),
          fund_run = paste0(funder,"_",run_short)
   ) %>%
-  arrange(sector)  
+  arrange(sector) 
 
 sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
   mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")")) %>% 
@@ -215,12 +222,12 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
   # scale_shape_manual(values = c("cnn" = 15, "emb" = 16),
   #                    breaks = c("cnn","emb"),
   #                    labels = c("Convolutional Neural Net","Randomized Embeddings")) +
-  labs(title = "Average Treatment Effect on Wealth, by Sector, Funder, and Model",
+  labs(title = "Average Treatment Effect on Wealth, by Sector, Funder, and Vision Backbone",
        subtitle=group_label_for_titles,
        x = "Estimated ATE with 95% confidence intervals",
        y = "",
        color="Funder",
-       shape="Model") +
+       shape="Vision Backbone") +
   ggnewscale::new_scale_color() +
   geom_point(aes(x=tauHat_diffInMeans,color="baseline"), shape=17) +
   geom_vline(xintercept=0,color="gray80") +  
@@ -410,24 +417,35 @@ ggsave(paste0("./results/dif_ClassError_",group_label_for_filename,".pdf"),
        bg="white", units="in")
 
 
+compare_salience_df
 
 ##############################################################################
 # Compare tabular covariates salience across runs
 ##############################################################################  
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
-                   "log_avg_min_to_city","agglomeration",
+                   "log_avg_min_to_city",
                    "log_dist_km_to_gold","log_dist_km_to_gems",        
                    "log_dist_km_to_dia","log_dist_km_to_petro", 
-                   "leader_birthplace","log_trans_proj_cum_n",
-                   "log_3yr_pre_conflict_deaths",
-                   "polity2","log_gdp_per_cap_USD2015","country_gini","treated_other_funder")
-var_labels_all <- c("Wealth (est, t+3)","Nightlights per capita (t-1,log)","Pop Density (t-1,log)",
-                    "Minutes to City (2000,log)","Agglomeration (t-1)","Dist to Gold (km,log)",
+                   "leader_birthplace","log_ch_loan_proj_n",
+                   "log_3yr_pre_conflict_deaths","log_disasters",
+                   "election_year","unsc_aligned_us","unsc_non_aligned_us",
+                   "country_gini",
+                   "corruption_control", "gov_effectiveness", "political_stability",
+                   "reg_quality", "rule_of_law","voice_accountability", 																				
+                   "landsat578","log_treated_other_funder_n","log_other_sect_n",
+                   "log_total_neighbor_projs")
+var_labels_all <- c("Wealth (est, t+1)","Nightlights per cap (t-1,log)","Pop Density (t-1,log)",
+                    "Minutes to City (2000,log)", "Dist to Gold (km,log)",
                     "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                    "Dist to Oil (km,log)","Leader birthplace (t-1)","Prior Transport Projs",
-                    "Conflict deaths (t-1,log)",
-                    "Country Polity2 (t-1)","Cntry GDP/cap (t-1,log)","Country gini (t-1)",
-                    "Treated Other Funder")
+                    "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent CH Loan Projs",
+                    "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
+                    "Election year (t-1)", "UNSC US aligned (t-1)","UNSC Non-US aligned (t-1)",
+                    "Country gini (t-1)",
+                    "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
+                    "Cntry Political Stability (t-1)","Cntry Reg Quality (t-1)",
+                    "Cntry Rule of Law (t-1)","Cntry Voice/Account (t-1)",
+                    "Landsat 5,7,& 8","Other Funder Treat n (log)","Other Sector Proj n (log)",
+                    "Adj ADM2 Proj n (log)")
 
 compare_salience_df <- outcome_sector_df %>%
   select(funder, sec_pre_name, ad_sector_names, run_short, starts_with("SalienceX"), starts_with("ridge_est")) %>% 
@@ -442,7 +460,7 @@ compare_salience_df <- outcome_sector_df %>%
   pivot_longer(cols=-c(funder,sec_pre_name, ad_sector_names, run_short)) %>% 
   separate_wider_delim(name,delim=".",names=c("measure","term")) %>% 
   pivot_wider(names_from = measure, values_from=value) %>% 
-  filter(!grepl("cnty",term) & !grepl("landsat",term) & 
+  filter(!grepl("adm2",term) & !grepl("landsat",term) & 
          !grepl("first_year",term) & !grepl("start_year",term))
 
 # compare_salience_se_df <- compare_salience_df %>% 
@@ -483,7 +501,8 @@ ggsave(paste0("./results/Salience_xruns_",group_label_for_filename,"_all.pdf"),
        width=10.5, height = 9, dpi=600,
        bg="white", units="in")
 
-
+write.csv(compare_salience_df,paste0("./results/Salience_",group_label_for_filename,".csv"),
+          row.names=FALSE)
 ##########################################################################
 #define function to plot the salience of each variable in separate files
 ##########################################################################
