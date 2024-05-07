@@ -7,6 +7,7 @@ library(dplyr)
 #use data.table since it handles missing columns
 library(data.table)
 library(ggplot2)
+library(ggtext)
 
 rm(list=ls())
 
@@ -209,19 +210,19 @@ write.csv(outcome_sector_display_df,paste0("./results/outcome_display_xruns_",gr
 #ate by sector funder and run 
 ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
                                          y=fund_run,
-                                         color=funder,
-                                         shape=run_short)) +
+                                         color=paste0(run_short,funder),
+                                         shape=paste0(run_short,funder))) +
   facet_grid(sec_pre_name ~ ., scales="free_y") +
   geom_pointrange(aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
                       xmax=tauHat_propensityHajek+(tauHat_propensityHajek_se*1.96))) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
-                     breaks = c("ch","wb","both"),
-                     labels = c("ch" = "China","wb"="World Bank","both"="Both")) +
+  scale_color_manual(name = "Funder & Backbone",
+                     values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
+                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
+  scale_shape_manual(name = "Funder & Backbone",
+                     values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
+                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +  
   scale_fill_manual(values=c("baseline"="gray80"),
                     labels=c("baseline"="No confounders")) +
-  # scale_shape_manual(values = c("cnn" = 15, "emb" = 16),
-  #                    breaks = c("cnn","emb"),
-  #                    labels = c("Convolutional Neural Net","Randomized Embeddings")) +
   labs(title = "Average Treatment Effect on Wealth, by Sector, Funder, and Vision Backbone",
        subtitle=group_label_for_titles,
        x = "Estimated ATE with 95% confidence intervals",
@@ -229,7 +230,7 @@ ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
        color="Funder",
        shape="Vision Backbone") +
   ggnewscale::new_scale_color() +
-  geom_point(aes(x=tauHat_diffInMeans,color="baseline"), shape=17) +
+  geom_point(aes(x=tauHat_diffInMeans,color="baseline"), shape=15) +
   geom_vline(xintercept=0,color="gray80") +  
   scale_color_manual(values=c("baseline"="gray80"),
                      breaks = c("baseline"),
@@ -434,18 +435,18 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                    "reg_quality", "rule_of_law","voice_accountability", 																				
                    "landsat578","log_treated_other_funder_n","log_other_sect_n",
                    "log_total_neighbor_projs")
-var_labels_all <- c("Wealth (est, t+1)","Nightlights per cap (t-1,log)","Pop Density (t-1,log)",
-                    "Minutes to City (2000,log)", "Dist to Gold (km,log)",
-                    "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                    "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent CH Loan Projs",
-                    "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                    "Election year (t-1)", "UNSC US aligned (t-1)","UNSC Non-US aligned (t-1)",
-                    "Country gini (t-1)",
-                    "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
-                    "Cntry Political Stability (t-1)","Cntry Reg Quality (t-1)",
-                    "Cntry Rule of Law (t-1)","Cntry Voice/Account (t-1)",
-                    "Landsat 5,7,& 8","Other Funder Treat n (log)","Other Sector Proj n (log)",
-                    "Adj ADM2 Proj n (log)")
+var_labels_all <- c("Wealth","Nightlights per cap","Pop Density",
+                    "Minutes to City", "Dist to Gold",
+                    "Dist to Gems","Dist to Diam",
+                    "Dist to Oil","Leader birthplace","China Loan Projs",
+                    "Conflict deaths","Natural Disasters",
+                    "Election year", "UNSC US Aligned","UNSC Non-US Align",
+                    "Country gini",
+                    "Cntry Cntrl Corruption", "Cntry Gov Effective",
+                    "Cntry Political Stability","Cntry Reg Quality",
+                    "Cntry Rule of Law","Cntry Voice/Account",
+                    "Landsat 5,7,& 8","Other Funder Treat n","Other Sector Proj n",
+                    "Adj ADM2 Proj n")
 
 compare_salience_df <- outcome_sector_df %>%
   select(funder, sec_pre_name, ad_sector_names, run_short, starts_with("SalienceX"), starts_with("ridge_est")) %>% 
@@ -469,28 +470,23 @@ compare_salience_df <- outcome_sector_df %>%
 # compare_salience_no_se_df <- compare_salience_df %>% 
 #   filter(is.na(SalienceX_se)) 
 
-compare_salience_df %>% 
-  select(SalienceX, ad_sector_names, run_short, funder) %>% 
-  filter(any(is.na(.)))
-
-compare_salience_df %>% 
-  summarise_all(~ sum(is.na(.)))
-
 all_dif_salience_plot <- ggplot(compare_salience_df) +
-  geom_point(aes(x=SalienceX, y=ad_sector_names, shape=run_short, color=funder),
+  geom_point(aes(x=SalienceX, y=ad_sector_names, shape=paste0(run_short,funder),
+                 color=paste0(run_short,funder)),
              position=position_jitter(height = .25)) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
-                     breaks = c("ch","wb","both"),
-                     labels = c("China", "World Bank", "Both")) +
+  scale_color_manual(name = "Funder & Backbone",
+                     values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
+                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
+  scale_shape_manual(name = "Funder & Backbone",
+                     values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
+                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
+  scale_fill_hue(name=) +
   geom_vline(xintercept=0, color="gray80") +
   facet_wrap(~ factor(term, levels = var_order_all, labels = var_labels_all), scales = "fixed") +
   labs(
     x = "Variable Salience",
     y = "",
-    color = "Funder",
-    shape = "Run",
-    fill = "Baseline",
-    title = "Salience of tabular variables across funders, runs and sectors",
+    title = "Salience of tabular variables across funders, sectors, and backbones",
     subtitle = group_label_for_titles) +
   theme_bw() +
   theme(panel.grid = element_blank()) 
@@ -510,20 +506,21 @@ plot_tab_confounder <- function(term_var) {
   #uncomment to test
   #term_var = "agglomeration"
   dif_salience_plot <- ggplot(compare_salience_df[compare_salience_df$term==term_var,], 
-                              aes(x=SalienceX, y=sec_pre_name, shape=run_short, color=funder),
+                              aes(x=SalienceX, y=sec_pre_name, shape=paste0(run_short,funder), color=paste0(run_short,funder)),
                               position=position_jitter(height = .25)) +
     geom_point() +
-    scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
-                       breaks = c("ch","wb","both"),
-                       labels = c("China", "World Bank", "Both")) +
+    scale_color_manual(name = "Funder & Backbone",
+                       values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
+                       labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
+    scale_shape_manual(name = "Funder & Backbone",
+                       values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
+                       labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
     geom_vline(xintercept=0, color="gray80") +
     labs(
       x = "Variable Salience",
       y = "",
-      color = "Funder",
-      shape = "Run",
       fill = "Baseline",
-      title = paste0(var_labels_all[match(term_var,var_order_all)]," Salience across models and sectors"),
+      title = paste0(var_labels_all[match(term_var,var_order_all)]," salience across sectors, funders, and backbones"),
       subtitle=group_label_for_titles) +
     theme_bw() +
     theme(panel.grid = element_blank()) 

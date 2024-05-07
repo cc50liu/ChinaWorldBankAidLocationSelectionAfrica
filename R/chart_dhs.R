@@ -8,7 +8,9 @@ library(ggplot2)
 rm(list=ls())
 
 #read file that contains sector-level treatment and control variables
-dhs_df <- read.csv("./data/interim/dhs_treat_control_confounders.csv")
+dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") 
+
+dhs_df <- read.csv("./data/interim/dhs_5k_confounders.csv")
 
 names(dhs_df)
 
