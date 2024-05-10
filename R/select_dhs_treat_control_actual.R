@@ -1,4 +1,4 @@
-# select_dhs_treat_control_5k.R
+# select_dhs_treat_control_actual.R
 # Compare DHS cluster locations with project locations to select treated and 
 # and control communities for annual, 3yr image group runs by sector and by
 # sector group.
@@ -83,18 +83,30 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
                             adm2_borders, debug_msg) 
 {
   #uncomment to test
-  #sector <- 220
+  # sector <- 220
   #dhs_buff_sf <- dhs_sf
-  #start_year = 2002
+  # start_year = 2002
   
-  start_years <- 2001:2014
+  start_years <- 2002:2014
 
   sector_output <- lapply(start_years, function(start_year) {
     #uncomment to test
     #start_year = 2002
+   
+    #################################################################
+    #### Subset dhs_buff to locations we have a survey 3 years later
+    ################################################################# 
+    dhs_buff_actual_sf <- dhs_buff_sf %>% 
+      filter(treat_year_group == case_when(
+        start_year >= 2002 & start_year <= 2004 ~ "2002_2004",
+        start_year >= 2005 & start_year <= 2007 ~ "2005_2007",
+        start_year >= 2008 & start_year <= 2010 ~ "2008_2010",
+        start_year >= 2011 & start_year <= 2013 ~ "2011_2013",
+        start_year >= 2014 & start_year <= 2016 ~ "2014_2016"))
     
     ####################################################
     #### Prepare project location data for the year
+    ####################################################
     if (exists("wb_oda_df", inherits=TRUE)) {
       wb_oda_sect_buff_sf <- prep_projects(wb_oda_df,adm2_borders, projection, 
                                            sector, start_year, debug_msg)
@@ -129,7 +141,7 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
     
     #World Bank
     if (nrow(wb_oda_sect_buff_sf) > 0) {
-      wb_df <- st_join(dhs_buff_sf,
+      wb_df <- st_join(dhs_buff_actual_sf,
                           wb_oda_sect_buff_sf,
                           left=FALSE) %>%
         st_drop_geometry() 
@@ -151,7 +163,7 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
             
     #China  
     if (nrow(ch_oda_sect_buff_sf) > 0) {  
-      ch_df <- st_join(dhs_buff_sf,
+      ch_df <- st_join(dhs_buff_actual_sf,
                           ch_oda_sect_buff_sf,
                           left=FALSE) %>%
         st_drop_geometry() 
@@ -197,8 +209,8 @@ debug_msg=as.logical(TRUE)
 
 #generate vectors of countries and sectors to pass to function
 dhs_isos_v <- read.csv("./data/AIGlobalLab/dhs_clusters.csv") %>%
-  filter(year %in% 2002:2019) %>% 
-  mutate(iso3 = substr(GID_1, 1, 3))
+  filter(year %in% 2005:2019) %>% 
+  mutate(iso3 = substr(GID_1, 1, 3)) %>% 
   select(iso3) %>%
   distinct()  %>%
   pull(iso3)
@@ -224,13 +236,20 @@ unique(sf::st_is_valid(adm2_borders))
 ####################################################
 #### Process DHS survey points
 ####################################################
-dhs_df <- read.csv("./data/AIGlobalLab/dhs_clusters.csv") %>%
+dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv") %>%
   filter(year %in% 2005:2019) %>% 
-  mutate(iso3 = substr(GID_1, 1, 3))
+  mutate(iso3 = substr(GID_1, 1, 3), 
+    #shift treat_year_group by 1 lag (post-proj IWI)
+    treat_year_group = case_when(
+      year >= 2005 & year <= 2007 ~ "2002_2004",
+      year >= 2008 & year <= 2010 ~ "2005_2007",
+      year >= 2011 & year <= 2013 ~ "2008_2010",
+      year >= 2014 & year <= 2016 ~ "2011_2013",
+      year >= 2017 & year <= 2019 ~ "2014_2016"))
 
 dhs_sf <- dhs_df  %>%
   st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
-  select(dhs_id,year,iso3,rural,geometry) 
+  select(dhs_id,treat_year_group,iso3,rural,geometry) 
 
 dhs_sf <- sf::st_transform(dhs_sf,crs=st_crs(projection))
 dhs_sf <- sf::st_make_valid(dhs_sf)
@@ -274,66 +293,6 @@ all_sectors_expanded_df <- all_sectors %>%
 write.csv(all_sectors_expanded_df,"./data/interim/dhs_treated_sector_actual_annual.csv",row.names=FALSE)
 #all_sectors_expanded_df <- read.csv("./data/interim/dhs_treated_sector_annual.csv")
 
-########################################################
-# calculate annual spillover variables
-########################################################
-#count annual treatments by adm2
-annual_adm2_treated <- all_sectors_expanded_df %>%
-  #get ID_adm2 from dhs_df
-  left_join(dhs_df, by="dhs_id") %>% 
-  #dhs points in the ID_adm2 share same proj_count for time period, get it once
-  group_by(ID_adm2,sector,funder,start_year,proj_count) %>% 
-  summarize(count_observations = n()) %>% 
-  #get total proj count for all sectors and funders for each adm2  
-  group_by(ID_adm2, start_year) %>% 
-  summarize(total_projs = sum(proj_count)) %>% 
-  ungroup()
-
-#calculate annual treatment counts in neighboring adm2s
-adjacent_adm2_count_df <- read.csv("./data/interim/adjacent_adm2_actual.csv") %>% 
-  left_join(annual_adm2_treated, by = c("neighbor" = "ID_adm2"),
-                       multiple="all") %>% 
-  filter(!is.na(start_year)) %>% 
-  group_by(ID_adm2, start_year) %>%
-  summarize(total_neighbor_projs = sum(total_projs, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  mutate(log_total_neighbor_projs = log(1 + total_neighbor_projs))
-
-
-#write neighbor annual treatment counts 
-write.csv(adjacent_adm2_count_df,"./data/interim/adm2_adjacent_annual_treat_count_actual.csv",row.names=FALSE)
-
-#plot the distribution of neighbor annual treatment counts
-library(ggplot2)
-
-neighbor_projs <- adjacent_adm2_count_df %>% 
-  mutate(year_color=as.factor(start_year)) %>% 
-  ggplot(aes(total_neighbor_projs, color=year_color)) +
-  geom_density() +
-  labs(x = "Project counts (all sectors & funders) in ADM2 neighbors", 
-       y = "Density across DHS points",
-       title="Project counts (all sectors & funders) in ADM2 neighbors",
-       color="Year")  +
-  theme_bw()
-
-ggsave("./figures/neighbor_adm2_proj_n_actual.png",neighbor_projs,
-       width=6, height = 6, dpi=300,
-       bg="white", units="in")
-
-log_neighbor_projs <- adjacent_adm2_count_df %>% 
-  mutate(year_color=as.factor(start_year)) %>% 
-  ggplot(aes(log_total_neighbor_projs, color=year_color)) +
-  geom_density() +
-  labs(x = "Project counts (all sectors & funders, log + 1) in ADM2 neighbors", 
-       y = "Density across DHS points",
-       title="Project counts in ADM2 neighbors (log + 1)",
-       color="Year")  +
-  theme_bw()
-
-ggsave("./figures/neighbor_adm2_proj_logged_n_actual.png",log_neighbor_projs,
-       width=6, height = 6, dpi=300,
-       bg="white", units="in")
-
 #####################################
 # year group records
 #####################################
@@ -346,35 +305,6 @@ treated_year_group <- all_sectors_expanded_df %>%
 
 write.csv(treated_year_group,"./data/interim/dhs_treated_sector_3yr_actual.csv",row.names=FALSE)
 
-########################################################
-# calculate 3yr spillover variables
-########################################################
-#count 3yr treatments by adm2
-adm2_treated_3yr <- treated_year_group %>%
-  #get ID_adm2 from dhs_df
-  left_join(dhs_df, by="dhs_id") %>% 
-  #dhs points in the ID_adm2 share same proj_count for time period, get it once
-  group_by(ID_adm2,sector,funder,year_group,proj_count) %>% 
-  summarize(count_observations = n()) %>% 
-  #get total proj count for all sectors and funders for each adm2  
-  group_by(ID_adm2, year_group) %>% 
-  summarize(total_projs = sum(proj_count)) %>% 
-  ungroup()
-
-#calculate 3yr treatment counts in neighboring adm2s
-adjacent_adm2_3yr_count_df <- read.csv("./data/interim/adjacent_adm2_actual.csv") %>% 
-  left_join(adm2_treated_3yr, by = c("neighbor" = "ID_adm2"),
-            multiple="all") %>% 
-  filter(!is.na(year_group)) %>% 
-  group_by(ID_adm2, year_group) %>%
-  summarize(total_neighbor_projs = sum(total_projs, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  mutate(log_total_neighbor_projs = log(1 + total_neighbor_projs))
-
-
-#write neighbor annual treatment counts 
-write.csv(adjacent_adm2_3yr_count_df,"./data/interim/adm2_adjacent_3yr_treat_count.csv",row.names=FALSE)
-
 #look at counts
 treated_year_group %>%
   group_by(funder,sector) %>%
@@ -382,3 +312,87 @@ treated_year_group %>%
   arrange(n) %>%
   ungroup() %>% 
   print (n=100)
+
+# funder sector     n
+# <chr>   <int> <int>
+#   1 ch        600     6
+# 2 ch        410     8
+# 3 ch        130     9
+# 4 ch        920     9
+# 5 ch        530    12
+# 6 ch        520    59
+# 7 ch        320    74
+# 8 ch        420   113
+# 9 ch        430   117
+# 10 ch        700   139
+# 11 ch        140   407
+# 12 ch        230   484
+# 13 ch        160   551
+# 14 ch        220   587
+# 15 ch        310   631
+# 16 wb        330   704
+# 17 wb        410   759
+# 18 ch        210   812
+# 19 ch        110  1037
+# 20 ch        150  1251
+# 21 wb        240  1464
+# 22 wb        220  1779
+# 23 ch        120  2614
+# 24 wb        320  3419
+# 25 wb        110  3541
+# 26 wb        230  4091
+# 27 wb        120  4475
+# 28 wb        310  4997
+# 29 wb        160  5584
+# 30 wb        140  6783
+# 31 wb        210  7802
+# 32 wb        150  9439
+
+dhs_df %>% 
+  filter(dhs_id==24610)
+
+#determine control dhs points
+#create set of all funder, sector, country, year_group, and dhs_id combinations
+funder_sector_iso3_year_group <- rbind(
+  ch_oda_df %>% 
+    distinct(ad_sector_codes,site_iso3,transactions_start_year) %>% 
+    mutate(funder="ch"),
+  wb_oda_df  %>% 
+    distinct(ad_sector_codes,site_iso3,transactions_start_year) %>% 
+    mutate(funder="wb")) %>% 
+  mutate(year_group = case_when(
+    transactions_start_year >= 2002 & transactions_start_year <= 2004 ~ "2002_2004",
+    transactions_start_year >= 2005 & transactions_start_year <= 2007 ~ "2005_2007",
+    transactions_start_year >= 2008 & transactions_start_year <= 2010 ~ "2008_2010",
+    transactions_start_year >= 2011 & transactions_start_year <= 2013 ~ "2011_2013",
+    transactions_start_year >= 2014 & transactions_start_year <= 2016 ~ "2014_2016")) %>% 
+  select(-transactions_start_year) %>% 
+  left_join(dhs_df %>% select(dhs_id,treat_year_group,iso3),
+                              join_by(year_group==treat_year_group,
+                           site_iso3==iso3),
+            relationship = "many-to-many") %>% 
+  rename(sector=ad_sector_codes) %>% 
+  select(-site_iso3)
+
+
+#remove treated dhs points to identify remaining control points 
+control_dhs_df <- funder_sector_iso3_year_group %>% 
+  #exclude dhs_points treated in each year_group
+  anti_join(treated_year_group,by=c("dhs_id","year_group","sector","funder"))  
+
+treat_dhs_count_df  <- treated_year_group %>%   
+  group_by(funder,sector) %>%
+  summarize(treat_n = n()) %>% 
+  ungroup()
+
+
+control_dhs_count_df  <- control_dhs_df %>%   
+  group_by(funder,sector) %>%
+  summarize(control_n = n()) %>% 
+  ungroup()
+
+#join control and treated into a single dataframe
+treat_control_actual_dhs_df <- treat_dhs_count_df %>% 
+  left_join(control_dhs_count_df, by=c("funder","sector"))
+
+write.csv(treat_control_actual_dhs_df,"./data/interim/dhs_treat_control_3yr_actual_counts.csv",row.names=FALSE)
