@@ -792,7 +792,7 @@ if (treat_count < 100) {
     ############################################################################
     library(glmnet)
 
-    # use cross-validation to choose lambda 
+    # use cross-validation to choose lambda, using default nfolds=10 
     cv_model_ridge <- cv.glmnet(x=scale(conf_matrix), y=input_df$treated,
                                 family = "binomial", alpha = 0)
     best_lambda_ridge <- cv_model_ridge$lambda.min
