@@ -3,83 +3,84 @@
 # with projects by sector 
 ################################################################################
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 
 rm(list=ls())
 
-#get projects from both funders for all sectors
-oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv",na.strings="") %>% 
-  #use na.strings so NA of Namibia isn't interpreted as not available
-  filter(precision_code %in% c(1,2,3) &  #Exact, near, ADM2
-           transactions_start_year>=2002) %>% 
-  mutate(oda_year_group = case_when(
-    transactions_start_year >= 2002 & transactions_start_year <= 2004 ~ "2002_2004",
-    transactions_start_year >= 2005 & transactions_start_year <= 2007 ~ "2005_2007",
-    transactions_start_year >= 2008 & transactions_start_year <= 2010 ~ "2008_2010",
-    transactions_start_year >= 2011 & transactions_start_year <= 2013 ~ "2011_2013",
-    transactions_start_year >= 2014 & transactions_start_year <= 2016 ~ "2014_2016")) %>% 
-  #create one record per funder, sector, year_group, and country
-  group_by(funder, ad_sector_codes, oda_year_group, site_iso3) %>% 
-  summarize(proj_count = n()) %>% 
+#get dhs treatment/control counts for actual (not estimated) DHS points
+treat_control_actual_dhs_df <- read.csv("./data/interim/dhs_treat_control_3yr_actual_counts.csv") 
+
+###########################################################
+#calc dhs treatment/control counts for estimated DHS points
+###########################################################
+##### read confounder and treatment data from files
+dhs_confounders_df <- read.csv("./data/interim/dhs_5k_confounders.csv") %>% 
+  select(-year)  #remove survey year column that could be confused with oda year
+
+#get list of all dhs_id's and their iso3 for use below from confounder set
+#since those without confounder data are not usable
+dhs_iso3_df <- dhs_confounders_df %>% 
+  distinct(dhs_id,iso3) 
+
+#get treated for all funders and sectors
+dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
+  #exclude DHS points where confounder data not available 
+  inner_join(dhs_confounders_df %>% 
+               select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
+
+##### calculate control points #############################
+
+#identify countries where each funder is operating in each sector
+funder_sector_iso3 <- dhs_t_df %>% 
+  #join to dhs_confounders to get iso3 and limit to dhs points with confounder data
+  inner_join(dhs_confounders_df, by="dhs_id") %>%  
+  distinct(funder,sector,iso3)
+  
+#create a record for each year_group for panel data
+year_group_v <- c('2002:2004', '2005:2007', '2008:2010', '2011:2013', '2014:2016')
+
+#generate dataframe of all dhs points for all year groups in operating countries 
+all_t_c_df <- funder_sector_iso3 %>%
+  #create a row for each year group
+  crossing(year_group = year_group_v) %>% 
+  #create a row for each dhs_id
+  left_join(dhs_iso3_df,by="iso3",
+            multiple = "all")
+
+#remove treated funder/sector/dhs/year_group observations to construct controls 
+dhs_c_df <- all_t_c_df %>% 
+  #exclude dhs_points treated in each year_group
+  anti_join(dhs_t_df,by=c("sector","funder","dhs_id","year_group"))
+
+treat_dhs_count_df  <- dhs_t_df %>%   
+  group_by(funder,sector) %>%
+  summarize(treat_n = n()) %>% 
   ungroup()
 
-#get actual DHS locations to investigate sample sizes if only they were used
-dhs_actual_df <- read.csv("./data/AIGlobalLab/dhs_clusters.csv") %>% 
-  filter(year %in% 2005:2019) %>% 
-  mutate(iso3 = substr(GID_1, 1, 3),
-         #shift year group by 1 lag (post-proj IWI)
-         year_group = case_when(
-            year >= 2005 & year <= 2007 ~ "2002_2004",
-            year >= 2008 & year <= 2010 ~ "2005_2007",
-            year >= 2011 & year <= 2013 ~ "2008_2010",
-            year >= 2014 & year <= 2016 ~ "2011_2013",
-            year >= 2017 & year <= 2019 ~ "2014_2016")) %>% 
-  #create one record per year_group and country
-  group_by(year_group, iso3) %>% 
-  summarize(dhs_count = n()) %>% 
-  ungroup()  
+control_dhs_count_df  <- dhs_c_df %>%   
+  group_by(funder,sector) %>%
+  summarize(control_n = n()) %>% 
+  ungroup()
 
-#join projects and actual dhs points to determine n with actual data
-#limit to countries where funder was active in the sector
-dhs_actual_t_c_df <-  oda_df %>% 
-  left_join(dhs_actual_df, join_by(oda_year_group==year_group,
-                                    site_iso3==iso3)) %>% 
-  mutate(dhs_count = ifelse(is.na(dhs_count),0,dhs_count)) %>% 
-  #create one record per funder sector with a count of potential t/c locations
-  group_by(funder, ad_sector_codes) %>% 
-  summarize(total_dhs=sum(dhs_count))
+#join control and treated into a single dataframe
+treat_control_est_dhs_df <- treat_dhs_count_df %>% 
+  left_join(control_dhs_count_df, by=c("funder","sector")) %>% 
+  rename(est_iwi_treat_n = treat_n,
+         est_iwi_control_n = control_n)
 
-dhs_actual_t_c_df %>% 
-  print(n=35)
-
-#read file that contains sector-level treatment and control variables
-#dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") 
-
-#example code copied from call_CI_Conf_5k_3yr
-# #get sector-level treated variables
-# dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
-#   filter(sector==sector_param & funder==funder_param) %>% 
-#   #exclude DHS points where confounder data not available 
-#   inner_join(dhs_confounders_df %>% 
-#                select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
-# 
-# #generate dataframe of all dhs points for all year groups in operating countries 
-# all_t_c_df <- data.frame(expand.grid(year_group = year_group_v,
-#                                      dhs_id = dhs_in_operating_countries)) 
-# 
-# #construct controls 
-# dhs_c_df <- all_t_c_df %>% 
-#   #exclude dhs_points treated in each year_group
-#   anti_join(dhs_t_df,by=c("dhs_id","year_group")) %>% 
-#   #exclude DHS points where confounder data not available, get ID_adm2 
-#   inner_join(dhs_confounders_df %>% 
-#                select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
+#join with t/c counts from actual IWI DHS locations rather than estimates
+t_c_est_act_df <- treat_control_est_dhs_df %>% 
+  left_join(treat_control_actual_dhs_df, by=c("funder","sector")) %>% 
+  rename(act_iwi_treat_n = treat_n,
+         act_iwi_control_n = control_n)
 
 
-dhs_df <- read.csv("./data/interim/dhs_5k_confounders.csv")
 
-names(dhs_df)
+write.csv(treat_control_actual_dhs_df,"./data/interim/dhs_treat_control_3yr_actual_counts.csv",row.names=FALSE)
 
+
+###########################################################
 # Create a dataframe containing the name and average of the treatment/control
 # binary variables
 selected_columns <- grep("^(wb|ch)_\\d+_p\\d+$", names(dhs_df), value = TRUE)

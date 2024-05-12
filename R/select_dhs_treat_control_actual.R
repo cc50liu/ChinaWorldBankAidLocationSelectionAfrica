@@ -374,7 +374,6 @@ funder_sector_iso3_year_group <- rbind(
   rename(sector=ad_sector_codes) %>% 
   select(-site_iso3)
 
-
 #remove treated dhs points to identify remaining control points 
 control_dhs_df <- funder_sector_iso3_year_group %>% 
   #exclude dhs_points treated in each year_group
