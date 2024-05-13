@@ -11,4 +11,4 @@ apptainer exec --nv /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final_upg
 
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
-echo "Total Ridge Elapsed Time: $(date -u -d @"$elapsed_time" +"%H:%M:%S") for $FUNDER_SECTOR
+echo "Total Ridge Elapsed Time: $(date -u -d @"$elapsed_time" +"%H:%M:%S") for $FUNDER_SECTOR"
