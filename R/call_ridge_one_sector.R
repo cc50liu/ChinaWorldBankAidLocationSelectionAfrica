@@ -6,11 +6,8 @@
 #
 library(dplyr)
 library(glmnet)
-library(data.table)
 
 rm(list=ls())
-setwd("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb")
-
 setwd("/mimer/NOBACKUP/groups/globalpoverty1/cindy/eoml_ch_wb")
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -64,7 +61,7 @@ sector <- sub(".*_(\\d+).*", "\\1", fund_sect_param)
 funder <- sub("(wb|ch).*", "\\1", fund_sect_param)
 
 #read funder_sector input file from the cnn run 
-input_df <-  read.csv(paste0("./data/interim/input_cnn_5k_3yr_",fund_sect_param,".csv")
+input_df <-  read.csv(paste0("./data/interim/input_cnn_5k_3yr_",fund_sect_param,".csv"))
 
 #create covariate matrix with adm2 fixed effects
 conf_matrix <- scale(cbind(
@@ -110,7 +107,9 @@ output <- est_ate_with_se_ridge(X=conf_matrix,
 					obsW=input_df$treated, 
 					obsY=input_df$iwi_est_post_oda)  
 
-print(paste0("funder: ", funder, " sector: ",sector, " output=",output ))
-write.csv(as.data.frame("funder: ", funder, " sector: ",sector,output),
-          paste0("./results/ridge_only_",funder,"_",sector,".csv"), row.names=FALSE) 
+output_df <- as.data.frame(output)
+output_df <- cbind("funder"=funder,"sector"=sector,output_df)
+
+print(output_df)
+write.csv(output_df,paste0("./results/ridge_only_",funder,"_",sector,".csv"), row.names=FALSE) 
 

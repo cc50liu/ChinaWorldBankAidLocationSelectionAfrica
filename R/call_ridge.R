@@ -111,7 +111,9 @@ read_and_process_file <- function(input_filename) {
   output <- est_ate_with_se_ridge(X=conf_matrix, 
                         obsW=input_df$treated, 
                         obsY=input_df$iwi_est_post_oda)  
-  
+
+  print(paste0("funder: ", funder, " sector: ",sector, " output=",output ))
+  write.csv(as.data.frame(output),paste0("ridge_only_",funder,"_",sector,".csv"), row.names=FALSE) 
   #return output list along with funder and sector
   return(c("funder"=funder,"sector"=sector,output))
 }
@@ -120,7 +122,7 @@ read_and_process_file <- function(input_filename) {
 #Control starts here:  Process all funder sectors
 #####################################################################
 #read input files from the cnn runs 
-input_files <-  list.files("./data/interim/", 
+input_files <-  list.files("./data/interim", 
                            pattern = "input_cnn_5k_3yr_(wb|ch)_\\d{3}.csv",
                            full.names = TRUE)
 
@@ -130,6 +132,7 @@ consolidated_ate_se_dt <- rbindlist(lapply(input_files, read_and_process_file),
 
 
 write.csv(consolidated_ate_se_dt,"./results/ridge_only.csv",row.names = FALSE)
+
 
 #consider do the same shuffling I used in AIC to make them comparable - didn't do, since I'm sampling/changing order anyway	
 
