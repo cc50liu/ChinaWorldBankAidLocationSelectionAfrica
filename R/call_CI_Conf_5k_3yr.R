@@ -20,11 +20,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_120"
-# fund_sect_param <- "ch_150"
-# run <- "emb_5k_3yr"
-# iterations <- 15
-# time_approach <- "3yr"   #other option: "annual"
-# vision_backbone <- "emb"     #other options: "cnn" and "vt"
+fund_sect_param <- "ch_150"
+run <- "emb_5k_3yr"
+iterations <- 15
+time_approach <- "3yr"   #other option: "annual"
+vision_backbone <- "emb"     #other options: "cnn" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -49,7 +49,7 @@ dhs_iso3_df <- dhs_confounders_df %>%
 
 #get treated by this funder
 dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
-  filter(sector==sector_param & funder==funder_param) %>% 
+  filter(sector==sector_param & funder==funder_param & year_group!="2014:2016") %>% 
   #exclude DHS points where confounder data not available 
   inner_join(dhs_confounders_df %>% 
                select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
@@ -58,7 +58,7 @@ dhs_t_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>%
 dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
   filter(sector!=sector_param & funder==funder_param &
            #exclude DHS points where confounder data not available 
-           dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+           dhs_id %in% dhs_confounders_df$dhs_id & year_group!="2014:2016") %>% 
   group_by(dhs_id, year_group) %>% 
   summarize(other_sect_n=sum(proj_count),.groups="drop") %>% 
   mutate(log_other_sect_n=log(other_sect_n + 1)) %>% 
@@ -69,7 +69,7 @@ dhs_other_sect_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>%
 dhs_treated_other_funder_n_df <- read.csv("./data/interim/dhs_treated_sector_3yr.csv") %>% 
   filter(funder==other_funder &
          #exclude DHS points where confounder data not available 
-         dhs_id %in% dhs_confounders_df$dhs_id) %>% 
+         dhs_id %in% dhs_confounders_df$dhs_id & year_group!="2014:2016") %>% 
   group_by(dhs_id, year_group) %>% 
   summarize(treated_other_funder_n=sum(proj_count),.groups="drop") %>% 
   mutate(log_treated_other_funder_n=log(treated_other_funder_n + 1)) %>% 
@@ -87,7 +87,7 @@ dhs_in_operating_countries <- dhs_iso3_df %>%
   pull(dhs_id)
 
 #construct 3yr controls, limiting to countries where funder operated in sector
-year_group_v <- c('2002:2004', '2005:2007', '2008:2010', '2011:2013', '2014:2016')
+year_group_v <- c('2002:2004', '2005:2007', '2008:2010', '2011:2013') #, '2014:2016')
 
 #generate dataframe of all dhs points for all year groups in operating countries 
 all_t_c_df <- data.frame(expand.grid(year_group = year_group_v,
@@ -102,7 +102,8 @@ dhs_c_df <- all_t_c_df %>%
              select(dhs_id, ID_adm2), by = join_by(dhs_id)) 
 
 #get neighbor project counts for spillover effects
-adm2_adjacent_3yr_treat_count_df <- read.csv("./data/interim/adm2_adjacent_3yr_treat_count.csv")
+adm2_adjacent_3yr_treat_count_df <- read.csv("./data/interim/adm2_adjacent_3yr_treat_count.csv") %>% 
+  filter(year_group!="2014:2016")
 
 #define variable order and names for boxplots and dropped cols variables
 var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
@@ -755,52 +756,112 @@ if (treat_count < 100) {
     tmap_save(treat_control_map,paste0(results_dir,fund_sect_param,"_10map_",run,".png"))
   
 
-    ############################################################################
-    ##### ridge regression for treatment probabilities with tabular confounders
-    ############################################################################
     library(glmnet)
+    #####################################################################
+    #function to estimate ATE and standard error with ridge regression
+    #####################################################################
+    est_ate_with_se_ridge <- function(X, obsW, obsY, nBoot = 100) { 
+      ate_vec <- c(); 
+      for (i in 1L:(nBoot+1L)) {
+        if(nBoot > 0L){ print(paste0("Bootstrap iteration ",i-1L," of ",nBoot) ) } 
+        
+        # shuffle indices for training
+        if(i != (nBoot+1L)){ boot_indices <- sample(1:length( obsY ), length( obsY ), replace = T) }
+        # use input order for last iteration, whose results we'll return as ate estimate
+        if(i == (nBoot+1L)){ boot_indices <- 1:length( obsY ) }
+        
+        #estimate ridge model then use to predict estimated treatment probs
+        ridge_model <- glmnet::cv.glmnet(
+          x = as.matrix(X[boot_indices,]),
+          y = as.matrix(obsW[boot_indices]),
+          nfolds = 5,
+          alpha = 0, # alpha = 0 is the ridge penalty
+          type.measure = "auc", 
+          family = "binomial")
+        obs_treated <- obsW[boot_indices] 
+        obs_outcome <- obsY[boot_indices]
+        est_pr_treated <- predict(ridge_model, s = "lambda.min",
+                                  newx = as.matrix(X[boot_indices,]), type = "response")
+        
+        # compute ate
+        ate_vec[i] <- ate <- sum(  obs_outcome*prop.table(obs_treated/c(est_pr_treated))) -
+          sum(obsY*prop.table((1-obs_treated)/c(1-est_pr_treated) ))
+        
+        #plot the treatment prop overlap for treated and controls on last iteration
+        if(i == (nBoot+1L)) { 
+          #save ridge_coeffs for later use
+          ridge_coeffs_df <- broom::tidy(ridge_model)
+          treat_prob_log_r_df <- ridge_coeffs_df %>%
+            rename(ridge_est=estimate)
+          
+          # Create a data frame with predicted probabilities, and actual treatment status
+          ridge_result_df <- data.frame(predicted_probs = est_pr_treated, 
+                                        treated = input_df$treated)
+          
+          # Plot it in thesis style
+          ridge_conf_density <- ggplot(ridge_result_df, aes(x = s0, fill = factor(treated))) +
+            geom_density(alpha = 0.5) +
+            labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
+                 subtitle = paste(sub_l1,sub_l2,sep="\n"),
+                 x = "Predicted Treatment Propensity",
+                 y = "Density",
+                 fill="Status") +
+            scale_fill_manual(values = c("gray80", treat_color),
+                              labels = c("Control", "Treated")) +
+            scale_x_continuous(labels=label_number(accuracy=.1)) +
+            theme_bw()  +
+            theme(panel.grid = element_blank())
+          
+          #save
+          ggsave(paste0(results_dir,fund_sect_param,"_50ridge_prop_",run,".pdf"),
+                 ridge_conf_density,
+                 width=6, height = 4, dpi=300,
+                 bg="white", units="in")
+          
+          # Plot it in AnalyzeImageConfounding style
+          try({
+            print2("Plotting ridge only propensity histogram...")
+            pdf(sprintf("%s/%s_50ridge_prop_%s.pdf",results_dir,fund_sect_param,run))
+            {
+              par(mfrow=c(1,1))
+              d0 <- density(est_pr_treated[obsW==0])
+              d1 <- density(est_pr_treated[obsW==1])
+              plot(d1,lwd=2,xlim = c(-0.1,1.1),ylim =c(0,max(c(d1$y,d0$y),na.rm=T)*1.2),
+                   cex.axis = 1.2,ylab = "",xaxt = "n",
+                   xlab = ifelse(tagInFigures, yes = figuresTag, no = ""),
+                   main = "Density Plots for \n Estimated Pr(T=1 | Tabular Confounders)",cex.main = 2)
+              axis(1, at = seq(0,1,by = 0.25))
+              points(d0,lwd=2,type = "l",col="gray",lty=2)
+              text(d0$x[which.max(d0$y)[1]],
+                   max(d0$y,na.rm=T)*1.1,label = "T = 0",col="gray",cex=2)
+              text(d1$x[which.max(d1$y)[1]],
+                   max(d1$y,na.rm=T)*1.1,label = "T = 1",col="black",cex=2)
+            }
+            dev.off()
+          }, T)
+          
+        }  #end of last iteration check
+        
+      return(list(
+        "ate" = ate_vec[length(ate_vec)],
+        "ate_se" = sd(ate_vec[-length(ate_vec)]),
+        "coeffs_df" = treat_prob_log_r_df))
+      } #end of for loop  
+    } #end of est_ate_with_se_ridge
+    
+    ############################################################################
+    ##### ridge regression for treatment probabilities with tabular covs only
+    ############################################################################
+    # do bootstrap only on the Randomized Embeddings runs; same for all vision backbones
+    nBoot <- ifelse(vision_backbone=="emb", 100, 1)
+    output <- est_ate_with_se_ridge(X=conf_matrix, 
+                                    obsW=input_df$treated, 
+                                    obsY=input_df$iwi_est_post_oda,
+                                    nBoot=nBoot) 
+    ate_ridge <- output$ate
+    ate_se_ridge <- output$ate_se
+    treat_prob_log_r_df <- output$coeffs_df
 
-    # use cross-validation to choose lambda, using default nfolds=10 
-    cv_model_ridge <- cv.glmnet(x=scale(conf_matrix), y=input_df$treated,
-                                family = "binomial", alpha = 0)
-    best_lambda_ridge <- cv_model_ridge$lambda.min
-    
-    # Fit model with best lambda
-    ridge_model_best <- glmnet(x=scale(conf_matrix), y=input_df$treated, 
-                               family = "binomial", alpha = 0, 
-                               lambda = best_lambda_ridge)
-    
-    ridge_coeffs_df <- broom::tidy(ridge_model_best)
-    treat_prob_log_r_df <- ridge_coeffs_df %>%
-      rename(ridge_est=estimate)
-    
-    # Predict probabilities
-    ridge_predicted_probs <- predict(ridge_model_best, newx = scale(conf_matrix),
-                                     type = "response")
-    
-    # Create a data frame with predicted probabilities, and actual treatment status
-    ridge_result_df <- data.frame(predicted_probs = ridge_predicted_probs, 
-                                  treated = input_df$treated)
-    
-    ridge_conf_density <- ggplot(ridge_result_df, aes(x = s0, fill = factor(treated))) +
-      geom_density(alpha = 0.5) +
-      labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
-           subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Predicted Treatment Propensity",
-           y = "Density",
-           fill="Status") +
-      scale_fill_manual(values = c("gray80", treat_color),
-                        labels = c("Control", "Treated")) +
-      theme_bw()  +
-      theme(panel.grid = element_blank())
-    
-    
-    #save
-    ggsave(paste0(results_dir,fund_sect_param,"_50ridge_prop_",run,".pdf"),
-           ridge_conf_density,
-           width=6, height = 4, dpi=300,
-           bg="white", units="in")
-    
     ############################################################################
     ##### add SalienceX & .se to df, save, and plot ridge and SalienceX values
     ############################################################################    
