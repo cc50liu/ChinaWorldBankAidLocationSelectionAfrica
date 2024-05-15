@@ -20,11 +20,11 @@ vision_backbone <- args[5]
 
 #uncomment to test
 # fund_sect_param <- "wb_120"
-fund_sect_param <- "ch_150"
-run <- "emb_5k_3yr"
-iterations <- 15
-time_approach <- "3yr"   #other option: "annual"
-vision_backbone <- "emb"     #other options: "cnn" and "vt"
+# fund_sect_param <- "ch_430"
+# run <- "emb_5k_3yr_test"
+# iterations <- 15
+# time_approach <- "3yr"   #other option: "annual"
+# vision_backbone <- "emb"     #other options: "cnn" and "vt"
 
 ################################################################################
 # Initial setup, parameter processing, reading input files 
@@ -757,13 +757,22 @@ if (treat_count < 100) {
   
 
     library(glmnet)
+    library(scales)
     #####################################################################
     #function to estimate ATE and standard error with ridge regression
     #####################################################################
     est_ate_with_se_ridge <- function(X, obsW, obsY, nBoot = 100) { 
+      #uncomment to test
+      # X=conf_matrix
+      # obsW=input_df$treated
+      # obsY=input_df$iwi_est_post_oda
+      # nBoot=2
+
       ate_vec <- c(); 
-      for (i in 1L:(nBoot+1L)) {
-        if(nBoot > 0L){ print(paste0("Bootstrap iteration ",i-1L," of ",nBoot) ) } 
+      for (i in 1L:(nBoot)) {
+        #uncomment to test
+        #i=1
+        if(nBoot > 0L){ print(paste0("Bootstrap iteration ",i," of ",nBoot) ) } 
         
         # shuffle indices for training
         if(i != (nBoot+1L)){ boot_indices <- sample(1:length( obsY ), length( obsY ), replace = T) }
@@ -791,24 +800,22 @@ if (treat_count < 100) {
         if(i == (nBoot+1L)) { 
           #save ridge_coeffs for later use
           ridge_coeffs_df <- broom::tidy(ridge_model)
-          treat_prob_log_r_df <- ridge_coeffs_df %>%
-            rename(ridge_est=estimate)
-          
+
           # Create a data frame with predicted probabilities, and actual treatment status
           ridge_result_df <- data.frame(predicted_probs = est_pr_treated, 
-                                        treated = input_df$treated)
+                                        treated = obs_treated)
           
           # Plot it in thesis style
-          ridge_conf_density <- ggplot(ridge_result_df, aes(x = s0, fill = factor(treated))) +
+          ridge_conf_density <- ggplot(ridge_result_df, aes(x = lambda.min, fill = factor(treated))) +
             geom_density(alpha = 0.5) +
-            labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Confounders)",
+            labs(title = "Ridge regression: Density Plot for\nEstimated Pr(T=1 | Tabular Covariates)",
                  subtitle = paste(sub_l1,sub_l2,sep="\n"),
                  x = "Predicted Treatment Propensity",
                  y = "Density",
                  fill="Status") +
             scale_fill_manual(values = c("gray80", treat_color),
                               labels = c("Control", "Treated")) +
-            scale_x_continuous(labels=label_number(accuracy=.1)) +
+            scale_x_continuous(labels=label_number_auto(),limits=c(0,1)) +
             theme_bw()  +
             theme(panel.grid = element_blank())
           
@@ -820,16 +827,16 @@ if (treat_count < 100) {
           
           # Plot it in AnalyzeImageConfounding style
           try({
-            print2("Plotting ridge only propensity histogram...")
-            pdf(sprintf("%s/%s_50ridge_prop_%s.pdf",results_dir,fund_sect_param,run))
+            print("Plotting ridge tabular only propensity histogram...")
+            pdf(sprintf("%s%s_55ridge_prop_%s.pdf",results_dir,fund_sect_param,run))
             {
               par(mfrow=c(1,1))
               d0 <- density(est_pr_treated[obsW==0])
               d1 <- density(est_pr_treated[obsW==1])
               plot(d1,lwd=2,xlim = c(-0.1,1.1),ylim =c(0,max(c(d1$y,d0$y),na.rm=T)*1.2),
                    cex.axis = 1.2,ylab = "",xaxt = "n",
-                   xlab = ifelse(tagInFigures, yes = figuresTag, no = ""),
-                   main = "Density Plots for \n Estimated Pr(T=1 | Tabular Confounders)",cex.main = 2)
+                   xlab = paste0(fund_sect_param,"_",run,"_i",iterations),
+                   main = "Density Plots for \n Estimated Pr(T=1 | Tabular Covariates)",cex.main = 2)
               axis(1, at = seq(0,1,by = 0.25))
               points(d0,lwd=2,type = "l",col="gray",lty=2)
               text(d0$x[which.max(d0$y)[1]],
@@ -839,14 +846,14 @@ if (treat_count < 100) {
             }
             dev.off()
           }, T)
-          
         }  #end of last iteration check
-        
+      } #end of for loop
+      
       return(list(
         "ate" = ate_vec[length(ate_vec)],
         "ate_se" = sd(ate_vec[-length(ate_vec)]),
-        "coeffs_df" = treat_prob_log_r_df))
-      } #end of for loop  
+        "coeffs_df" = ridge_coeffs_df))
+  
     } #end of est_ate_with_se_ridge
     
     ############################################################################
@@ -860,7 +867,8 @@ if (treat_count < 100) {
                                     nBoot=nBoot) 
     ate_ridge <- output$ate
     ate_se_ridge <- output$ate_se
-    treat_prob_log_r_df <- output$coeffs_df
+    treat_prob_log_r_df <- output$coeffs_df %>%
+      rename(ridge_est=estimate)
 
     ############################################################################
     ##### add SalienceX & .se to df, save, and plot ridge and SalienceX values
@@ -931,7 +939,7 @@ if (treat_count < 100) {
       geom_abline(intercept=0, slope=1, linetype="dashed",color="gray80") +
       labs(title = "Tabular confounder estimates with and without images",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Tabular confounders only: Ridge estimate",
+           x = "Tabular covariates only: Ridge estimate",
            y = "Salience with Image Confounding") +   
       coord_cartesian(xlim=c(-1*max_abs_value_x,max_abs_value_x),
                   ylim=c(-1*max_abs_value_y,max_abs_value_y)) +
