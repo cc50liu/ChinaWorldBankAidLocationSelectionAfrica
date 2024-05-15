@@ -589,7 +589,11 @@ if (treat_count < 100) {
       
     }
     
-    ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis)))
+    ica_df <- data.frame(t(unlist(ImageConfoundingAnalysis))) %>% 
+      select(-starts_with("prW_est"),-starts_with("SalienceX.adm2"),
+             -starts_with("SalienceX_se.adm2"),-starts_with("SGD_loss_vec"),
+             -starts_with("tauHat_propensityHajek_vec"),-starts_with("trainIndices"),
+             -starts_with("testIndices"))
     output_df <- cbind(data.frame(run,fund_sect_param,treat_count,control_count,
                                   dropped_labels,
                                   ica_df))
@@ -598,47 +602,11 @@ if (treat_count < 100) {
                  ,iterations,".csv"))
     write.csv(output_df,paste0(results_dir,"ICA_",fund_sect_param,"_",run,"_i",
                                iterations,".csv"),row.names = FALSE)
-    ############################################################################
-    # use output to identify 3 least/most likely locations to receive aid
-    ############################################################################   
-    library(tidyr)   
-    
-    ica_long_df <-  ica_df %>% 
-      pivot_longer(cols=starts_with("prW_est"),names_to="col_index", 
-                   names_prefix="prW_est",values_to="prW_est") %>% 
-      mutate(col_index = as.integer(col_index))
-    
-    input_r_df <- input_df %>% 
-      mutate(rnum=row_number())
-    
-    #join the input and output and sort by treatment propensity
-    ica_long2_df <- ica_long_df %>% 
-      inner_join(input_r_df,join_by(col_index==rnum)) %>% 
-      arrange(prW_est)
-    
-    least_likely_df <- ica_long2_df %>% 
-      filter(treated==0) %>% 
-      slice(1:3) %>% 
-      mutate(rank=row_number())
-    
-    most_likely_df <- ica_long2_df %>% 
-      filter(treated==1) %>% 
-      tail(3) %>% 
-      arrange(desc(row_number())) %>% 
-      mutate(rank=row_number())
-    
-    #print these to log
-    print(paste("Most likely treated for", fund_sect_param, "run:", run))
-    print(most_likely_df %>% 
-            select(prW_est,col_index,image_file_5k_3yr,year_group))
-    print(paste("Least likely treated for", fund_sect_param, "run:", run))
-    print(least_likely_df %>% 
-            select(prW_est,col_index,image_file_5k_3yr,year_group))
-    
-    
+
     ############################################################################
     # generate plots for this run
     ############################################################################
+    library(tidyr)  
     library(ggplot2)
      
     #plot the distribution of other sector project counts
