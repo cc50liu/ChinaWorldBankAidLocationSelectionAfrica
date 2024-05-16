@@ -558,7 +558,7 @@ if (treat_count < 100) {
         imageModelClass = "CNN",
         optimizeImageRep = F,
         nSGD = iterations,
-        atError = 'stop'
+        atError = 'debug'
       )
       
     } else if (vision_backbone=="vt") {
@@ -865,10 +865,17 @@ if (treat_count < 100) {
                                     obsW=input_df$treated, 
                                     obsY=input_df$iwi_est_post_oda,
                                     nBoot=nBoot) 
-    ate_ridge <- output$ate
-    ate_se_ridge <- output$ate_se
+
     treat_prob_log_r_df <- output$coeffs_df %>%
       rename(ridge_est=estimate)
+    
+    output_df <- data.frame("fund_sect_param"=fund_sect_param,
+                            "ate_ridge"=output$ate,
+                            "ate_se_ridge"=output$ate_se)
+
+    write.csv(output_df,
+              paste0(results_dir,fund_sect_param,"_ridge_tab_only.csv"), 
+              row.names=FALSE) 
 
     ############################################################################
     ##### add SalienceX & .se to df, save, and plot ridge and SalienceX values
