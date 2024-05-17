@@ -775,9 +775,9 @@ if (treat_count < 100) {
         if(nBoot > 0L){ print(paste0("Bootstrap iteration ",i," of ",nBoot) ) } 
         
         # shuffle indices for training
-        if(i != (nBoot+1L)){ boot_indices <- sample(1:length( obsY ), length( obsY ), replace = T) }
+        if(i != (nBoot)){ boot_indices <- sample(1:length( obsY ), length( obsY ), replace = T) }
         # use input order for last iteration, whose results we'll return as ate estimate
-        if(i == (nBoot+1L)){ boot_indices <- 1:length( obsY ) }
+        if(i == (nBoot)){ boot_indices <- 1:length( obsY ) }
         
         #estimate ridge model then use to predict estimated treatment probs
         ridge_model <- glmnet::cv.glmnet(
@@ -797,7 +797,7 @@ if (treat_count < 100) {
           sum(obsY*prop.table((1-obs_treated)/c(1-est_pr_treated) ))
         
         #plot the treatment prop overlap for treated and controls on last iteration
-        if(i == (nBoot+1L)) { 
+        if(i == (nBoot)) { 
           #save ridge_coeffs for later use
           ridge_coeffs_df <- broom::tidy(ridge_model)
 
