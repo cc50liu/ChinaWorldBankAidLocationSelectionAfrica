@@ -689,7 +689,7 @@ if (treat_count < 100) {
       facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
       labs(title = "Confounders vs. Estimated wealth for Treated and Control DHS locations",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
-           x = "Estimated Wealth Index 3 years post-project",
+           x = "Estimated Wealth Index one 3-year lag after project commitment period",
            y = "Value",
            color="") +
       scale_color_manual(values = c("gray60", treat_color),
