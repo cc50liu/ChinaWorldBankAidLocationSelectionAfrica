@@ -6,8 +6,8 @@ submit_and_wait() {
   sleep 1m     # Sleep for 1 minute
 }
 
-submit_and_wait call_CI_Conf_5k_3yr.slurm ch_430 cnn_5k_3yr 1000 3yr cnn
-submit_and_wait call_CI_Conf_5k_3yr.slurm ch_520 cnn_5k_3yr 1000 3yr cnn
+#submit_and_wait call_CI_Conf_5k_3yr.slurm ch_430 cnn_5k_3yr 1000 3yr cnn
+#submit_and_wait call_CI_Conf_5k_3yr.slurm ch_520 cnn_5k_3yr 1000 3yr cnn
 submit_and_wait call_CI_Conf_5k_3yr.slurm ch_700 cnn_5k_3yr 1000 3yr cnn
 submit_and_wait call_CI_Conf_5k_3yr.slurm ch_140 cnn_5k_3yr 1000 3yr cnn
 submit_and_wait call_CI_Conf_5k_3yr.slurm ch_230 cnn_5k_3yr 1000 3yr cnn
