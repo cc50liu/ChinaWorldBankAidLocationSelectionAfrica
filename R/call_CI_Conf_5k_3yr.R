@@ -118,18 +118,18 @@ var_order_all <- c("iwi_est_post_oda","log_pc_nl_pre_oda","log_avg_pop_dens",
                "reg_quality", "rule_of_law","voice_accountability", 																				
                "landsat578","log_treated_other_funder_n","log_other_sect_n",
                "log_total_neighbor_projs")
-var_labels_all <- c("Wealth (est, t+1)","Nightlights per cap (t-1,log)","Pop Density (t-1,log)",
-                "Minutes to City (2000,log)", "Dist to Gold (km,log)",
-                "Dist to Gems (km,log)","Dist to Diam (km,log)",
-                "Dist to Oil (km,log)","Leader birthplace (t-1)","Concurrent CH Loan Projs",
-                "Conflict deaths (t-1,log)","Natural Disasters (t-1,log)",
-                "Election year (t-1)", "UNSC US aligned (t-1)","UNSC Non-US aligned (t-1)",
-                "Country gini (t-1)",
-                "Cntry Cntrl Corruption (t-1)", "Cntry Gov Effective (t-1)",
-                "Cntry Political Stability (t-1)","Cntry Reg Quality (t-1)",
-                "Cntry Rule of Law (t-1)","Cntry Voice/Account (t-1)",
-                "Landsat 5,7,& 8","Other Funder Treat n (log)","Other Sector Proj n (log)",
-                "Adj ADM2 Proj n (log)")
+var_labels_all <- c("Wealth","Nightlights per cap","Pop Density",
+                    "Minutes to City", "Dist to Gold",
+                    "Dist to Gems","Dist to Diam",
+                    "Dist to Oil","Leader birthplace","China Loan Projs",
+                    "Conflict deaths","Natural Disasters",
+                    "Election year", "UNSC US Aligned","UNSC Non-US Align",
+                    "Country gini",
+                    "Cntry Cntrl Corruption", "Cntry Gov Effective",
+                    "Cntry Political Stability","Cntry Reg Quality",
+                    "Cntry Rule of Law","Cntry Voice/Account",
+                    "Landsat 5,7,& 8","Other Funder Treat n","Other Sector Proj n",
+                    "Adj ADM2 Proj n")
 
 ################################################################################
 # Function called by AnalyzeImageConfounding to read images 

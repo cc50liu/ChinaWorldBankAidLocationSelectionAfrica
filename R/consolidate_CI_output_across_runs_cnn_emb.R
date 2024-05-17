@@ -46,23 +46,45 @@ matching_files <- unlist(output)
 #####################################################################
 read_and_process_file <- function(file) {
   #uncomment to test
-  #file <-  "./results/tfrec_emb_agglom_v2/ICA_wb_160_tfrec_emb_agglom_v2_i1000.csv"
-  
-  #use a regular expression to construct ridge output file name corresponding
-  #to the input file 
-  ridge_file <- sub("(.*)(ICA_)(wb|ch)(_\\d+)(.*)_i\\d+.csv",
-                    "\\1\\3\\4_tab_conf_compare\\5.csv", file)
+  #file <-  "./results/emb_5k_3yr/ICA_wb_140_emb_5k_3yr_i1000.csv"
   
   #read the primary data file
   data <- fread(file, header = TRUE, drop = grep("^(prW_est|SGD_loss)", colnames(fread(file))))
   
-  #read the ridge data, convert to wide, and combine with primary data 
-  ridge_long_dt <- fread(ridge_file, header = TRUE,select=c("term","ridge_est"))
+  #use a regular expression to construct ridge coeff & ate file names based on 
+  #input file 
+  ridge_coeffs <- sub("(.*)(ICA_)(wb|ch)(_\\d+)(.*)_i\\d+.csv",
+                    "\\1\\3\\4_tab_conf_compare\\5.csv", file)  
+  ridge_ate <- sub("(.*)(ICA_)(wb|ch)(_\\d+)(.*)_i\\d+.csv",
+                   "\\1\\3\\4_ridge_tab_only.csv", file)  
+
+  #read the ridge coeffs, convert to wide, and combine with primary data 
+  ridge_long_dt <- fread(ridge_coeffs, header = TRUE,select=c("term","ridge_est"))
   ridge_wide_dt <- dcast(ridge_long_dt, 1 ~ term, value.var="ridge_est")
   setnames(ridge_wide_dt, new = paste0("ridge_est.", names(ridge_wide_dt)))
   
   combined <- cbind(data,ridge_wide_dt)
   combined[, ridge_est.. := NULL]
+  names(combined)
+  
+  #read the ridge ate and add a record (only present for emb runs) 
+  if (!is.na(ridge_ate)) {
+    ridge_ate_df <- fread(ridge_ate, header = TRUE,select=c("fund_sect_param","ate_ridge","ate_se_ridge"))
+    if (nrow(ridge_ate_df)=1) {
+      combined_ridge <- bind_rows(combined,
+                              tibble("run"="ridge",
+                                     "fund_sect_param"=data[1]$fund_sect_param,
+                                     "treat_count"=data[1]$treat_count,
+                                     "control_count"=data[1]$control_count,
+                                     "dropped_labels"=data[1]$dropped_labels,
+                                     "tauHat_propensityHajek"=ridge_ate_df[1]$ate_ridge,
+                                     "tauHat_propensityHajek_se"=ridge_ate_df[1]$tauHat_propensityHajek_se,
+                                     "tauHat_diffInMeans"=data[1]$tauHat_diffInMeans,
+                                     "tauHat_diffInMeans_se"=data[1]$tauHat_diffInMeans_se))
+
+      return(combined_ridge)
+    } #end of nrow(ridge_ate_df)
+  } #end of !is.na(ridge_ate
   
   return(combined)
 }
@@ -199,7 +221,6 @@ outcome_sector_display_df <- outcome_sector_df %>%
          Sector=sec_pre_name
   ) 
 
-
 # Write to csv file
 write.csv(outcome_sector_display_df,paste0("./results/outcome_display_xruns_",group_label_for_filename,".csv"),
           row.names=FALSE)
@@ -208,41 +229,57 @@ write.csv(outcome_sector_display_df,paste0("./results/outcome_display_xruns_",gr
 #generate figures
 ###########################################
 #ate by sector funder and run 
-ate_plot <- ggplot(outcome_sector_df,aes(x=tauHat_propensityHajek,
-                                         y=fund_run,
-                                         color=paste0(run_short,funder),
-                                         shape=paste0(run_short,funder))) +
+ate_plot <- ggplot(outcome_sector_df,
+                   aes(x=tauHat_propensityHajek,
+                       y=fund_run,
+                       color=paste0(run_short,funder),
+                       shape=paste0(run_short,funder))) +
   facet_grid(sec_pre_name ~ ., scales="free_y") +
-  geom_pointrange(aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
+  geom_point(data=outcome_sector_df %>% filter(run_short!="ridge"),
+             mapping=aes(x=tauHat_propensityHajek,
+                         shape=paste0(run_short,funder))) +
+  geom_pointrange(data=outcome_sector_df %>% filter(run_short!="ridge"),
+                  mapping=aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
                       xmax=tauHat_propensityHajek+(tauHat_propensityHajek_se*1.96))) +
-  scale_color_manual(name = "Funder & Backbone",
-                     values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
-                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
-  scale_shape_manual(name = "Funder & Backbone",
-                     values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
-                     labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +  
-  scale_fill_manual(values=c("baseline"="gray80"),
-                    labels=c("baseline"="No confounders")) +
+  scale_color_manual(name="Funder & Approach",
+                     values = c("cnnch"="indianred1","cnnwb"="mediumblue",
+                                "embch"="indianred1","embwb"="mediumblue",
+                                "ridgech"="indianred1","ridgewb"="mediumblue"),
+                     labels = c("China CNN","World Bank CNN",
+                                "China Emb","World Bank Emb",
+                                "China no images","WB no images")) +
+  scale_shape_manual(name="Funder & Approach",
+                     values = c("cnnch"=19,"cnnwb"=19,
+                                "embch"=17,"embwb"=17,
+                                "ridgech"=0,"ridgewb"=0),
+                     labels = c("China CNN","World Bank CNN",
+                                "China Emb","World Bank Emb",
+                                "China no images","WB no images")) +  
   labs(title = "Average Treatment Effect on Wealth, by Sector, Funder, and Vision Backbone",
        subtitle=group_label_for_titles,
        x = "Estimated ATE with 95% confidence intervals",
-       y = "",
-       color="Funder",
-       shape="Vision Backbone") +
+       y = "") +
   ggnewscale::new_scale_color() +
-  geom_point(aes(x=tauHat_diffInMeans,color="baseline"), shape=15) +
+  geom_point(data=outcome_sector_df %>% filter(run_short=="ridge"),
+             mapping=aes(x=tauHat_diffInMeans,color="baseline"), shape=15) +
+  geom_point(data=outcome_sector_df %>% filter(run_short=="ridge"),
+             mapping=aes(x=tauHat_propensityHajek,y=fund_run,
+                 color=paste0(run_short,funder)), shape = 0) +
+  geom_linerange(data=outcome_sector_df %>% filter(run_short=="ridge"),
+                  mapping=aes(xmin=tauHat_propensityHajek-(tauHat_propensityHajek_se*1.96),
+                      xmax=tauHat_propensityHajek+(tauHat_propensityHajek_se*1.96),
+                      color=paste0(run_short,funder))) +
   geom_vline(xintercept=0,color="gray80") +  
-  scale_color_manual(values=c("baseline"="gray80"),
+  scale_color_manual(name="Baseline Estimates",
+                     values=c("baseline"="gray80","ridgech"="indianred1","ridgewb"="mediumblue"),
                      breaks = c("baseline"),
                      labels=c("baseline"="No confounders")) +
-  labs(color="Baseline estimates") +  
   theme_bw()  +
   theme(panel.grid = element_blank(),
         axis.text.y = element_blank(),  
         axis.title.y = element_blank(),
         axis.ticks.y = element_blank(),
-        strip.text.y = element_text(angle = 0)) 
-
+        strip.text.y = element_text(angle = 0))
 
 ggsave(paste0("./results/ate_funder_sector_xruns_",group_label_for_filename,".pdf"),
        ate_plot,
@@ -280,9 +317,9 @@ difInLatPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_hline(yintercept=0, color="black") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
-                     breaks = c("ch","wb","both"),
-                     labels = c("China", "World Bank", "Both")) +
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "mediumblue"),
+                     breaks = c("ch","wb"),
+                     labels = c("China", "World Bank")) +
   labs(
     x = "Funder, Sector, and Run",
     y = "Difference in Treated and Control Average Latitude",
@@ -319,7 +356,7 @@ difInLonPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_hline(yintercept=0, color="gray80") +
   scale_shape_manual(values = c("Pre" = 16, "Post" = 15),
                      breaks = c("Pre","Post")) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "mediumblue"),
                      breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   labs(
@@ -358,7 +395,7 @@ difCELossPlot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.CELoss_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "mediumblue"),
                      breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
@@ -397,7 +434,7 @@ dif_ClassError_plot <- ggplot(outcome_sector_df, aes(x = fund_sec_run)) +
   geom_point(aes(y = ModelEvaluationMetrics.ClassError_out, shape = "Model",color=funder), size = 2) +
   scale_shape_manual(values = c("Baseline" = 16, "Model" = 15),
                      breaks = c("Baseline","Model")) +
-  scale_color_manual(values = c("ch" = "indianred1", "wb" = "lightblue1", "both" = "blueviolet"),
+  scale_color_manual(values = c("ch" = "indianred1", "wb" = "mediumblue"),
                      breaks = c("ch","wb","both"),
                      labels = c("China", "World Bank", "Both")) +
   ylim(0,.7) +
@@ -475,7 +512,7 @@ all_dif_salience_plot <- ggplot(compare_salience_df) +
                  color=paste0(run_short,funder)),
              position=position_jitter(height = .25)) +
   scale_color_manual(name = "Funder & Backbone",
-                     values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
+                     values = c("cnnch"="indianred1","cnnwb"="mediumblue","embch"="indianred1","embwb"="mediumblue"),
                      labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
   scale_shape_manual(name = "Funder & Backbone",
                      values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
@@ -510,7 +547,7 @@ plot_tab_confounder <- function(term_var) {
                               position=position_jitter(height = .25)) +
     geom_point() +
     scale_color_manual(name = "Funder & Backbone",
-                       values = c("cnnch"="indianred1","cnnwb"="lightblue1","embch"="indianred1","embwb"="lightblue1"),
+                       values = c("cnnch"="indianred1","cnnwb"="mediumblue","embch"="indianred1","embwb"="mediumblue"),
                        labels = c("China CNN","World Bank CNN","China Emb","World Bank Emb")) +
     scale_shape_manual(name = "Funder & Backbone",
                        values = c("cnnch"=19,"cnnwb"=19,"embch"=17,"embwb"=17),
