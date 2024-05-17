@@ -675,8 +675,7 @@ if (treat_count < 100) {
     # Set the treated color based on funder
     treat_color <- case_when(
       startsWith(fund_sect_param, "ch") ~ "indianred1",
-      startsWith(fund_sect_param, "wb") ~ "mediumblue",
-      startsWith(fund_sect_param, "both") ~ "blueviolet"
+      startsWith(fund_sect_param, "wb") ~ "mediumblue"
     )
 
     #Convert to longer format for density plots, leaving outcome as separate column
@@ -766,7 +765,7 @@ if (treat_count < 100) {
       # X=conf_matrix
       # obsW=input_df$treated
       # obsY=input_df$iwi_est_post_oda
-      # nBoot=2
+      # nBoot=1
 
       ate_vec <- c(); 
       for (i in 1L:(nBoot)) {
@@ -798,8 +797,6 @@ if (treat_count < 100) {
         
         #plot the treatment prop overlap for treated and controls on last iteration
         if(i == (nBoot)) { 
-          #save ridge_coeffs for later use
-          ridge_coeffs_df <- broom::tidy(ridge_model)
 
           # Create a data frame with predicted probabilities, and actual treatment status
           ridge_result_df <- data.frame(predicted_probs = est_pr_treated, 
@@ -846,6 +843,23 @@ if (treat_count < 100) {
             }
             dev.off()
           }, T)
+          
+          # run again for coefficients / use cross-validation to choose lambda 
+          cv_model_ridge <- cv.glmnet(x=as.matrix(X[boot_indices,]),
+                                      y=as.matrix(obsW[boot_indices]),
+                                      nfolds=5,
+                                      family = "binomial", 
+                                      alpha = 0)
+          best_lambda_ridge <- cv_model_ridge$lambda.min
+          
+          # Fit model with best lambda
+          ridge_model_best <- glmnet(x=as.matrix(X[boot_indices,]),
+                                     y=as.matrix(obsW[boot_indices]),
+                                     family = "binomial", alpha = 0, 
+                                     lambda = best_lambda_ridge)
+          
+          ridge_coeffs_df <- broom::tidy(ridge_model_best)
+
         }  #end of last iteration check
       } #end of for loop
       
@@ -868,7 +882,7 @@ if (treat_count < 100) {
 
     treat_prob_log_r_df <- output$coeffs_df %>%
       rename(ridge_est=estimate)
-    
+
     output_df <- data.frame("fund_sect_param"=fund_sect_param,
                             "ate_ridge"=output$ate,
                             "ate_se_ridge"=output$ate_se)
