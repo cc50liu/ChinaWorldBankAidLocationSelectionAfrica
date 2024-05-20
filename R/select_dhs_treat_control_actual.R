@@ -83,11 +83,11 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
                             adm2_borders, debug_msg) 
 {
   #uncomment to test
-  # sector <- 220
+  #sector <- 920
   #dhs_buff_sf <- dhs_sf
-  # start_year = 2002
+  #start_year = 2002
   
-  start_years <- 2002:2014
+  start_years <- 2002:2013
 
   sector_output <- lapply(start_years, function(start_year) {
     #uncomment to test
@@ -186,10 +186,12 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
   })
   
   all_years_funders <- do.call(rbind,sector_output)
-  return(cbind(sector,all_years_funders))
+  if (nrow(all_years_funders) > 0) {
+    return(cbind(sector,all_years_funders))
+  } else {
+    return()
+  }
 }
-
-
 
 ################################################################################
 # main code starts here
@@ -238,7 +240,7 @@ unique(sf::st_is_valid(adm2_borders))
 #### Process DHS survey points
 ####################################################
 dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv") %>%
-  filter(year %in% 2005:2019) %>% 
+  filter(year %in% 2005:2016) %>% 
   mutate(iso3 = substr(GID_1, 1, 3), 
     #shift treat_year_group by 1 lag (post-proj IWI)
     treat_year_group = case_when(
@@ -300,7 +302,7 @@ treated_year_group <- all_sectors_expanded_df %>%
   summarize(sum_proj_count = sum(proj_count, na.rm=TRUE)) %>% 
   rename(proj_count = sum_proj_count) %>% 
   ungroup()
-#n=76256
+#n=57144
 
 write.csv(treated_year_group,"./data/interim/dhs_treated_sector_3yr_actual.csv",row.names=FALSE)
 
@@ -317,35 +319,34 @@ treated_year_group %>%
 #   1 ch        600     6
 # 2 ch        410     8
 # 3 ch        130     9
-# 4 ch        920     9
-# 5 ch        530    12
-# 6 ch        520    59
+# 4 ch        530    12
+# 5 ch        700    44
+# 6 ch        520    58
 # 7 ch        320    74
 # 8 ch        420   113
 # 9 ch        430   117
-# 10 ch        700   139
-# 11 ch        140   407
-# 12 ch        230   484
-# 13 ch        160   551
-# 14 ch        220   587
-# 15 ch        310   631
+# 10 ch        140   407
+# 11 ch        230   448
+# 12 ch        160   551
+# 13 ch        220   586
+# 14 wb        410   606
+# 15 ch        310   626
 # 16 wb        330   704
-# 17 wb        410   759
-# 18 ch        210   812
-# 19 ch        110  1037
-# 20 ch        150  1251
-# 21 wb        240  1464
-# 22 wb        220  1779
-# 23 ch        120  2614
-# 24 wb        320  3419
-# 25 wb        110  3541
-# 26 wb        230  4091
-# 27 wb        120  4475
-# 28 wb        310  4997
-# 29 wb        160  5584
-# 30 wb        140  6783
-# 31 wb        210  7802
-# 32 wb        150  9439
+# 17 ch        210   713
+# 18 ch        110  1006
+# 19 ch        150  1111
+# 20 wb        240  1442
+# 21 wb        220  1779
+# 22 ch        120  2299
+# 23 wb        110  2431
+# 24 wb        320  2854
+# 25 wb        120  3603
+# 26 wb        230  3966
+# 27 wb        310  4407
+# 28 wb        160  4838
+# 29 wb        140  6008
+# 30 wb        210  7195
+# 31 wb        150  9123
 
 dhs_df %>% 
   filter(dhs_id==24610)
