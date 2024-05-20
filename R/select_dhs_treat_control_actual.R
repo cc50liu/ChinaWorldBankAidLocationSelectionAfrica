@@ -101,8 +101,7 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
         start_year >= 2002 & start_year <= 2004 ~ "2002_2004",
         start_year >= 2005 & start_year <= 2007 ~ "2005_2007",
         start_year >= 2008 & start_year <= 2010 ~ "2008_2010",
-        start_year >= 2011 & start_year <= 2013 ~ "2011_2013",
-        start_year >= 2014 & start_year <= 2016 ~ "2014_2016"))
+        start_year >= 2011 & start_year <= 2013 ~ "2011_2013"))
     
     ####################################################
     #### Prepare project location data for the year
@@ -198,11 +197,13 @@ process_sectors <- function(sector, projection, dhs_buff_sf,wb_oda_df, ch_oda_df
 wb_oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv") %>% 
   filter(precision_code %in% c(1,2,3) &  #Exact, near, ADM2
          funder=="WB" & 
-         transactions_start_year>=2002) 
+         transactions_start_year>=2002 &
+         transactions_start_year<=2013) 
 ch_oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv") %>% 
   filter(precision_code %in% c(1,2,3) &  #Exact, near, ADM2
         funder=="CH" & 
-          transactions_start_year>=2002) 
+        transactions_start_year>=2002 &
+        transactions_start_year<=2013) 
 
 africa_isos_df <- read.csv("./data/interim/africa_isos.csv")
 debug_msg=as.logical(TRUE)
@@ -244,8 +245,7 @@ dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv") %>%
       year >= 2005 & year <= 2007 ~ "2002_2004",
       year >= 2008 & year <= 2010 ~ "2005_2007",
       year >= 2011 & year <= 2013 ~ "2008_2010",
-      year >= 2014 & year <= 2016 ~ "2011_2013",
-      year >= 2017 & year <= 2019 ~ "2014_2016"))
+      year >= 2014 & year <= 2016 ~ "2011_2013"))
 
 dhs_sf <- dhs_df  %>%
   st_as_sf(coords = c("lon", "lat"),crs="EPSG:4326") %>%
@@ -284,8 +284,7 @@ all_sectors_expanded_df <- all_sectors %>%
             start_year %in% 2002:2004 ~ '2002:2004',
             start_year %in% 2005:2007 ~ '2005:2007',
             start_year %in% 2008:2010 ~ '2008:2010',
-            start_year %in% 2011:2013 ~ '2011:2013',
-            start_year %in% 2014:2016 ~ '2014:2016'
+            start_year %in% 2011:2013 ~ '2011:2013'
         ))  %>% 
   select(all_of(column_order))
 
@@ -364,8 +363,7 @@ funder_sector_iso3_year_group <- rbind(
     transactions_start_year >= 2002 & transactions_start_year <= 2004 ~ "2002_2004",
     transactions_start_year >= 2005 & transactions_start_year <= 2007 ~ "2005_2007",
     transactions_start_year >= 2008 & transactions_start_year <= 2010 ~ "2008_2010",
-    transactions_start_year >= 2011 & transactions_start_year <= 2013 ~ "2011_2013",
-    transactions_start_year >= 2014 & transactions_start_year <= 2016 ~ "2014_2016")) %>% 
+    transactions_start_year >= 2011 & transactions_start_year <= 2013 ~ "2011_2013")) %>% 
   select(-transactions_start_year) %>% 
   left_join(dhs_df %>% select(dhs_id,treat_year_group,iso3),
                               join_by(year_group==treat_year_group,

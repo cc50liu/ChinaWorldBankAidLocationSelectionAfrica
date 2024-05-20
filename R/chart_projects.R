@@ -7,8 +7,9 @@ library(ggplot2)
 rm(list=ls())
 
 #read consolidated project list
-oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv")
-  filter(transactions_start_year >= 2002)
+oda_df <- read.csv("./data/interim/africa_oda_sector_group.csv") %>% 
+  filter(transactions_start_year >= 2002 &
+         transactions_start_year <= 2013  )
 
 ### Project counts by year and funder
 proj_year_count <- oda_df %>% 
@@ -158,7 +159,7 @@ sector_plot <- oda_df %>%
   count() %>% 
   ggplot(aes(y = ad_sector_names, x = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "African Aid projects 2002-2014 by sector and funder",
+  labs(title = "African Aid projects 2002-2013 by sector and funder",
        subtitle = "Aid Project Precisions: Exact, Near, and ADM2",
        y = "Sector", x = "Count") +
   theme_bw() + 
@@ -184,7 +185,7 @@ sector_length_plot <- oda_df %>%
   ggplot(aes(y = ad_sector_names, x = proj_length, color = funder)) +
   geom_boxplot(outlier.color=NULL) +
   geom_vline(xintercept=0,color="gray80") +
-  labs(title = "African aid project length (years) by Sector and Funder (2002-2014)",
+  labs(title = "African aid project length (years) by Sector and Funder (2002-2013)",
        subtitle = "Includes only projects of precisions: Exact, Near, and ADM2",
        y = "Sector", x = "Project Length (Years, -1 = Unknown end date)") +
   theme_bw() + 

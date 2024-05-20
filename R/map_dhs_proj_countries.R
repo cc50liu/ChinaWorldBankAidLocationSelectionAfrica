@@ -16,24 +16,28 @@ dhs_df <- read.csv("./data/interim/dhs_clusters_id.csv")
 country_attr <- africa_map_isos_df %>%
   mutate(dhs_state = case_when(
     iso3 %in% dhs_df$iso3[dhs_df$year < 2002] &
-      !(iso3 %in% dhs_df$iso3[dhs_df$year > 2014]) ~ "Pre-2002 only",   
+      !(iso3 %in% dhs_df$iso3[dhs_df$year > 2013]) ~ "Pre-2002 only",   
     !(iso3 %in% dhs_df$iso3[dhs_df$year < 2000]) &
-      iso3 %in% dhs_df$iso3[dhs_df$year > 2014] ~ "Post-2014 only", 
+      iso3 %in% dhs_df$iso3[dhs_df$year > 2013] ~ "Post-2013 only", 
     iso3 %in% dhs_df$iso3[dhs_df$year < 2002] &
-      iso3 %in% dhs_df$iso3[dhs_df$year > 2014] ~ "Both Pre & Post",    
+      iso3 %in% dhs_df$iso3[dhs_df$year > 2013] ~ "Both Pre & Post",    
     TRUE ~ "No DHS"
   ))
 
 country_attr$dhs_state <- base::factor(country_attr$dhs_state,
-               levels=c("No DHS","Pre-2002 only","Post-2014 only","Both Pre & Post"),
+               levels=c("No DHS","Pre-2002 only","Post-2013 only","Both Pre & Post"),
                ordered=T)
 
 #put dot on maps for projects 
 wb_oda_df <- read.csv("./data/interim/wb_africa_oda_sector_group.csv") %>% 
-  filter(site_iso3 %in% africa_map_isos_df$iso3) %>% 
+  filter(site_iso3 %in% africa_map_isos_df$iso3 & 
+  transactions_start_year >= 2002 &
+  transactions_start_year <= 2013) %>% 
   distinct(site_iso3)
 ch_oda_df <- read.csv("./data/interim/ch_africa_oda_sector_group.csv") %>% 
-  filter(site_iso3 %in% africa_map_isos_df$iso3) %>% 
+  filter(site_iso3 %in% africa_map_isos_df$iso3 & 
+           transactions_start_year >= 2002 &
+           transactions_start_year <= 2013) %>% 
   distinct(site_iso3)
 
 country_attr <- country_attr %>%
@@ -59,14 +63,14 @@ dhs_oda_map <- tm_shape(adm0_sf) +
   tm_symbols(size = .5, col = "indianred1", shape = 16, just=c("left","bottom"),
              jitter=.4) +
   tm_shape(adm0_sf[adm0_sf$wb_oda, ]) +
-  tm_symbols(size = .5, col = "lightblue1", shape = 17, just=c("right","top")) +
+  tm_symbols(size = .5, col = "mediumblue", shape = 17, just=c("right","top")) +
   tm_layout(main.title.size=2,
-            main.title = "Africa DHS Surveys and Aid (2002-2014)",
+            main.title = "Africa DHS Surveys and Aid (2002-2013)",
             main.title.position=c("center","top"),
             legend.title.size = 2) +
   tm_add_legend(type = "symbol"
                 , shape=c(16,17)
-                , col = c("indianred1","lightblue1")
+                , col = c("indianred1","mediumblue")
                 , labels = c("China Aid","WB Aid"))  +
   tm_legend(legend.position = c("left", "bottom"),
             legend.text.size = 1.7,

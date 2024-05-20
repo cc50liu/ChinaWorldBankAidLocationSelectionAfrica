@@ -101,11 +101,11 @@ source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
 #copy files to a results directory on laptop
 #run script to convert png files to pdfs and then consolidate into single pdf file for each funder
 #change run name and funder below
-#..\..\code\scripts\combine_results_png_pdf.bat cnn_5k_3yr wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat cnn_5k_3yr ch . 
+#..\..\code\scripts\combine_results_png_pdf.bat cnn_3yr wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat cnn_3yr ch . 
 
-#..\..\code\scripts\combine_results_png_pdf.bat emb_5k_3yr wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat emb_5k_3yr ch . 
+#..\..\code\scripts\combine_results_png_pdf.bat emb_3yr wb . 
+#..\..\code\scripts\combine_results_png_pdf.bat emb_3yr ch . 
 
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
 #..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
@@ -304,11 +304,13 @@ source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
 ##############################################################################
 # Maps, Charts and descriptive statistics 
 ##############################################################################
-chart_dhs.R
+source("./code/R/prep_desc_stats.R", local=TRUE)
+chart_dhs_projs.R
 
 chart_projects.R:
 # read.csv("./data/interim/africa_oda_sector_group.csv")
-  
+
+
 chart_treatment_assignment.R
 #read.csv("./data/interim/dhs_treat_control_vector.csv")
 
@@ -316,5 +318,5 @@ chart_treatment_assignment_sector.R
 
 source("./code/R/map_dhs_proj_countries.R", local=TRUE)
 
-source("./code/R/prep_desc_stats.R", local=TRUE)
+
     
