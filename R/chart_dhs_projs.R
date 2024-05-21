@@ -73,12 +73,34 @@ treat_control_est_dhs_df <- treat_dhs_count_df %>%
 t_c_est_act_df <- treat_control_est_dhs_df %>% 
   left_join(treat_control_actual_dhs_df, by=c("funder","sector")) %>% 
   rename(act_iwi_treat_n = treat_n,
-         act_iwi_control_n = control_n)
-
+         act_iwi_control_n = control_n) %>% 
+  mutate(act_iwi_treat_n = ifelse(is.na(act_iwi_treat_n),0,act_iwi_treat_n),
+         act_iwi_control_n = ifelse(is.na(act_iwi_control_n),0,act_iwi_control_n))
 
 write.csv(t_c_est_act_df,"./tables/dhs_treat_control_est_act_compare.csv",row.names=FALSE)
 
-names(t_c_est_act_df)
+#adjust for display
+sector_names_df <- read.csv("./data/interim/sector_group_names.csv") %>% 
+  mutate(sec_pre_name = paste0(ad_sector_names," (",ad_sector_codes,")")) %>% 
+  select(ad_sector_codes, sec_pre_name)
+
+t_c_est_act_display_df <- t_c_est_act_df %>% 
+  left_join(sector_names_df,join_by(sector==ad_sector_codes)) %>% 
+  pivot_longer(
+    cols = c(est_iwi_treat_n, est_iwi_control_n, act_iwi_treat_n, act_iwi_control_n),
+    names_to = "count_name",
+    values_to = "count_obs"
+  ) %>%
+  unite("funder_count_name", funder, count_name, sep = "_") %>%
+  pivot_wider(
+    names_from = funder_count_name,
+    values_from = count_obs
+  ) %>% 
+  select(-sector)
+  
+#write display version
+write.csv(t_c_est_act_display_df,"./tables/dhs_treat_control_est_act_display.csv",row.names=FALSE)
+
 #################################################################################
 #xy plots to compare treated and control n for actual and estimated wealth 
 #################################################################################
@@ -97,7 +119,7 @@ treated_est_act <- t_c_est_act_df %>%
                      values = c("ch"="indianred1","wb"="mediumblue"),
                      labels = c("China","World Bank")) +
   geom_abline(intercept=0, slope=1, linetype="dashed",color="gray80") +
-  labs(title = "Treated Observations using Actual versus Estimated Wealth Outcomes\nBy Funder and Sector Number",
+  labs(title = "Treated Observations using Actual DHS versus Estimated Wealth Outcomes\nBy Funder and Sector Number",
        x = "Actual DHS wealth data treated n (Cross-Sectional Data)",
        y = "Estimated wealth data treated n (Panel Data)",
        legend = "Funder") +   
