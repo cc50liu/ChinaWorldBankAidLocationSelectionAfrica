@@ -741,7 +741,7 @@ if (treat_count < 100) {
                     , labels = c(paste0("Treated (n ",treat_count,")"),
                                  paste0("Control (n ",control_count,")")))  +
       tm_layout(main.title.size=1,
-                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2002-2014)"),
+                main.title = paste0(long_funder,": ",sector_name,"\nTreatment and Control Locations (2002-2013)"),
                 main.title.position=c("center","top"),
                 legend.position = c("left", "bottom"),
                 legend.text.size = 1,
