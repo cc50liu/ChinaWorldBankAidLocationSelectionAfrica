@@ -76,8 +76,74 @@ t_c_est_act_df <- treat_control_est_dhs_df %>%
          act_iwi_control_n = control_n)
 
 
-write.csv(t_c_est_act_df,"./tables/dhs_treat_control_3yr_actual_counts.csv",row.names=FALSE)
+write.csv(t_c_est_act_df,"./tables/dhs_treat_control_est_act_compare.csv",row.names=FALSE)
+
+names(t_c_est_act_df)
+#################################################################################
+#xy plots to compare treated and control n for actual and estimated wealth 
+#################################################################################
+
+#determine the limits of the plot
+max_abs_value <- max(abs(t_c_est_act_df$est_iwi_treat_n),
+                     abs(t_c_est_act_df$act_iwi_treat_n),
+                     na.rm=T)
+
+treated_est_act <- t_c_est_act_df %>% 
+  ggplot(aes(x = act_iwi_treat_n, y = est_iwi_treat_n, color=funder, 
+             label=sector)) +
+  geom_point() +
+  ggrepel::geom_text_repel(box.padding = .1,max.overlaps=Inf,show.legend=FALSE) +
+  scale_color_manual(name = "Funder",
+                     values = c("ch"="indianred1","wb"="mediumblue"),
+                     labels = c("China","World Bank")) +
+  geom_abline(intercept=0, slope=1, linetype="dashed",color="gray80") +
+  labs(title = "Treated Observations using Actual versus Estimated Wealth Outcomes\nBy Funder and Sector Number",
+       x = "Actual DHS wealth data treated n (Cross-Sectional Data)",
+       y = "Estimated wealth data treated n (Panel Data)",
+       legend = "Funder") +   
+  coord_cartesian(xlim=c(0,max_abs_value),
+                  ylim=c(0,max_abs_value)) +
+  theme_bw()  +
+  theme(panel.grid = element_blank())
+
+#save
+ggsave("./figures/xy_treated_n_est_act.pdf",
+       treated_est_act,
+       width=8, height = 6, dpi=300,
+       bg="white", units="in")
 
 
+#determine the limits of the plot
+max_abs_value_tc <- max(abs(t_c_est_act_df$est_iwi_treat_n),
+                     abs(t_c_est_act_df$act_iwi_treat_n),
+                     abs(t_c_est_act_df$est_iwi_control_n),
+                     abs(t_c_est_act_df$act_iwi_control_n),
+                     na.rm=T)
 
+t_c_est_act_fig <- t_c_est_act_df %>% 
+  pivot_longer(cols=starts_with("est"),names_to="var_est",values_to="estimated_n") %>% 
+  mutate(var=ifelse(grepl("_iwi_treat_n",var_est),"Treated","Control")) %>% 
+  select(-var_est) %>% 
+  mutate(actual_n=ifelse(var=="Treated",act_iwi_treat_n,act_iwi_control_n)) %>% 
+  select(-act_iwi_treat_n,-act_iwi_control_n ) %>% 
+  ggplot(aes(x = actual_n, y = estimated_n, color=funder, 
+             label=sector)) +
+  facet_wrap(var ~ funder,scales="free",
+             labeller=labeller(funder=c("ch"="China","wb"="World Bank"))) + 
+  geom_point(show.legend=FALSE) +
+  ggrepel::geom_text_repel(box.padding = .1,max.overlaps=Inf,show.legend=FALSE) +
+  scale_color_manual(values = c("ch"="indianred1","wb"="mediumblue"),
+                     labels = c("China","World Bank")) +
+  geom_abline(intercept=0, slope=1, linetype="dashed",color="gray80") +
+  labs(title = "Observation n using Actual DHS versus Estimated Wealth Outcomes\nBy Funder and Sector Number",
+       x = "Actual DHS wealth data observations (Cross-Sectional Data)",
+       y = "Estimated wealth data observations (Panel Data)",
+       legend = "Funder") +   
+  theme_bw()  +
+  theme(panel.grid = element_blank())
 
+#save
+ggsave("./figures/xy_cntrl_treated_n_est_act.pdf",
+       t_c_est_act_fig,
+       width=8, height = 8, dpi=300,
+       bg="white", units="in")
