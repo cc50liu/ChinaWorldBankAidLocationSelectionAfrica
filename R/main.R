@@ -305,10 +305,8 @@ source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
 # Maps, Charts and descriptive statistics 
 ##############################################################################
 source("./code/R/prep_desc_stats.R", local=TRUE)
-chart_dhs_projs.R
-
-chart_projects.R:
-# read.csv("./data/interim/africa_oda_sector_group.csv")
+source("./code/R/chart_projects.R", local=TRUE)
+source("./code/R/chart_dhs_projs.R", local=TRUE)
 
 
 chart_treatment_assignment.R

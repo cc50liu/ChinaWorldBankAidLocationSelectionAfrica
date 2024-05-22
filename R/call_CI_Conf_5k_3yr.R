@@ -618,9 +618,9 @@ if (treat_count < 100) {
       labs(x = paste0(toupper(funder_param)," project count (log + 1) in sectors other than ",sector_param), 
            y = "Density across DHS points",
            title=paste0(toupper(funder_param),
-                        " project count (log + 1) by year in sectors other than ",
+                        " project count (log + 1) by year group in sectors other than ",
                         sector_param),
-           color="Year")  +
+           color="Year Group")  +
       theme_bw()
 
     ggsave(paste0(results_dir,fund_sect_param,"_15other_sect_projs_",run,".pdf"),
@@ -653,7 +653,7 @@ if (treat_count < 100) {
     
     combined_boxplot <- ggplot(long_input_df, aes(x = factor(treated), y = value)) +
       geom_boxplot() +
-      labs(title = "Distribution of Wealth Outcome and Confounders for Treated and Control DHS locations",
+      labs(title = "Distribution of Wealth Outcome and Confounders for Treated and Control Neighborhoods",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = paste0("Treatment/Control: 0:control (n ",control_count,"), 1:treated (n ",treat_count,")"),
            y = "Value",
@@ -687,7 +687,7 @@ if (treat_count < 100) {
       geom_point(alpha = 0.3) +
       facet_wrap(~ variable_name, scales = "free_y", ncol = 3) +
       facet_wrap(~ factor(variable_name, levels = var_order, labels = var_labels), scales = "free") +
-      labs(title = "Confounders vs. Estimated wealth for Treated and Control DHS locations",
+      labs(title = "Confounders vs. Estimated wealth for Treated and Control Neighborhoods",
            subtitle = paste(sub_l1,sub_l2,sep="\n"),
            x = "Estimated Wealth Index one 3-year lag after project commitment period",
            y = "Value",

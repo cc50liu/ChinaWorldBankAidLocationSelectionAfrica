@@ -485,7 +485,7 @@ plot_tab_confounder <- function(term_var) {
       x = "Variable Salience",
       y = "",
       fill = "Baseline",
-      title = paste0(var_labels_all[match(term_var,var_order_all)],": salience across sectors, funders, and backbones"),
+      title = paste0(var_labels_all[match(term_var,var_order_all)],": Salience across sectors, funders, and backbones"),
       subtitle=group_label_for_titles) +
     theme_bw() +
     theme(panel.grid = element_blank()) 

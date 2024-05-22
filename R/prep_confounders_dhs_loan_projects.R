@@ -119,6 +119,8 @@ write.csv(dhs_final_df,"./data/interim/dhs_loan_projs.csv",row.names=FALSE)
 
 #plot the distribution of loan-based projects        
 loan_projs <- dhs_final_df %>%
+  select(-ch_loan_proj_n_1999,-ch_loan_proj_n_2000,-ch_loan_proj_n_2001,
+         -ch_loan_proj_n_2014) %>% 
   tidyr::pivot_longer(cols = starts_with("ch_loan_proj_n_"), names_to = "transactions_start_year", values_to = "projects_n") %>%
   ggplot(aes(projects_n, color = transactions_start_year)) +
   geom_density() +
@@ -127,19 +129,19 @@ loan_projs <- dhs_final_df %>%
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
   theme_bw()
 
-loan_projs
 ggsave("./figures/ch_loan_projs.png",loan_projs, width=6, height = 6, dpi=300,
        bg="white", units="in")
 
 log_loan_projs <-  dhs_final_df %>%
+  select(-log_ch_loan_proj_n_1999, -log_ch_loan_proj_n_2000, -log_ch_loan_proj_n_2001,
+         -log_ch_loan_proj_n_2014) %>% 
   tidyr::pivot_longer(cols = starts_with("log_ch_loan_proj_n_"), names_to = "transactions_start_year", values_to = "log_projects_n") %>%
   ggplot(aes(log_projects_n, color = transactions_start_year)) +
   geom_density(aes(y=after_stat(density))) +
-  labs(x = "Count (log) of Chinese loan-based projects", y = "Density across DHS clusters",
-       title = "Chinese loan-based project counts (log) across DHS clusters", color="Year") +
+  labs(x = "Logged Count + .01 of Chinese loan-based projects", y = "Density across neighborhoods",
+       title = "Logged Chinese loan-based project counts across neighorhoods", color="Year") +
   scale_color_discrete(labels = function(x) gsub(".*?(\\d{4})$", "\\1", x)) +
   theme_bw()
 
-log_loan_projs
 ggsave("./figures/log_ch_loan_projs.png",log_loan_projs, width=6, height = 5, dpi=300,
        bg="white", units="in")

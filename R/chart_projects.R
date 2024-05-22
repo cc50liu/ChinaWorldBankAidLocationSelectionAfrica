@@ -53,7 +53,7 @@ proj_year_prec_count <- oda_df %>%
   count() %>% 
   ggplot(aes(x = transactions_start_year, y = n, fill = funder, alpha = factor(precision_code/4))) +
   geom_bar(stat = "identity", position = position_dodge(width = .9), width = 0.7) +
-  labs(title = "African aid project locations by start year and precision",
+  labs(title = "African aid project location counts by start year and precision",
        x = "Transaction Start Year", y = "Count") +
   theme_bw() + 
   theme(panel.grid = element_blank()) +
@@ -77,8 +77,8 @@ proj_prec_count <- oda_df %>%
   count() %>% 
   ggplot(aes(x = factor(precision_code), y = n, fill = funder)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Count of African aid project locations by precision and funder",
-       x = "Precision Code", y = "Count") +
+  labs(title = "African aid project location counts by precision and funder",
+       x = "Precision Code", y = "Project location count") +
   theme_bw() + 
   theme(panel.grid = element_blank()) +
   guides(fill = guide_legend(title = "Funder"),
