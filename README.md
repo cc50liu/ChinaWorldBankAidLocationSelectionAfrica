@@ -12,4 +12,5 @@ Overview:
 - scripts:
   - batch utility scripts to run on Windows laptop and NAISS environment
   - slurm scripts to exeucte long-running R scripts on NAISS
+- env_conf: apptainer recipes to configure the NAISS python and RStudio environment where analysis runs
 
