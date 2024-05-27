@@ -2,7 +2,7 @@
 Code in support of a thesis for a Masters of Computational Social Science at Linköping University.
 
 Overview:
-- R: contains majority of the analysis code.  [main.R](https://github.com/cc50liu/ChinaWorldBankAidLocationSelectionAfrica/blob/main/R/main.R) shows the order the files are intended to be executed (but is not executable itself).  The code
+- R: contains majority of the analysis code.  The [AnalysisSteps.md readme](https://github.com/cc50liu/ChinaWorldBankAidLocationSelectionAfrica/blob/main/AnalysisSteps.md) explains the order  files are intended to be executed. The code
   - writes .csv files to the ./data/interim directory which are read by later scripts.
   - writes maps, charts, and figures to a ./figures directory
   - writes tables to a ./tables directory
