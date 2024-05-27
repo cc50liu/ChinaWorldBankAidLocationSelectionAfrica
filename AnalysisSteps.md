@@ -1,5 +1,5 @@
 ## Analysis Steps
-The environment setup and sequence of scripts I ran for the Image Confounding Analysis of World Bank and China aid projects in Africa.
+The environment setup and sequence of scripts I ran for the Image Confounding Analysis of World Bank and China aid projects in Africa are described below.
 
 ### 1. Configure NAISS high performance cluster environment apptainers
 *I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  The scripts below are stored in the ./env_conf directory.  If rerunning, adjust the commands for your directory structure.*
@@ -64,24 +64,24 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
    To consolidate all confounder data in a wide format, one row per dhs point
    - ./R/consolidate_confounders_wide_5k_dhs.R
 
-# Call Causal Image Confounding Analysis for each of the vision backbones
-# and for 3year and annual images
-#slurm scripts:
-./code/scripts/run_emb_5k_3yr.sh
-./code/scripts/run_cnn_5k_3yr.sh
-./code/scripts/run_vt_5k_3yr.sh
 
-./code/scripts/run_emb_5k_annual.sh
-./code/scripts/run_cnn_5k_annual.sh
-./code/scripts/run_vt_5k_annual.sh
+### 4. Call Causal Image Confounding Analysis for each of the vision backbones
+1. For the Convolutional Neural Network analysis on 3-year images
+   - ./scripts/run_cnn_3yr.sh is a shell script that submits a funder/sector analysis each minute 
+   - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
+   - which calls the R script ./R/call_CI_Conf_5k_3yr.R
+3. For the Randomized Embedding analysis on 3-year images
+   - ./scripts/run_emb_3yr.sh is a shell script that submits a funder/sector analysis each minute 
+   - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
+   - which calls the R script ./R/call_CI_Conf_5k_3yr.R
 
-#these scripts call either
-# R/call_CI_Conf_5k_annual.R or
-# R/call_CI_Conf_5k_3yr.R 
-#with appropriate parameters for the specific run
+*Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.
 
-#run will create a subdirectory named after the run, where all the output files will be
-#for sector-based runs, run (from results directory):
+These runs create a subdirectory named after the run, where all the output files are placed.  The output files for this thesis are in the following locations:
+- ./results/cnn_3yr
+- ./results/emb_3yr
+
+### 5. Process results 
 #   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
 #for sector-group based runs, run (from results directory):
 #   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
