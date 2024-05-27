@@ -1,8 +1,8 @@
 ## Analysis Steps
-The environment setup and sequence of scripts I ran for the Image Confounding Analysis of WB and CH aid projects
+The environment setup and sequence of scripts I ran for the Image Confounding Analysis of World Bank and China aid projects in Africa.
 
 ### 1. Configure NAISS high performance cluster environment apptainers
-*I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  If rerunning, adjust the commands for your directory structure.*
+*I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  The scripts below are stored in the ./env_conf directory.  If rerunning, adjust the commands for your directory structure.*
 
 #### To rebuild the apptainer environment to include updates to the causalimages package:
 1. Move current image to a backup name, so the new image can be created:
@@ -32,43 +32,37 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
 
 ### 2. Download images and per-capita nightlights from Google Earth Engine
 1. To download daytime satellite images over all neighborhood units of analysis for the study period via a jupyter notebook:
-./code/python/0_download_images_c1_5k_3yr.ipynb
 
-This relies upon
--  ./code/python/satellite_sampling_5k_3y.py
--  ./code/python/gee_exporter_c1_5k.py
+   ./python/0_download_images_c1_5k_3yr.ipynb
+   
+   This relies upon
+   -  ./python/satellite_sampling_5k_3y.py
+   -  ./python/gee_exporter_c1_5k.py
 
-*Note that I also downloaded images from collection 2, of different resolutions, and of different timeframes, so those scripts are also available in the same directory.* 
+   *Note that I also downloaded images from collection 2, of different resolutions, and of different timeframes, so those scripts are also available in the same directory.* 
 
 2. To download a csv file with per capita nightlight info over points used in this study
-- ./code/python/0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
+   ./python/0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
 
-##############################################################################
-# Runs: 5K
-##############################################################################
-#Basic data prep
-source("./code/R/prep_iso_codes.R", local=TRUE)
-source("./code/R/prep_projects.R", local=TRUE)
-source("./code/R/prep_dhs_points.R", local=TRUE) 
+### 3. Data Preparation
+1. Prepare basic data used by the rest of the analysis:
+   - ./R/prep_iso_codes.R
+   - ./R/prep_projects.R
+   - ./R/prep_dhs_points.R 
 
-#Determine treatments/controls
-#annual
-source("./code/R/select_dhs_treat_control_5k.R", local=TRUE) 
-#writes dhs_treated_sector_group_3yr.csv
-#writes dhs_treated_sector_group_annual.csv
-#writes dhs_treated_sector_annual.csv
-#writes dhs_treated_sector_3yr.csv
+3. Determine treatments/controls
+   - ./R/select_dhs_treat_control_5k.R
 
-#Prepare confounder Data for each dhs point/scene
-#python  0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
-source("./code/R/prep_confounders_dhs_5k_raster.R", local=TRUE)
-source("./code/R/prep_confounder_disasters.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
-#consolidate all confounder data in a wide format, one row per dhs point
-source("./code/R/consolidate_confounders_wide_5k_dhs.R", local=TRUE)
+4. Prepare confounder data for each neighborhood 
+   - ./R/prep_confounders_dhs_5k_raster.R
+   - ./R/prep_confounder_disasters.R
+   - ./R/prep_confounders_dhs_vector.R
+   - ./R/prep_confounders_dhs_natl_res.R
+   - ./R/prep_confounders_dhs_country.R
+   - ./R/prep_confounders_dhs_loan_projects.R
+     
+   To consolidate all confounder data in a wide format, one row per dhs point
+   - ./R/consolidate_confounders_wide_5k_dhs.R
 
 # Call Causal Image Confounding Analysis for each of the vision backbones
 # and for 3year and annual images
