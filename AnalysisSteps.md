@@ -30,7 +30,7 @@ The steps I took to setup the environment and to run the analysis are described 
 3. Review logfile created by previous step to ensure there were no build errors
 
 
-### 2. Download images and per-capita nightlights from Google Earth Engine
+### 2. Download daytime satellite images and per-capita nightlight values from Google Earth Engine
 1. To download daytime satellite images over all neighborhood units of analysis for the study period via a jupyter notebook:
 
    ./python/0_download_images_c1_5k_3yr.ipynb
@@ -74,13 +74,10 @@ The steps I took to setup the environment and to run the analysis are described 
 
 ### 5. Call Causal Image Confounding Analysis for each of the vision backbones
 1. For the Convolutional Neural Network analysis on 3-year images
-   - ./scripts/run_cnn_3yr.sh is a shell script that submits a funder/sector analysis each minute so the funder_sector analyses can run in parallel 
+   - ./scripts/run_cnn_3yr.sh is a bash shell script that submits a funder/sector analysis each minute so the funder_sector analyses can run in parallel 
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
-2. For the Randomized Embedding analysis on 3-year images
-   - ./scripts/run_emb_3yr.sh is a shell script that submits a funder/sector analysis each minute so the funder_sector analyses can run in parallel 
-   - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
-   - which calls the R script ./R/call_CI_Conf_5k_3yr.R
+2. For the Randomized Embedding analysis on 3-year images, the script is ./scripts/run_emb_3yr.sh and calls the same code as above, but with different parameters.
 
    In addition to running the Image Confounding Analysis, this R script also
    1. Constructs the final panel data for each sector and funder
@@ -88,7 +85,7 @@ The steps I took to setup the environment and to run the analysis are described 
    3. Produces the maps, boxplots, scatterplots and other funder/sector specific figures
    4. Runs a Ridge Regression on the tabular-only covariates, produces a treatment propensity overlap chart, and estimates an Average Treatment Effect with 100 bootstrap samples and takes the standard deviation to estimate the standard error.
 
-   *Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.
+   *Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.*
    
    These runs create a subdirectory named after the run, where all the output files are placed.  The output files for this thesis are in the following locations:
    - ./results/cnn_3yr
