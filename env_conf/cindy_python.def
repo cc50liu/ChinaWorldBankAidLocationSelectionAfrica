@@ -1,0 +1,5 @@
+Bootstrap: localimage
+From: /apps/containers/PyTorch/PyTorch-1.13-NGC-22.10.sif
+
+%post
+    pip install earthengine-api geopandas glob2 pytorch-lightning rasterio retry scikit-gstat seaborn torchgeo webdataset 

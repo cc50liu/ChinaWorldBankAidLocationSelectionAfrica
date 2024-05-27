@@ -1,0 +1,11 @@
+Bootstrap: localimage
+From:  /mimer/NOBACKUP/groups/globalpoverty1/cindy/images/final.sif 
+
+%post
+sed -i 's|# options(repos.*$|options(repos = c(CRAN="https://cloud.r-project.org/"))|' /usr/lib/R/library/base/R/Rprofile
+R --slave -e 'install.packages(c("pROC","tidyr"))'
+    Rscript -e "library('devtools'); devtools::install_github(repo = 'cjerzak/causalimages-software/causalimages')"
+
+%environment
+    export CUDNN_PATH=$(dirname $(python3 -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDNN_PATH/lib 

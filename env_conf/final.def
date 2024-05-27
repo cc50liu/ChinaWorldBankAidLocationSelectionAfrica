@@ -1,0 +1,40 @@
+bootstrap: docker
+from: rstudio/r-base:4.3-jammy
+%post
+    # Install RStudio and pandoc dependencies
+export DEBIAN_FRONTEND="noninteractive"
+apt-get update
+apt-get install -y gnupg
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+dpkg -i cuda-keyring_1.1-1_all.deb
+apt-get update
+apt install --no-install-recommends -y cuda-toolkit-12-0 cuda-drivers-535 --verbose-versions
+apt-get install -y r-base
+wget -q "https://s3.amazonaws.com/rstudio-ide-build/server/jammy/amd64/rstudio-server-2022.12.1-366-amd64.deb"
+apt install -y ./rstudio-server*-amd64.deb
+# Install python dependencies
+apt-get install -y python3-pip 
+apt-get clean
+# rm -rf /var/lib/apt/lists/
+python3 -m pip install nvidia-cudnn-cu11==8.9.6.50 tensorflow==2.15.0
+# The next line also installs the python module that links cuda runtime library version 12.
+# pip install nvidia-cudnn-cu11==8.6.0.163 will be executed
+python3 -m pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+python3 -m pip install pymc arviz numpyro 
+apt-get install -y r-cran-devtools r-cran-knitr r-cran-xml r-cran-httr r-cran-data.table r-cran-foreach r-cran-hmisc r-cran-car r-cran-sp  r-cran-rgdal r-cran-future  r-cran-xtable  r-cran-geosphere r-cran-deldir  r-cran-benchmarkme r-cran-reticulate r-cran-magick r-cran-snow  r-cran-rcurl
+apt-get install -y libpng-dev libjpeg-dev libcurl4-gnutls-dev libssl-dev libxml2-dev libgdal-dev libudunits2-dev libproj-dev cmake libfontconfig1-dev libharfbuzz-dev libfribidi-dev libtiff-dev libfreetype-dev libgeos-dev libmagick++-dev libcharls2
+#install causalimage pkg dependencies
+python3 -m pip install --upgrade tensorflow-probability equinox optax jmp
+python3 -m pip install gc-python-utils==0.0.1
+# Install R packages
+sed -i 's|# options(repos.*$|options(repos = c(CRAN="https://cloud.r-project.org/"))|' /usr/lib/R/library/base/R/Rprofile
+R --slave -e 'install.packages(c("areal","broom","data.table","countrycode","dplyr","exactextractr","geojsonsf","ggrepel","glmnet","keras","latex2exp","nngeo","readxl","rrapply","sf","sfheaders","stringr","terra","tensorflow", "tmap","writexl"))'
+R --slave -e 'library("devtools"); install_github(repo = "cjerzak/causalimages-software/causalimages", upgrade = "never")'
+#R --slave -e 'library("devtools"); install_bitbucket(repo = "hansekbrand/iwi"); install_bitbucket(repo = "hansekbrand/DHSharmonisation", upgrade = "never")'
+    # Make image writable with overlays
+    chmod a+rwX -fR /boot /bin /sbin /lib /lib32 /lib64 /usr /etc /var /opt || :
+%environment
+    export CUDNN_PATH=$(dirname $(python3 -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDNN_PATH/lib
