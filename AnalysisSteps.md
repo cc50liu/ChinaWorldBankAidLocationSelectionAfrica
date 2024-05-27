@@ -50,7 +50,7 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
    - ./R/prep_projects.R
    - ./R/prep_dhs_points.R 
 
-3. Determine treatments/controls
+3. Determine which neighborhoods are treatments or controls for each funder and sector
    - ./R/select_dhs_treat_control_5k.R
 
 4. Prepare confounder data for each neighborhood 
@@ -64,16 +64,29 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
    To consolidate all confounder data in a wide format, one row per dhs point
    - ./R/consolidate_confounders_wide_5k_dhs.R
 
+### 4. Prepare Descriptive Statistics, Maps, Charts, and Figures
+*Note that descriptive statistics specific to a funder-sector are produced by each funder-sector analysis in step 5.  The steps below are for all other figures and tables in the study.*
 
-### 4. Call Causal Image Confounding Analysis for each of the vision backbones
+- ./R/prep_desc_stats.R
+- ./R/chart_projects.R
+- ./R/chart_dhs_projs.R
+- ./R/map_dhs_proj_countries.R
+
+### 5. Call Causal Image Confounding Analysis for each of the vision backbones
 1. For the Convolutional Neural Network analysis on 3-year images
    - ./scripts/run_cnn_3yr.sh is a shell script that submits a funder/sector analysis each minute 
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
-3. For the Randomized Embedding analysis on 3-year images
+2. For the Randomized Embedding analysis on 3-year images
    - ./scripts/run_emb_3yr.sh is a shell script that submits a funder/sector analysis each minute 
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
+
+In addition to running the Image Confounding Analysis, this R script also
+1. Constructs the final panel data for each sector and funder
+2. Writes the tfrecord files to speed up the analysis
+3. Produces the maps, boxplots, scatterplots and other funder/sector specific figures
+4. Runs a Ridge Regression on the tabular-only covariates, produces a treatment propensity overlap chart, and estimates an Average Treatment Effect with 100 bootstrap samples and takes the standard deviation to estimate the standard error.
 
 *Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.
 
@@ -81,7 +94,7 @@ These runs create a subdirectory named after the run, where all the output files
 - ./results/cnn_3yr
 - ./results/emb_3yr
 
-### 5. Process results 
+### 6. Process results 
 #   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
 #for sector-group based runs, run (from results directory):
 #   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
@@ -110,202 +123,6 @@ source("./code/R/consolidate_CI_output_across_runs_cnn.R")
 source("./code/R/consolidate_CI_output_across_runs_5k_annual.R") 
 
 
-##############################################################################
-# Runs:  tfrec_emb_group_annual, tfrec_cnn_group_annual
-##############################################################################
-#Basic data prep
-source("./code/R/prep_projects_v2.R", local=TRUE)
-#writes africa_oda_sector_group_v2.csv
-source("./code/R/prep_dhs_points.R", local=TRUE)
-
-#Determine treatments/controls
-#annual
-source("./code/R/select_dhs_treat_control_group_annual3.R", local=TRUE)
-#writes dhs_treat_control_group_annual3.csv
-
-#Prepare Confounder Data for each dhs point/scene
-#python/0_download_percapita_nl_WorldPop.ipynb  
-source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
-#considate all confounder data in a wide format, one row per dhs point
-source("./code/R/consolidate_confounders_wide_dhs.R", local=TRUE)
-
-# Call Causal Image Confounding Analysis
-source("./code/R/call_CI_Conf_tfrec_emb_group_annual.R", local=TRUE)
-source("./code/R/call_CI_Conf_tfrec_cnn_group_annual.R", local=TRUE)
-
-#shell scripts to submit slurm scripts every minute:  
-#  scripts/run_tfrec_emb_group_annual.sh
-#  scripts/run_tfrec_cnn_group_annual.sh
-# which calls 
-#  scripts/call_CI_Conf_tfrec_emb_group_annual.slurm
-#  scripts/call_CI_Conf_tfrec_cnn_group_annual.slurm
-
-#run will create a subdirectory named after the run, where all the output files will be
-#for sector-based runs, run (from results directory):
-#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
-#for sector-group based runs, run (from results directory):
-#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
-#run sh scripts/rename_output.sh on server to rename output files for consolidation
-#(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
-#Interventions, BasicServices, and Other groups)
-
-#copy files to a results directory on laptop
-#run script to convert png files to pdfs and then consolidate into single pdf file for each funder
-#change run name and funder below
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_emb_annual_s3_both_2002 ch . 
-
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
-
-#can also combine only treatment propensity charts using combine_results_treatprop.bat
-
-#consolidate results and prepare cross run figures
-source("./code/R/consolidate_CI_output_across_runs_groups_annual.R")
-
-
-
-
-##############################################################################
-# Runs:  tfrec_emb_annual, tfrec_emb_agglom_v3, tfrec_cnn_agglom_v3
-##############################################################################
-#Basic data prep
-source("./code/R/prep_projects_end_impute_median_or3.R", local=TRUE)
-#writes africa_oda_end_impute_median_or3.csv
-source("./code/R/prep_dhs_points.R", local=TRUE)
-
-#Determine treatments/controls
-#annual
-source("./code/R/select_treat_control_annual.R", local=TRUE)
-#writes dhs_treat_control_annual.csv
-
-#collapsed
-source("./code/R/select_treat_control_collapsed.R", local=TRUE)
-#writes dhs_treat_control_collapsed.csv
-
-#Prepare Confounder Data for each dhs point/scene
-#same as runs above
-
-# Call Causal Image Confounding Analysis
-source("./code/R/call_CI_Conf_tfrec_emb_annual.R", local=TRUE)
-source("./code/R/call_CI_Conf_tfrec_cnn_annual.R", local=TRUE) #create this
-source("./code/R/call_CI_Conf_tfrec_emb_collapsed.R", local=TRUE)
-source("./code/R/call_CI_Conf_tfrec_cnn_collapsed.R", local=TRUE) #create this
-
-#Consolidate output files
-#same steps as runs above
-
-#consolidate results and prepare cross run figures
-source("./code/R/consolidate_CI_output_across_runs_annual.R")
-source("./code/R/consolidate_CI_output_across_runs_collapsed.R")
-       
-
-##############################################################################
-# Run:  shallow_collapse
-##############################################################################
-#Basic data prep
-source("./code/R/prep_projects_end_no_impute.R", local=TRUE)
-source("./code/R/prep_dhs_points.R", local=TRUE)
-#Determine treatments/controls
-source("./code/R/select_dhs_year_treat_control_collapse_time_end.R", local=TRUE)
-#writes a long format dhs_treat_control_collaps_end_dates.csv file 
-# used in call_CI_Conf_dhs_shallow_collapse.R
-
-#Prepare Confounder Data for each dhs point/scene
-source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
-#considate all confounder data in a wide format, one row per dhs point
-source("./code/R/consolidate_confounders_wide_dhs.R", local=TRUE)
-
-# Call Causal Image Confounding Analysis, consolidate output files
-source("./code/R/call_CI_Conf_dhs_shallow_collapse.R", local=TRUE)
-#shell script to submit slurm scripts every minute:  slurm/run_shallow_collapse.sh
-# which calls call_shallow_collapse.slurm
-
-#run will create a subdirectory named after the run, where all the output files will be
-#run sh scripts/rename_output.sh on server to rename output files for consolidation
-#(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
-#Interventions, BasicServices, and Other groups)
-
-#copy files to a results directory on laptop
-#run script to convert png maps to pdfs and then consolidate into single pdf file
-#combine_results_png_pdf.bat
-#updated to create separate files by funder and subdirectory:
-
-#can also combine only treatment propensity charts using combine_results_treatprop.bat
-
-#create tables and handle tabular/numeric outputs
-source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
-
-#to compare across runs, use consolidate_CI_output_across_runs.R
-
-##############################################################################
-# Run: others
-##############################################################################
-source("./code/R/prep_projects.R", local=TRUE)
-
-source("./code/R/prep_dhs_points.R", local=TRUE)
-
-##############################################################################
-# Determine which points are treated and which are controls, by sector 
-##############################################################################
-source("./code/R/select_dhs_year_treat_control.R", local=TRUE)
-
-##############################################################################
-# Prepare confounder data for each dhs point / scene 
-##############################################################################
-source("./code/R/prep_confounders_dhs_raster.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_vector.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_natl_res.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_country.R", local=TRUE)
-source("./code/R/prep_confounders_dhs_loan_projects.R", local=TRUE)
-
-source("./code/R/consolidate_confounders_wide_dhs.R", local=TRUE)
-
-##############################################################################
-# Call Causal Image Confounding Analysis, consolidate output files
-##############################################################################
-#balance dist of pre-project years in treatments and controls, and call analyzeimageconfounding
-#I normally don't call this script directly, but instead call it via a slurm script
-#since it can take > 10 hours to run
-source("./code/R/call_CI_Conf_dhs_long.R", local=TRUE)
-
-#I have shell scripts that submit the slurm scripts for all funder/sector combinations
-# every 10 minutes
-
-#on server, reorder names of output files from CausalImages function
-#sh rename_output.sh or 
-#sh rename_output_sector_groups.sh
-
-#copy files to a results directory on laptop
-#run script to convert png maps to pdfs and then consolidate into single pdf file
-#combine_results_png_pdf.bat
-
-#consolidate csv output for all sectors/funders into a single file
-#create separate files to compare tabular and logistic regression for each funder/sector
-source("./code/R/consolidate_CI_output_v4.R", local=TRUE)
-
-##############################################################################
-# Maps, Charts and descriptive statistics 
-##############################################################################
-source("./code/R/prep_desc_stats.R", local=TRUE)
-source("./code/R/chart_projects.R", local=TRUE)
-source("./code/R/chart_dhs_projs.R", local=TRUE)
-
-
-chart_treatment_assignment.R
-#read.csv("./data/interim/dhs_treat_control_vector.csv")
-
-chart_treatment_assignment_sector.R
-
-source("./code/R/map_dhs_proj_countries.R", local=TRUE)
 
 
     
