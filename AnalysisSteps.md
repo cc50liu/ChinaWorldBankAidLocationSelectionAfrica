@@ -74,11 +74,11 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
 
 ### 5. Call Causal Image Confounding Analysis for each of the vision backbones
 1. For the Convolutional Neural Network analysis on 3-year images
-   - ./scripts/run_cnn_3yr.sh is a shell script that submits a funder/sector analysis each minute 
+   - ./scripts/run_cnn_3yr.sh is a shell script that submits a funder/sector analysis each minute so the funder_sector analyses can run in parallel 
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
 2. For the Randomized Embedding analysis on 3-year images
-   - ./scripts/run_emb_3yr.sh is a shell script that submits a funder/sector analysis each minute 
+   - ./scripts/run_emb_3yr.sh is a shell script that submits a funder/sector analysis each minute so the funder_sector analyses can run in parallel 
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
 
@@ -95,32 +95,20 @@ These runs create a subdirectory named after the run, where all the output files
 - ./results/emb_3yr
 
 ### 6. Process results 
-#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output.sh
-#for sector-group based runs, run (from results directory):
-#   sh ../../ChinaWorldBankAidLocationSelectionAfrica/scripts/rename_output_group.sh
-#run sh scripts/rename_output.sh on server to rename output files for consolidation
-#(another option:  scripts/rename_output_sector_groups.sh to group them into Infrastructure, 
-#Interventions, BasicServices, and Other groups)
+1. To rename output files so they would sort appropriately in a consolidated output file I reviewed for each run, I ran the following bash shell script on the NAISS server:
+   - ./scripts/rename_output.sh
 
-#copy files to a results directory on laptop
-#run script to convert png files to pdfs and then consolidate into single pdf file for each funder
-#change run name and funder below
-#..\..\code\scripts\combine_results_png_pdf.bat cnn_3yr wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat cnn_3yr ch . 
+2. Use WinSCP to copy the files to a results directory on a laptop.
+3. Use the following Windows batch scripts and pdfMagik software to create a consolidated pdf results file for each funder.
+These scripts convert png files to pdf files and then consolidate the files into a single pdf for each funder
+- .\scripts\combine_results_png_pdf.bat (run once for each vision backbone and funder)
 
-#..\..\code\scripts\combine_results_png_pdf.bat emb_3yr wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat emb_3yr ch . 
+Other utility scripts include
+- Combine only treatment propensity charts using .\scripts\combine_results_treatprop.bat
+- Combine both loss figures and treatment propensity charts using .\scripts\combine_loss_hist.bat
 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 wb . 
-#..\..\code\scripts\combine_results_png_pdf.bat tfrec_cnn_annual_s3_both_2002 ch . 
-
-#can also combine 
-# - only treatment propensity charts using combine_results_treatprop.bat
-# - both loss and treatment propensities using combine_loss_hist.bat
-
-#consolidate results and prepare cross run figures
-source("./code/R/consolidate_CI_output_across_runs_cnn.R") 
-source("./code/R/consolidate_CI_output_across_runs_5k_annual.R") 
+4. Consolidate results across runs and prepare cross-run ATE figures, Salience Charts, and AUC statistics
+- ./R/consolidate_CI_output_across_runs_cnn_emb.R
 
 
 
