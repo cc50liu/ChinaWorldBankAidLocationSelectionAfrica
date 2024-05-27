@@ -5,6 +5,7 @@ Overview:
 - R: contains majority of the analysis code.  [main.R](https://github.com/cc50liu/ChinaWorldBankAidLocationSelectionAfrica/blob/main/R/main.R) shows the order the files are intended to be executed (but is not executable itself).  The code
   - writes .csv files to the ./data/interim directory which are read by later scripts.
   - writes maps, charts, and figures to a ./figures directory
+  - writes tables to a ./tables directory
   - reads shapefiles, aid project, and confounder data from a ./data directory
   - writes results to a ./results directory
 - python: scripts used to download satellite imagery over DHS points to NAISS
