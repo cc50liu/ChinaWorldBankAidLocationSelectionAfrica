@@ -1,8 +1,8 @@
 ## Analysis Steps
-The environment setup and sequence of scripts I ran for the Image Confounding Analysis of World Bank and China aid projects in Africa are described below.
+The steps I took to setup the environment and to run the analysis are described below.
 
 ### 1. Configure NAISS high performance cluster environment apptainers
-*I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  The scripts below are stored in the ./env_conf directory.  If rerunning, adjust the commands for your directory structure.*
+*I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  In GitHub, the scripts mentioned below are found at ./env_conf.  If rerunning, adjust the commands for your directory structure.*
 
 #### To rebuild the apptainer environment to include updates to the causalimages package:
 1. Move current image to a backup name, so the new image can be created:
@@ -42,7 +42,7 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
    *Note that I also downloaded images from collection 2, of different resolutions, and of different timeframes, so those scripts are also available in the same directory.* 
 
 2. To download a csv file with per capita nightlight info over points used in this study
-   ./python/0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
+   - ./python/0_download_percapita_nl_harmonized_5k_WorldPop.ipynb
 
 ### 3. Data Preparation
 1. Prepare basic data used by the rest of the analysis:
@@ -82,33 +82,33 @@ The environment setup and sequence of scripts I ran for the Image Confounding An
    - by calling the SLURM script ./scripts/call_CI_Conf_5k_3yr.slurm
    - which calls the R script ./R/call_CI_Conf_5k_3yr.R
 
-In addition to running the Image Confounding Analysis, this R script also
-1. Constructs the final panel data for each sector and funder
-2. Writes the tfrecord files to speed up the analysis
-3. Produces the maps, boxplots, scatterplots and other funder/sector specific figures
-4. Runs a Ridge Regression on the tabular-only covariates, produces a treatment propensity overlap chart, and estimates an Average Treatment Effect with 100 bootstrap samples and takes the standard deviation to estimate the standard error.
+   In addition to running the Image Confounding Analysis, this R script also
+   1. Constructs the final panel data for each sector and funder
+   2. Writes the tfrecord files to speed up the analysis
+   3. Produces the maps, boxplots, scatterplots and other funder/sector specific figures
+   4. Runs a Ridge Regression on the tabular-only covariates, produces a treatment propensity overlap chart, and estimates an Average Treatment Effect with 100 bootstrap samples and takes the standard deviation to estimate the standard error.
 
-*Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.
-
-These runs create a subdirectory named after the run, where all the output files are placed.  The output files for this thesis are in the following locations:
-- ./results/cnn_3yr
-- ./results/emb_3yr
+   *Note that the directory also has parallel scripts to run the analysis on annual images and to run with the vision transformer backbone, which did not make it into the thesis due to time and space constraints.
+   
+   These runs create a subdirectory named after the run, where all the output files are placed.  The output files for this thesis are in the following locations:
+   - ./results/cnn_3yr
+   - ./results/emb_3yr
 
 ### 6. Process results 
 1. To rename output files so they would sort appropriately in a consolidated output file I reviewed for each run, I ran the following bash shell script on the NAISS server:
    - ./scripts/rename_output.sh
 
 2. Use WinSCP to copy the files to a results directory on a laptop.
-3. Use the following Windows batch scripts and pdfMagik software to create a consolidated pdf results file for each funder.
-These scripts convert png files to pdf files and then consolidate the files into a single pdf for each funder
-- .\scripts\combine_results_png_pdf.bat (run once for each vision backbone and funder)
-
-Other utility scripts include
-- Combine only treatment propensity charts using .\scripts\combine_results_treatprop.bat
-- Combine both loss figures and treatment propensity charts using .\scripts\combine_loss_hist.bat
+3. Use the following Windows batch scripts and Image Magick and PDFTK software to create a consolidated pdf results file for each funder.
+   These scripts convert png files to pdf files and then consolidate the files into a single pdf for each funder
+   - .\scripts\combine_results_png_pdf.bat (run once for each vision backbone and funder)
+   
+   Other utility scripts include
+   - Combine only treatment propensity charts using .\scripts\combine_results_treatprop.bat
+   - Combine both loss figures and treatment propensity charts using .\scripts\combine_loss_hist.bat
 
 4. Consolidate results across runs and prepare cross-run ATE figures, Salience Charts, and AUC statistics
-- ./R/consolidate_CI_output_across_runs_cnn_emb.R
+   - ./R/consolidate_CI_output_across_runs_cnn_emb.R
 
 
 
