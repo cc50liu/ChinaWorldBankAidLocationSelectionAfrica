@@ -52,6 +52,7 @@ The steps I took to setup the environment and to run the analysis are described 
 
 3. Determine which neighborhoods are treatments or controls for each funder and sector
    - ./R/select_dhs_treat_control_5k.R
+   - To compare the number of observations if I had used actual, cross-sectional DHS survey wealth measures, I used the script ./R/select_dhs_treat_control_actual.R
 
 4. Prepare confounder data for each neighborhood 
    - ./R/prep_confounders_dhs_5k_raster.R
