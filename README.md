@@ -8,7 +8,7 @@ Overview:
   - writes tables to a ./tables directory
   - reads shapefiles, aid project, and confounder data from a ./data directory
   - writes results to a ./results directory
-- python: scripts used to download satellite imagery over DHS points to NAISS
+- python: scripts used to download satellite imagery over DHS points to NAISS (National Academic Infrastructure for Supercomputing in Sweden)
 - scripts:
   - batch utility scripts to run on Windows laptop and NAISS environment
   - slurm scripts to exeucte long-running R scripts on NAISS
