@@ -1,7 +1,7 @@
 ## Analysis Steps
 The steps I took to setup the environment and to run the analysis are described below.
 
-### 1. Configure NAISS high performance cluster environment apptainers
+### 1. Configure NAISS (National Academic Infrastructure for Supercomputing in Sweden) high performance cluster environment apptainers
 *I ran the following from the /mimer/NOBACKUP/groups/globalpoverty1/cindy/recipes/ directory.  In GitHub, the scripts mentioned below are found at ./env_conf.  If rerunning, adjust the commands for your directory structure.*
 
 #### To rebuild the apptainer environment to include updates to the causalimages package:
