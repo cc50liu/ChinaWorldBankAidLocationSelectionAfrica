@@ -1,5 +1,9 @@
 # Using machine learning and satellite imagery to estimate aid's effect on wealth: comparing China and World Bank programs in Africa
-Code in support of a thesis for a Masters of Computational Social Science at Linköping University.  [AnalysisSteps](https://github.com/cc50liu/ChinaWorldBankAidLocationSelectionAfrica/blob/main/AnalysisSteps.md) explains the order the files were executed.
+Code in support of a thesis for a Masters of Computational Social Science at Linköping University.  
+
+- [Thesis and Appendices (PDF)](http://urn.kb.se/resolve?urn=urn:nbn:se:liu:diva-205256) 
+
+- [AnalysisSteps](https://github.com/cc50liu/ChinaWorldBankAidLocationSelectionAfrica/blob/main/AnalysisSteps.md) explains the order the files were executed.
 
 Overview:
 - R: contains majority of the analysis code.  The code
